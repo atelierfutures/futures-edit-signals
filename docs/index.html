@@ -58,9 +58,12 @@
   .search{flex:1 1 320px;display:flex;gap:10px}
   .search input{width:100%}
 
-  .pill{padding:6px 10px;border-radius:999px;background:var(--pill);font-size:12px;border:1px solid var(--border)}
-  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-  .chip{display:inline-flex;align-items:center;gap:6px} .chip button{all:unset;cursor:pointer;color:var(--muted)}
+  /* Pills — compact */
+  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .tag, .status{ padding:4px 8px; font-size:11px; }
+  .kchip{ padding:3px 6px; font-size:11px; }
+  .meta-right .score{ padding:2px 6px; font-size:11px; }
+  .kchips{ gap:6px; }
 
   /* Drawer */
   .drawer-back{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:80}
@@ -70,6 +73,21 @@
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .drawer .actions{display:flex;gap:10px;margin-top:14px}
 
+  /* More menu (pretty) */
+  .menu{ position:relative; }
+  .menu-panel{
+    display:none; position:absolute; right:0; top:calc(100% + 8px);
+    min-width:260px; background:var(--card); border:1px solid var(--border);
+    border-radius:10px; padding:8px; box-shadow:var(--shadow); z-index:60;
+  }
+  .menu-panel.open{ display:block; }
+  .menu-panel button, .menu-panel a{
+    display:flex; align-items:center; gap:8px; width:100%;
+    padding:10px; border:0; border-radius:8px; background:transparent; color:var(--fg);
+    text-decoration:none; cursor:pointer;
+  }
+  .menu-panel button:hover, .menu-panel a:hover{ background:var(--pill); }
+
   /* Table */
   table{width:100%;border-collapse:collapse;margin-top:10px}
   th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
@@ -78,33 +96,28 @@
   th .arrow{opacity:.35;margin-left:6px}
   th.active .arrow{opacity:1}
 
-  /* Cards — vertical with real covers */
+  /* Cards (no cover image) */
   .cards{display:grid;gap:14px;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
-  .cover{width:100%;aspect-ratio:16/9;object-fit:cover;background:#f3f4f6}
   .card-body{padding:12px;display:flex;flex-direction:column;gap:8px}
   .card-title{display:block;font-weight:600;margin:0}
   .card-title a{color:inherit}
-  .meta-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .meta-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .meta-right{display:flex;align-items:center;gap:8px}
-  .kchips{display:flex;gap:6px;flex-wrap:wrap}
-  .kchip{font-size:12px;padding:4px 8px;border-radius:999px;background:var(--pill);border:1px solid var(--border);color:var(--fg)}
   .footer{display:flex;align-items:center;justify-content:space-between;margin-top:2px}
   .muted{color:var(--muted)}
-  .score{padding:2px 8px;border:1px solid var(--border);border-radius:999px}
-
-  .tag{font-weight:600}
-  .tag--fashion{background:var(--fashion-bg); border-color:var(--fashion-bd); color:var(--fashion-fg)}
-  .tag--beauty{ background:var(--beauty-bg);  border-color:var(--beauty-bd);  color:var(--beauty-fg)}
-  .tag--wellness{background:var(--wellness-bg);border-color:var(--wellness-bd);color:var(--wellness-fg)}
-  .status{font-weight:600}
-  .status--emerging{background:var(--emerg-bg);border-color:var(--emerg-bd);color:var(--emerg-fg)}
-  .status--bubbling{background:var(--bubbl-bg);border-color:var(--bubbl-bd);color:var(--bubbl-fg)}
-  .status--mainstream{background:var(--main-bg);border-color:var(--main-bd);color:var(--main-fg)}
 
   /* Pager */
   .pager{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px;flex-wrap:wrap}
   .pager-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+  /* Tag colors */
+  .tag--fashion{background:var(--fashion-bg); border-color:var(--fashion-bd); color:var(--fashion-fg)}
+  .tag--beauty{ background:var(--beauty-bg);  border-color:var(--beauty-bd);  color:var(--beauty-fg)}
+  .tag--wellness{background:var(--wellness-bg);border-color:var(--wellness-bd);color:var(--wellness-fg)}
+  .status--emerging{background:var(--emerg-bg);border-color:var(--emerg-bd);color:var(--emerg-fg)}
+  .status--bubbling{background:var(--bubbl-bg);border-color:var(--bubbl-bd);color:var(--bubbl-fg)}
+  .status--mainstream{background:var(--main-bg);border-color:var(--main-bd);color:var(--main-fg)}
 </style>
 
 <div class="bar" id="bar">
@@ -135,7 +148,7 @@
     <div class="spacer"></div>
     <div class="menu">
       <button class="btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">More</button>
-      <div class="menu-panel" id="moreMenu" role="menu" style="display:none">
+      <div class="menu-panel" id="moreMenu" role="menu">
         <a href="signals_simple.csv" download>Download CSV</a>
         <button id="copyFiltered">Copy filtered CSV</button>
         <button id="copyShare">Copy share link</button>
@@ -165,7 +178,7 @@
     <tbody></tbody>
   </table>
 
-  <!-- Cards -->
+  <!-- Cards (no images) -->
   <div id="cards" class="cards" style="display:none"></div>
 
   <!-- Pager -->
@@ -273,9 +286,8 @@ const statusOrder = {emerging:0, bubbling:1, mainstream:2};
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const catClass = c => c && ["fashion","beauty","wellness"].includes(c) ? `pill tag tag--${c}` : "pill";
 const statusClass = s => s ? `pill status status--${s.toLowerCase()}` : "pill";
-const toDomain = url => { try { return new URL(url).hostname; } catch { return ""; } };
 
-/* compact header */
+/* sticky header compact state */
 window.addEventListener("scroll", ()=> bar.classList.toggle("compact", window.scrollY > 10));
 
 /* theme */
@@ -284,6 +296,15 @@ darkToggleBtn.onclick = () => {
   document.documentElement.classList.toggle("dark");
   localStorage.setItem("fe_theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
 };
+
+/* More menu */
+function toggleMenu(open){
+  moreMenu.classList.toggle('open', open);
+  moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+moreBtn.onclick = (e)=>{ e.stopPropagation(); toggleMenu(!moreMenu.classList.contains('open')); };
+document.addEventListener('click', (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn) toggleMenu(false); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') toggleMenu(false); });
 
 /* sorting */
 function updateSortUI(){
@@ -382,11 +403,6 @@ quick.onchange = () => {
   toI.value   = today.toISOString().slice(0,10);
 };
 
-/* More menu */
-function toggleMenu(open){ moreMenu.style.display = open ? "block" : "none"; moreBtn.setAttribute("aria-expanded", open ? "true" : "false"); }
-moreBtn.onclick = (e)=>{ e.stopPropagation(); toggleMenu(getComputedStyle(moreMenu).display==="none"); };
-document.addEventListener("click", (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn) toggleMenu(false); });
-
 /* reset / copy / share */
 resetAllBtn.onclick = () => {
   q.value="";
@@ -462,90 +478,7 @@ function buildQuery(){
 }
 function syncUrl(){ history.replaceState(null, "", "?"+buildQuery().toString()); }
 
-/* ---------- Better cover detection ---------- */
-/* We parse meta (og/twitter) and JSON-LD. We skip logos/icons/defaults. */
-const badImgHints = /(logo|icon|sprite|brand|placeholder|default|opengraph|ogimage)/i;
-const goodExt = /\.(jpe?g|png|webp|avif)(\?|#|$)/i;
-
-function absUrl(u, base){ try { return new URL(u, base).toString(); } catch { return u; } }
-
-function jsonLdImages(html, base){
-  const out = [];
-  const scripts = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
-  for(const m of scripts){
-    let txt = m[1].trim();
-    // attempt to parse safely
-    try{
-      const data = JSON.parse(txt);
-      const items = Array.isArray(data) ? data : [data];
-      for(const it of items){
-        const img = it && it.image;
-        if(!img) continue;
-        if(typeof img === "string") out.push(absUrl(img, base));
-        else if(Array.isArray(img)) img.forEach(x=>{
-          if(typeof x === "string") out.push(absUrl(x, base));
-          else if(x && x.url) out.push(absUrl(x.url, base));
-        });
-        else if(img && img.url) out.push(absUrl(img.url, base));
-      }
-    }catch{ /* ignore */ }
-  }
-  return out;
-}
-
-function metaImages(html, base){
-  const out = [];
-  const add = (re) => { for(const m of html.matchAll(re)) out.push(absUrl(m[1], base)); };
-  add(/<meta[^>]+property=["']og:image(?::secure_url|:url)?["'][^>]+content=["']([^"']+)["']/gi);
-  add(/<meta[^>]+name=["']twitter:image(?::src)?["'][^>]+content=["']([^"']+)["']/gi);
-  return out;
-}
-
-async function findCover(link){
-  const proxied = "https://r.jina.ai/http://" + link.replace(/^https?:\/\//,'');
-  try{
-    const html = await fetch(proxied, {mode:"cors"}).then(r=>r.text());
-    const base = link;
-    let candidates = [
-      ...jsonLdImages(html, base),
-      ...metaImages(html, base),
-    ];
-    // de-dupe
-    candidates = [...new Set(candidates)];
-    // prefer non-logo looking and with good image extensions
-    const scored = candidates.map(u => {
-      const bad = badImgHints.test(u) ? 1 : 0;
-      const ext = goodExt.test(u) ? 0 : 1;
-      // shorter is often logo; give penalty to very short paths
-      let pathLen = 0; try { pathLen = new URL(u).pathname.length; } catch {}
-      const shortPenalty = pathLen < 20 ? 1 : 0;
-      return {u, score: bad + ext + shortPenalty};
-    }).sort((a,b)=> a.score - b.score);
-    const pick = scored.length ? scored[0].u : null;
-    return pick;
-  }catch{ return null; }
-}
-
-function faviconFor(link){ const d = toDomain(link); return d ? `https://www.google.com/s2/favicons?domain=${d}&sz=128` : ""; }
-
-function applyCovers(){
-  const cards = cardsEl.querySelectorAll('.card[data-link]');
-  cards.forEach(async card=>{
-    const img = card.querySelector('img.cover');
-    if(img.dataset.done) return;
-    img.dataset.done = "1";
-    img.loading = "lazy";
-    img.alt = "preview";
-    img.referrerPolicy = "no-referrer";
-    const link = card.dataset.link;
-    let src = await findCover(link);
-    if(!src) src = faviconFor(link);
-    if(!src) { img.style.background = '#e5e7eb'; return; }
-    img.src = src;
-  });
-}
-
-/* ---------- render ---------- */
+/* render */
 function render(){
   const rows = getFilteredSortedRows();
   const total = rows.length;
@@ -572,23 +505,20 @@ function render(){
     `).join("");
   } else {
     cardsEl.innerHTML = slice.map(r => {
-      // keywords neat: up to 3 chips + +N
-      const allK = (r.primary_keyword||"")
-        .split(",").map(s=>s.trim()).filter(Boolean);
+      const allK = (r.primary_keyword||"").split(",").map(s=>s.trim()).filter(Boolean);
       const shown = allK.slice(0,3);
       const moreN = Math.max(0, allK.length - shown.length);
       const chips = shown.map(k=>`<span class="kchip">${highlight(k, q.value)}</span>`).join("")
                     + (moreN ? `<span class="kchip">+${moreN}</span>` : "");
       return `
-        <div class="card" data-link="${r.link}">
-          <img class="cover" alt="">
+        <div class="card">
           <div class="card-body">
             <div class="card-title"><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></div>
             <div class="meta-row">
               <span class="${catClass(r.category)}">${r.category||""}</span>
               <div class="meta-right">
                 <span class="${statusClass(r.status||"")}">${(r.status||"").toLowerCase()}</span>
-                <span class="score">score ${r.trend_score ?? ""}</span>
+                <span class="pill" style="padding:2px 6px;">score ${r.trend_score ?? ""}</span>
               </div>
             </div>
             ${chips ? `<div class="kchips">${chips}</div>` : ""}
@@ -600,7 +530,6 @@ function render(){
         </div>
       `;
     }).join("");
-    applyCovers();
   }
 
   renderChips();
