@@ -11,13 +11,9 @@
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
     --ctl-w:180px; --seg-w:160px;
-
-    /* Category */
     --fashion-bg:#fff1f2; --fashion-bd:#fecdd3; --fashion-fg:#9f1239;
     --beauty-bg:#eef2ff;  --beauty-bd:#c7d2fe; --beauty-fg:#3730a3;
     --wellness-bg:#ecfeff;--wellness-bd:#a5f3fc;--wellness-fg:#155e75;
-
-    /* Status */
     --emerg-bg:#ecfccb; --emerg-bd:#bef264; --emerg-fg:#3f6212;
     --bubbl-bg:#fef3c7; --bubbl-bd:#fcd34d; --bubbl-fg:#92400e;
     --main-bg:#f1f5f9;  --main-bd:#cbd5e1; --main-fg:#334155;
@@ -26,23 +22,17 @@
     --bg:#0b0b0c; --fg:#f2f3f5; --muted:#a3a7ae;
     --card:#121317; --border:#2b2f36; --pill:#1b1f25; --accent:#e5e7eb;
     --shadow:0 10px 30px rgba(0,0,0,.35);
-
     --fashion-bg:#3b0b12; --fashion-bd:#701a29; --fashion-fg:#fecdd3;
     --beauty-bg:#1e1b4b;  --beauty-bd:#3730a3; --beauty-fg:#c7d2fe;
     --wellness-bg:#0b3a42;--wellness-bd:#0e7490;--wellness-fg:#a5f3fc;
-
     --emerg-bg:#1b2e0b; --emerg-bd:#3f6212; --emerg-fg:#bef264;
     --bubbl-bg:#3a2a0a; --bubbl-bd:#a16207; --bubbl-fg:#fcd34d;
     --main-bg:#0f172a;  --main-bd:#334155; --main-fg:#cbd5e1;
   }
-
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
   a{color:#2563eb;text-decoration:none} a:hover{text-decoration:underline}
   .wrap{max-width:1100px;margin:0 auto;padding:20px}
-  h1{margin:0 0 8px;font-size:28px}
-
-  /* Sticky / toolbar */
   .bar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(10px);
     background:color-mix(in oklab, var(--bg) 90%, transparent); border-bottom:1px solid var(--border)}
   .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -57,12 +47,9 @@
   .select.fixed{width:var(--ctl-w)}
   .search{flex:1 1 320px;display:flex;gap:10px}
   .search input{width:100%}
-
   .pill{padding:6px 10px;border-radius:999px;background:var(--pill);font-size:12px;border:1px solid var(--border)}
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
   .chip{display:inline-flex;align-items:center;gap:6px} .chip button{all:unset;cursor:pointer;color:var(--muted)}
-
-  /* Drawer */
   .drawer-back{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:80}
   .drawer{position:fixed;right:0;top:0;height:100%;width:360px;max-width:90vw;background:var(--bg);
     border-left:1px solid var(--border);box-shadow:var(--shadow);padding:18px;display:none;z-index:90}
@@ -70,7 +57,6 @@
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .drawer .actions{display:flex;gap:10px;margin-top:14px}
 
-  /* Table */
   table{width:100%;border-collapse:collapse;margin-top:10px}
   th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
   th{position:sticky;top:64px;background:var(--bg);z-index:1}
@@ -78,9 +64,7 @@
   th .arrow{opacity:.35;margin-left:6px}
   th.active .arrow{opacity:1}
 
-  /* Card view — vertical cards with cover image */
-  .cards{display:grid;gap:14px;margin-top:12px;
-    grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+  .cards{display:grid;gap:14px;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
   .cover{width:100%;height:168px;object-fit:cover;background:#f3f4f6}
   .card-body{padding:12px}
@@ -90,8 +74,6 @@
   .meta-right{display:flex;align-items:center;gap:8px}
   .kchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
   .kchip{font-size:12px;padding:4px 8px;border-radius:999px;background:var(--pill);border:1px solid var(--border);color:var(--fg)}
-
-  /* Tags */
   .tag{font-weight:600}
   .tag--fashion{background:var(--fashion-bg); border-color:var(--fashion-bd); color:var(--fashion-fg)}
   .tag--beauty{ background:var(--beauty-bg);  border-color:var(--beauty-bd);  color:var(--beauty-fg)}
@@ -100,15 +82,12 @@
   .status--emerging{background:var(--emerg-bg);border-color:var(--emerg-bd);color:var(--emerg-fg)}
   .status--bubbling{background:var(--bubbl-bg);border-color:var(--bubbl-bd);color:var(--bubbl-fg)}
   .status--mainstream{background:var(--main-bg);border-color:var(--main-bd);color:var(--main-fg)}
-
   .score{padding:2px 8px;border:1px solid var(--border);border-radius:999px}
   .muted{color:var(--muted)}
-  .pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin:16px 0;flex-wrap:wrap}
-  .menu{position:relative}
-  .menu-panel{display:none;position:absolute;right:0;top:calc(100% + 8px);min-width:240px;background:var(--card);
-    border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:8px;z-index:60}
-  .menu-panel button,.menu-panel a{display:flex;gap:8px;align-items:center;width:100%;padding:10px;border-radius:8px;border:0;background:transparent;color:var(--fg);text-decoration:none;cursor:pointer}
-  .menu-panel button:hover,.menu-panel a:hover{background:var(--pill)}
+
+  /* New pager layout (showing text on the left, controls on the right) */
+  .pager{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px;flex-wrap:wrap}
+  .pager-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 </style>
 
 <div class="bar" id="bar">
@@ -134,7 +113,7 @@
       <option>fashion</option><option>beauty</option><option>wellness</option>
     </select>
     <select id="barStatus" class="select fixed">
-      <option value="">All statuses</option>
+      <option value="">All status</option>
       <option>emerging</option><option>bubbling</option><option>mainstream</option>
     </select>
     <button id="filtersBtn" class="btn">Filters</button>
@@ -155,7 +134,6 @@
 
 <div class="wrap">
   <div id="chips" class="chips"></div>
-  <div id="counts" class="muted">Loading…</div>
 
   <!-- Table -->
   <table id="tbl">
@@ -175,18 +153,22 @@
   <!-- Cards -->
   <div id="cards" class="cards" style="display:none"></div>
 
+  <!-- Bottom pager (now includes the "Showing X–Y of Z") -->
   <div class="pager">
-    <span>Rows per page:</span>
-    <select id="pageSize" class="select fixed">
-      <option>25</option><option selected>50</option><option>100</option><option>200</option>
-    </select>
-    <span id="pageInfo" class="muted">Page 1 of 1</span>
-    <button class="btn" id="prevBtn">Prev</button>
-    <button class="btn" id="nextBtn">Next</button>
+    <div class="pager-left muted" id="rangeInfo">Loading…</div>
+    <div class="pager-right">
+      <span>Rows per page:</span>
+      <select id="pageSize" class="select fixed">
+        <option selected>25</option><option>50</option><option>100</option><option>200</option>
+      </select>
+      <span id="pageInfo" class="muted">Page 1 of 1</span>
+      <button class="btn" id="prevBtn">Prev</button>
+      <button class="btn" id="nextBtn">Next</button>
+    </div>
   </div>
 </div>
 
-<!-- Drawer (dates + extra filters) -->
+<!-- Drawer -->
 <div class="drawer-back" id="drawerBack"></div>
 <div class="drawer" id="drawer" aria-modal="true" role="dialog">
   <h3>Filters & Dates</h3>
@@ -199,7 +181,7 @@
     </label>
     <label>Status
       <select id="stat" class="select">
-        <option value="">All</option>
+        <option value="">All status</option>
         <option>emerging</option><option>bubbling</option><option>mainstream</option>
       </select>
     </label>
@@ -222,41 +204,34 @@
 </div>
 
 <script>
-/* ---------- util & refs (same as before) ---------- */
+/* refs */
 const bar = document.getElementById("bar");
 const tbody   = document.querySelector("#tbl tbody");
 const cardsEl = document.getElementById("cards");
-const counts  = document.getElementById("counts");
 const chipsEl = document.getElementById("chips");
 const headers = [...document.querySelectorAll("th.sortable")];
-
 const q = document.getElementById("q");
 const sortKeySel = document.getElementById("sortKey");
-
 const viewTableBtn = document.getElementById("viewTable");
 const viewCardsBtn = document.getElementById("viewCards");
-
 const barCatSel = document.getElementById("barCat");
 const barStatusSel = document.getElementById("barStatus");
-
 const pageSizeSel = document.getElementById("pageSize");
 const prevBtn  = document.getElementById("prevBtn");
 const nextBtn  = document.getElementById("nextBtn");
 const pageInfo = document.getElementById("pageInfo");
-
+const rangeInfo= document.getElementById("rangeInfo");
 const drawerBack = document.getElementById("drawerBack");
 const drawer = document.getElementById("drawer");
 const filtersBtn = document.getElementById("filtersBtn");
 const closeDrawer = document.getElementById("closeDrawer");
 const applyFilters = document.getElementById("applyFilters");
-
 const cat   = document.getElementById("cat");
 const stat  = document.getElementById("stat");
 const fromI = document.getElementById("from");
 const toI   = document.getElementById("to");
 const quick = document.getElementById("quick");
 const clearDatesBtn = document.getElementById("clearDates");
-
 const moreBtn  = document.getElementById("moreBtn");
 const moreMenu = document.getElementById("moreMenu");
 const copyFilteredBtn = document.getElementById("copyFiltered");
@@ -264,12 +239,13 @@ const copyShareBtn = document.getElementById("copyShare");
 const resetAllBtn = document.getElementById("resetAll");
 const darkToggleBtn = document.getElementById("darkToggle");
 
+/* state */
 let rowsAll = [];
 let viewMode = "table";
 let sortKey = "trend_score";
 let sortDir = "desc";
 let currentPage = 1;
-let pageSize = parseInt(pageSizeSel.value,10) || 50;
+let pageSize = parseInt(pageSizeSel.value,10) || 25;
 
 const statusOrder = {emerging:0, bubbling:1, mainstream:2};
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -277,7 +253,7 @@ const catClass = c => c && ["fashion","beauty","wellness"].includes(c) ? `pill t
 const statusClass = s => s ? `pill status status--${s.toLowerCase()}` : "pill";
 const toDomain = url => { try { return new URL(url).hostname; } catch { return ""; } };
 
-/* sticky compact */
+/* compact header */
 window.addEventListener("scroll", ()=> bar.classList.toggle("compact", window.scrollY > 10));
 
 /* theme */
@@ -324,7 +300,7 @@ function setSort(key){
 headers.forEach(h => h.addEventListener("click", () => setSort(h.dataset.key)));
 sortKeySel.onchange = () => { sortKey = sortKeySel.value; sortDir = (sortKey==="trend_score"||sortKey==="published")?"desc":"asc"; currentPage=1; updateSortUI(); render(); };
 
-/* view toggle */
+/* view */
 function setView(mode){
   viewMode = mode;
   viewTableBtn.classList.toggle("active", mode==="table");
@@ -360,21 +336,17 @@ window.addEventListener("keydown", e => {
   }
 });
 
-/* toolbar filters (category/status) */
+/* toolbar filters */
 barCatSel.onchange   = () => { cat.value = barCatSel.value; currentPage=1; render(); };
 barStatusSel.onchange= () => { stat.value= barStatusSel.value; currentPage=1; render(); };
 
-/* drawer open/close + dates */
+/* drawer */
 function openDrawer(){ drawerBack.style.display="block"; drawer.style.display="block"; document.body.style.overflow="hidden"; }
 function closeDrawerFn(){ drawerBack.style.display="none"; drawer.style.display="none"; document.body.style.overflow=""; }
 filtersBtn.onclick = openDrawer;
 closeDrawer.onclick = closeDrawerFn;
 drawerBack.onclick  = closeDrawerFn;
-applyFilters.onclick = () => {
-  barCatSel.value = cat.value;
-  barStatusSel.value = stat.value;
-  currentPage=1; closeDrawerFn(); render();
-};
+applyFilters.onclick = () => { barCatSel.value = cat.value; barStatusSel.value = stat.value; currentPage=1; closeDrawerFn(); render(); };
 clearDatesBtn.onclick = () => { fromI.value=""; toI.value=""; quick.value=""; };
 quick.onchange = () => {
   const days = parseInt(quick.value) || 0;
@@ -390,13 +362,13 @@ function toggleMenu(open){ moreMenu.style.display = open ? "block" : "none"; mor
 moreBtn.onclick = (e)=>{ e.stopPropagation(); toggleMenu(getComputedStyle(moreMenu).display==="none"); };
 document.addEventListener("click", (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn) toggleMenu(false); });
 
-/* Reset / copy csv / share */
+/* Reset / copy / share */
 resetAllBtn.onclick = () => {
   q.value="";
   sortKey="trend_score"; sortDir="desc"; updateSortUI();
   cat.value=""; stat.value=""; barCatSel.value=""; barStatusSel.value="";
   fromI.value=""; toI.value=""; quick.value="";
-  pageSizeSel.value="50"; pageSize=50; currentPage=1; setView("table"); toggleMenu(false); render();
+  pageSizeSel.value="25"; pageSize=25; currentPage=1; setView("table"); toggleMenu(false); render();
 };
 copyFilteredBtn.onclick = async () => {
   const rows = getFilteredSortedRows();
@@ -415,12 +387,11 @@ copyShareBtn.onclick = async () => {
   } catch {}
 };
 
-/* filtering & sorting pipeline */
+/* pipeline */
 function getFilteredSortedRows(){
   const query=q.value, c=barCatSel.value, s=barStatusSel.value;
   const fromMs = fromI.value ? new Date(new Date(fromI.value).setUTCHours(0,0,0,0)).getTime() : -Infinity;
   const toMs   = toI.value   ? new Date(new Date(toI.value).setUTCHours(23,59,59,999)).getTime() :  Infinity;
-
   let rows = rowsAll.filter(r => {
     if (c && r.category !== c) return false;
     if (s && (r.status||"").toLowerCase() !== s) return false;
@@ -432,12 +403,11 @@ function getFilteredSortedRows(){
     }
     return true;
   });
-
   rows = rows.sort((a,b)=>cmp(a,b,sortKey));
   return rows;
 }
 
-/* chips + URL state (unchanged) */
+/* chips + url */
 function renderChips(){
   const chips = [];
   if(q.value) chips.push({k:"search", label:`Search: ${q.value}`, clear:()=>{q.value="";}});
@@ -459,15 +429,13 @@ function buildQuery(){
   if(viewMode!=="table") p.set("view", viewMode);
   if(sortKey!=="trend_score") p.set("sort", sortKey);
   if(sortDir!=="desc") p.set("dir", sortDir);
-  if(pageSize!==50) p.set("size", String(pageSize));
+  if(pageSize!==25) p.set("size", String(pageSize));
   if(currentPage!==1) p.set("page", String(currentPage));
   return p;
 }
 function syncUrl(){ history.replaceState(null, "", "?"+buildQuery().toString()); }
 
-/* ---------- CARD COVERS ---------- */
-/* Fetch OG/Twitter image via a CORS-safe text reader (r.jina.ai), then
-   set the card's <img>. Fallbacks: twitter:image, favicon, solid placeholder. */
+/* covers (same as before) */
 async function findCover(link){
   const proxied = "https://r.jina.ai/http://" + link.replace(/^https?:\/\//,'');
   try{
@@ -480,15 +448,13 @@ async function findCover(link){
   }catch{ return null; }
 }
 function faviconFor(link){ const d = toDomain(link); return d ? `https://www.google.com/s2/favicons?domain=${d}&sz=128` : ""; }
-
-/* Lazy apply covers to visible cards on current page slice */
 function applyCovers(){
   const cards = cardsEl.querySelectorAll('.card[data-link]');
   cards.forEach(async card=>{
     const img = card.querySelector('img.cover');
     if(img.dataset.done) return;
     img.dataset.done = "1";
-    img.src = ""; // reset
+    img.src = "";
     img.alt = "preview";
     img.referrerPolicy = "no-referrer";
     const link = card.dataset.link;
@@ -499,7 +465,7 @@ function applyCovers(){
   });
 }
 
-/* ---------- render ---------- */
+/* render */
 function render(){
   const rows = getFilteredSortedRows();
   const total = rows.length;
@@ -510,14 +476,8 @@ function render(){
   const end   = Math.min(start + pageSize, total);
   const slice = rows.slice(start, end);
 
-  const cats = ["fashion","beauty","wellness"].map(k => [k, rows.filter(x=>x.category===k).length]);
-  const stats= ["emerging","bubbling","mainstream"].map(k => [k, rows.filter(x=>(x.status||"").toLowerCase()===k).length]);
-  counts.textContent = `Showing ${start+1}-${end} of ${total} • ` +
-    cats.map(x=>`${x[0]} ${x[1]}`).join(" • ") + " • " +
-    stats.map(x=>`${x[0]} ${x[1]}`).join(" • ");
-
   pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-  prevBtn.disabled = currentPage <= 1; nextBtn.disabled = currentPage >= totalPages;
+  rangeInfo.textContent = `Showing ${start+1}-${end} of ${total}`;
 
   if(viewMode==="table"){
     tbody.innerHTML = slice.map(r => `
@@ -559,7 +519,7 @@ function render(){
 }
 
 /* paging */
-pageSizeSel.onchange = () => { pageSize = parseInt(pageSizeSel.value,10) || 50; currentPage=1; render(); };
+pageSizeSel.onchange = () => { pageSize = parseInt(pageSizeSel.value,10) || 25; currentPage=1; render(); };
 prevBtn.onclick = () => { if(currentPage>1){ currentPage--; render(); } };
 nextBtn.onclick = () => { currentPage++; render(); };
 
@@ -574,7 +534,7 @@ function restoreFromUrl(){
   const v = p.get("view"); if(v==="cards") setView("cards"); else setView("table");
   const sk = p.get("sort"); if(sk){ sortKey = sk; }
   const sd = p.get("dir"); if(sd){ sortDir = sd; }
-  const ps = parseInt(p.get("size")||"50",10); pageSize = ps; pageSizeSel.value = String(ps);
+  const ps = parseInt(p.get("size")||"25",10); pageSize = ps; pageSizeSel.value = String(ps);
   const pg = parseInt(p.get("page")||"1",10); currentPage = Math.max(1, pg);
   updateSortUI();
 }
@@ -585,7 +545,7 @@ function load(){
     .then(r => r.text())
     .then(csv => Papa.parse(csv, {header:true, skipEmptyLines:true}))
     .then(res => { rowsAll = res.data; render(); })
-    .catch(() => { counts.textContent = "Failed to load CSV"; });
+    .catch(() => { rangeInfo.textContent = "Failed to load CSV"; });
 }
 load();
 </script>
