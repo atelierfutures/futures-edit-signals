@@ -4,111 +4,140 @@
 <title>The Futures Edit — Signals</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
 <style>
-  :root{--gap:12px;--pill:#f2f2f2;--border:#e6e6e6}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:24px}
-  .wrap{max-width:1100px;margin:0 auto}
-  header{display:flex;gap:var(--gap);align-items:center;justify-content:space-between;flex-wrap:wrap}
-  h1{font-size:28px;margin:0 0 8px}
-  .controls{display:grid;gap:var(--gap);grid-template-columns:repeat(8,minmax(140px,1fr));align-items:center}
-  .search{display:flex;gap:8px;align-items:center}
-  .pill{padding:6px 10px;border-radius:999px;background:var(--pill);font-size:12px;border:1px solid var(--border);cursor:pointer}
-  input[type="search"],select,input[type="date"]{padding:8px 10px;border:1px solid #ddd;border-radius:8px;width:100%}
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
-  th{background:#fafafa;position:sticky;top:0}
+  :root{
+    --bg:#ffffff; --fg:#141414; --muted:#6b7280;
+    --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
+    --shadow:0 8px 24px rgba(0,0,0,.06);
+  }
+  :root.dark{
+    --bg:#0b0b0c; --fg:#f2f3f5; --muted:#a3a7ae;
+    --card:#121317; --border:#2b2f36; --pill:#1b1f25; --accent:#e5e7eb;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  a{color:#2563eb;text-decoration:none} a:hover{text-decoration:underline}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px}
+  h1{margin:0 0 8px;font-size:28px}
+
+  /* Top bar */
+  .bar{
+    position:sticky;top:0;z-index:20;backdrop-filter:saturate(180%) blur(10px);
+    background:color-mix(in oklab, var(--bg) 90%, transparent);
+    border-bottom:1px solid var(--border)
+  }
+  .bar-inner{max-width:1100px;margin:0 auto;padding:14px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .title{font-weight:700;font-size:18px;margin-right:auto}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+  .seg button{padding:8px 12px;border:0;background:var(--card);color:var(--fg);cursor:pointer}
+  .seg button.active{background:var(--accent);color:var(--bg)}
+  .btn, .icon-btn{
+    background:var(--card);color:var(--fg);border:1px solid var(--border);
+    border-radius:10px;padding:10px 12px;cursor:pointer;box-shadow:var(--shadow)
+  }
+  .icon-btn{padding:8px 10px;display:flex;align-items:center;gap:8px}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .select, .input{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+  .search{flex:1 1 280px;display:flex;gap:10px}
+  .search input{width:100%}
+
+  /* Pills & chips */
+  .pill{padding:6px 10px;border-radius:999px;background:var(--pill);font-size:12px;border:1px solid var(--border)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .chip{display:inline-flex;align-items:center;gap:6px} .chip button{all:unset;cursor:pointer;color:var(--muted)}
+
+  /* Drawer (Filters) */
+  .drawer-back{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none}
+  .drawer{position:fixed;right:0;top:0;height:100%;width:360px;max-width:90vw;background:var(--bg);border-left:1px solid var(--border);box-shadow:var(--shadow);padding:18px;display:none}
+  .drawer h3{margin:0 0 10px;font-size:16px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .drawer .actions{display:flex;gap:10px;margin-top:14px}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
+  th{position:sticky;top:68px;background:var(--bg);z-index:1}
   th.sortable{cursor:pointer}
-  th.sortable .arrow{opacity:.35;margin-left:6px}
-  th.sortable.active .arrow{opacity:1}
-  #counts{font-size:14px;color:#555;margin:8px 0}
-  mark{background:#ffe58a;padding:0 .15em;border-radius:3px}
-  .pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
-  .pager .btn{padding:6px 10px;border:1px solid #ddd;background:#fff;border-radius:8px;cursor:pointer}
-  .pager .btn[disabled]{opacity:.5;cursor:not-allowed}
-  .hidden{display:none}
+  th .arrow{opacity:.35;margin-left:6px}
+  th.active .arrow{opacity:1}
+  mark{background:#f59e0b20;border:1px solid #f59e0b40;border-radius:4px;padding:0 .2em}
 
   /* Cards */
-  .cards{display:grid;gap:12px}
-  .card{border:1px solid var(--border);border-radius:12px;padding:12px}
-  .card .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-  .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:#555}
+  .cards{display:grid;gap:12px;margin-top:10px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+  .card .top{display:flex;justify-content:space-between;gap:10px;margin-bottom:6px}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;color:var(--muted)}
   .score{padding:2px 8px;border:1px solid var(--border);border-radius:999px}
 
-  /* segmented buttons */
-  .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden}
-  .seg button{padding:8px 12px;border:0;background:#fff;cursor:pointer}
-  .seg button.active{background:#111;color:#fff}
-  /* responsive grid tweaks */
-  @media (max-width: 980px){ .controls{grid-template-columns:repeat(4,minmax(140px,1fr))} }
-  @media (max-width: 720px){ body{margin:16px} .controls{grid-template-columns:repeat(2,minmax(150px,1fr))} }
+  /* Pager */
+  .pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin:16px 0;flex-wrap:wrap}
+  .muted{color:var(--muted)}
+
+  /* Menu */
+  .menu{position:relative}
+  .menu-panel{
+    display:none;position:absolute;right:0;top:calc(100% + 8px);min-width:220px;
+    background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:8px
+  }
+  .menu-panel button, .menu-panel a{display:flex;gap:8px;align-items:center;width:100%;padding:10px;border-radius:8px;border:0;background:transparent;color:var(--fg);text-decoration:none;cursor:pointer}
+  .menu-panel button:hover, .menu-panel a:hover{background:var(--pill)}
+
+  @media (max-width: 760px){
+    .bar-inner{gap:8px}
+    .title{flex:1 1 auto}
+  }
 </style>
 
-<div class="wrap">
-  <header>
-    <h1>The Futures Edit — Signals (auto)</h1>
-    <div class="controls">
-      <label>Category:
-        <select id="cat">
-          <option value="">All</option>
-          <option>fashion</option><option>beauty</option><option>wellness</option>
-        </select>
-      </label>
-      <label>Status:
-        <select id="stat">
-          <option value="">All</option>
-          <option>emerging</option><option>bubbling</option><option>mainstream</option>
-        </select>
-      </label>
+<div class="bar">
+  <div class="bar-inner">
+    <div class="title">The Futures Edit — Signals</div>
 
-      <!-- Date range (Clear next to From/To) -->
-      <label>From: <input id="from" type="date"></label>
-      <label>To: <input id="to" type="date"></label>
-      <button id="clearDates" type="button" class="pill">Clear dates</button>
+    <!-- primary actions -->
+    <div class="seg" id="viewSeg">
+      <button id="viewList" class="active" type="button">List</button>
+      <button id="viewCards" type="button">Cards</button>
+    </div>
 
-      <!-- Quick after the date block -->
-      <label>Quick:
-        <select id="quick">
-          <option value="">All time</option>
-          <option value="7">Last 7 days</option>
-          <option value="30">Last 30 days</option>
-          <option value="90">Last 90 days</option>
-        </select>
-      </label>
+    <select id="sortKey" class="select">
+      <option value="trend_score" selected>Sort: Trend score</option>
+      <option value="published">Sort: Published</option>
+      <option value="title">Sort: Title</option>
+      <option value="category">Sort: Category</option>
+      <option value="primary_keyword">Sort: Keyword</option>
+      <option value="status">Sort: Status</option>
+    </select>
+    <button id="sortDir" class="icon-btn" title="Toggle sort direction">↓ Desc</button>
 
-      <!-- View + Sort controls (always available) -->
-      <div>
-        <label style="display:block;margin-bottom:6px">View:</label>
-        <div class="seg">
-          <button id="viewList" class="active" type="button">List</button>
-          <button id="viewCards" type="button">Cards</button>
-        </div>
-      </div>
-      <div>
-        <label style="display:block;margin-bottom:6px">Sort:</label>
-        <div style="display:flex;gap:8px">
-          <select id="sortKey">
-            <option value="trend_score" selected>Trend score</option>
-            <option value="published">Published</option>
-            <option value="title">Title</option>
-            <option value="category">Category</option>
-            <option value="primary_keyword">Keyword</option>
-            <option value="status">Status</option>
-          </select>
-          <button id="sortDir" class="pill" type="button">↓ Desc</button>
-        </div>
-      </div>
-
-      <!-- Search + download full width -->
-      <div class="search" style="grid-column:1 / -1">
-        <input id="q" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" />
-        <a id="dl" class="pill" href="signals_simple.csv" download>Download CSV</a>
+    <div class="menu">
+      <button class="icon-btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">
+        ⋯ More
+      </button>
+      <div class="menu-panel" id="moreMenu" role="menu">
+        <a href="signals_simple.csv" download>⬇️ Download CSV</a>
+        <button id="copyFiltered">📋 Copy filtered CSV</button>
+        <button id="resetAll">↺ Reset all</button>
+        <button id="darkToggle">🌓 Toggle dark mode</button>
+        <a href="https://github.com/atelierfutures/futures-edit-signals" target="_blank" rel="noopener">ℹ️ Repository</a>
       </div>
     </div>
-  </header>
 
-  <div id="counts">Loading…</div>
+    <button id="filtersBtn" class="icon-btn">⚙️ Filters</button>
 
-  <!-- Desktop table (List view) -->
+    <div class="search">
+      <input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" />
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- active filter chips -->
+  <div id="chips" class="chips"></div>
+
+  <div id="counts" class="muted">Loading…</div>
+
+  <!-- list view -->
   <table id="tbl">
     <thead>
       <tr>
@@ -123,58 +152,116 @@
     <tbody></tbody>
   </table>
 
-  <!-- Cards view -->
-  <div id="cards" class="cards hidden"></div>
+  <!-- cards view -->
+  <div id="cards" class="cards" style="display:none"></div>
 
   <div class="pager">
     <span>Rows per page:</span>
-    <select id="pageSize">
-      <option>25</option>
-      <option selected>50</option>
-      <option>100</option>
-      <option>200</option>
+    <select id="pageSize" class="select">
+      <option>25</option><option selected>50</option><option>100</option><option>200</option>
     </select>
-    <span id="pageInfo">Page 1 of 1</span>
+    <span id="pageInfo" class="muted">Page 1 of 1</span>
     <button class="btn" id="prevBtn">‹ Prev</button>
     <button class="btn" id="nextBtn">Next ›</button>
   </div>
 </div>
 
-<script>
-const tbody     = document.querySelector("#tbl tbody");
-const cardsEl   = document.getElementById("cards");
-const counts    = document.getElementById("counts");
-const headers   = [...document.querySelectorAll("th.sortable")];
+<!-- Filters drawer -->
+<div class="drawer-back" id="drawerBack"></div>
+<div class="drawer" id="drawer" aria-modal="true" role="dialog">
+  <h3>Filters</h3>
+  <div class="grid">
+    <label>Category
+      <select id="cat" class="select">
+        <option value="">All</option>
+        <option>fashion</option><option>beauty</option><option>wellness</option>
+      </select>
+    </label>
+    <label>Status
+      <select id="stat" class="select">
+        <option value="">All</option>
+        <option>emerging</option><option>bubbling</option><option>mainstream</option>
+      </select>
+    </label>
+    <label>From <input id="from" type="date" class="input"></label>
+    <label>To <input id="to" type="date" class="input"></label>
+    <label style="grid-column:1 / -1">Quick
+      <select id="quick" class="select" style="width:100%">
+        <option value="">All time</option>
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+    </label>
+  </div>
+  <div class="actions">
+    <button id="clearDates" class="btn" type="button">Clear dates</button>
+    <button id="applyFilters" class="btn" type="button">Apply</button>
+    <button id="closeDrawer" class="btn" type="button">Close</button>
+  </div>
+</div>
 
-const cat   = document.getElementById("cat");
-const stat  = document.getElementById("stat");
-const q     = document.getElementById("q");
-const fromI = document.getElementById("from");
-const toI   = document.getElementById("to");
-const quick = document.getElementById("quick");
-const clearBtn = document.getElementById("clearDates");
+<script>
+/* ---------- state ---------- */
+const tbody   = document.querySelector("#tbl tbody");
+const cardsEl = document.getElementById("cards");
+const counts  = document.getElementById("counts");
+const chipsEl = document.getElementById("chips");
+const headers = [...document.querySelectorAll("th.sortable")];
+
+const q       = document.getElementById("q");
+const sortKeySel = document.getElementById("sortKey");
+const sortDirBtn = document.getElementById("sortDir");
+const viewListBtn = document.getElementById("viewList");
+const viewCardsBtn= document.getElementById("viewCards");
 
 const pageSizeSel = document.getElementById("pageSize");
 const prevBtn  = document.getElementById("prevBtn");
 const nextBtn  = document.getElementById("nextBtn");
 const pageInfo = document.getElementById("pageInfo");
 
-const viewListBtn  = document.getElementById("viewList");
-const viewCardsBtn = document.getElementById("viewCards");
-const sortKeySel   = document.getElementById("sortKey");
-const sortDirBtn   = document.getElementById("sortDir");
+const drawerBack = document.getElementById("drawerBack");
+const drawer = document.getElementById("drawer");
+const filtersBtn = document.getElementById("filtersBtn");
+const closeDrawer = document.getElementById("closeDrawer");
+const applyFilters = document.getElementById("applyFilters");
+
+const cat   = document.getElementById("cat");
+const stat  = document.getElementById("stat");
+const fromI = document.getElementById("from");
+const toI   = document.getElementById("to");
+const quick = document.getElementById("quick");
+const clearDatesBtn = document.getElementById("clearDates");
+
+const moreBtn  = document.getElementById("moreBtn");
+const moreMenu = document.getElementById("moreMenu");
+const copyFilteredBtn = document.getElementById("copyFiltered");
+const resetAllBtn = document.getElementById("resetAll");
+const darkToggleBtn = document.getElementById("darkToggle");
 
 let rowsAll = [];
-let viewMode = "list";            // "list" or "cards"
-let sortKey = "trend_score";      // default sort
+let viewMode = "list";
+let sortKey = "trend_score";
 let sortDir = "desc";
 let currentPage = 1;
 let pageSize = parseInt(pageSizeSel.value,10) || 50;
 
 const statusOrder = {emerging:0, bubbling:1, mainstream:2};
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-function escRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+/* ---------- theme ---------- */
+(function initTheme(){
+  const saved = localStorage.getItem("fe_theme");
+  if(saved === "dark") document.documentElement.classList.add("dark");
+})();
+darkToggleBtn.onclick = () => {
+  document.documentElement.classList.toggle("dark");
+  localStorage.setItem("fe_theme",
+    document.documentElement.classList.contains("dark") ? "dark" : "light"
+  );
+};
 
+/* ---------- sorting ---------- */
 function cmp(a,b,key){
   const dir = sortDir === "asc" ? 1 : -1;
   if(key === "trend_score"){
@@ -195,70 +282,107 @@ function cmp(a,b,key){
   const y = (b[key]||"").toString().toLowerCase();
   return (x<y?-1:x>y?1:0)*dir;
 }
-
 function setSort(key){
-  if(sortKey === key){
-    sortDir = (sortDir === "asc") ? "desc" : "asc";
-  } else {
-    sortKey = key;
-    sortDir = (key === "trend_score" || key === "published") ? "desc" : "asc";
-  }
+  if(sortKey === key){ sortDir = (sortDir === "asc") ? "desc" : "asc"; }
+  else { sortKey = key; sortDir = (key === "trend_score" || key === "published") ? "desc" : "asc"; }
   sortKeySel.value = sortKey;
   sortDirBtn.textContent = (sortDir==="asc"?"↑ Asc":"↓ Desc");
   currentPage = 1;
   headers.forEach(h=>{
     h.classList.toggle("active", h.dataset.key === sortKey);
-    h.querySelector(".arrow").textContent = h.dataset.key === sortKey ? (sortDir==="asc"?"↑":"↓") : "↕";
+    const arrow = h.querySelector(".arrow");
+    if(arrow) arrow.textContent = h.dataset.key === sortKey ? (sortDir==="asc"?"↑":"↓") : "↕";
   });
   render();
 }
 headers.forEach(h => h.addEventListener("click", () => setSort(h.dataset.key)));
+sortKeySel.onchange = () => setSort(sortKeySel.value);
+sortDirBtn.onclick = () => { sortDir = (sortDir==="asc"?"desc":"asc"); setSort(sortKey); };
 
+/* ---------- view ---------- */
 function setView(mode){
   viewMode = mode;
   viewListBtn.classList.toggle("active", mode==="list");
   viewCardsBtn.classList.toggle("active", mode==="cards");
-  document.getElementById("tbl").classList.toggle("hidden", mode!=="list");
-  cardsEl.classList.toggle("hidden", mode!=="cards");
-  currentPage = 1;
-  render();
+  document.getElementById("tbl").style.display = mode==="list" ? "" : "none";
+  document.getElementById("cards").style.display = mode==="cards" ? "grid" : "none";
+  currentPage = 1; render();
 }
+viewListBtn.onclick  = () => setView("list");
+viewCardsBtn.onclick = () => setView("cards");
 
-function tokenize(s){ return (s||"").toLowerCase().trim().split(/\s+/).filter(Boolean); }
+/* ---------- search & filters ---------- */
+const tokenize = s => (s||"").toLowerCase().trim().split(/\s+/).filter(Boolean);
 function matches(row, query){
   const toks = tokenize(query);
   if(!toks.length) return true;
-  const hay = [
-    row.title||"", row.primary_keyword||"",
-    row.category||"", (row.status||"").toLowerCase()
-  ].join(" ").toLowerCase();
+  const hay = [row.title||"", row.primary_keyword||"", row.category||"", (row.status||"").toLowerCase()].join(" ").toLowerCase();
   return toks.every(t => hay.includes(t));
 }
 function highlight(str, query){
   let out = str||"";
   tokenize(query).forEach(t=>{
-    const re = new RegExp("(" + escRegExp(t) + ")", "ig");
+    const re = new RegExp("(" + escRe(t) + ")", "ig");
     out = out.replace(re, "<mark>$1</mark>");
   });
   return out;
 }
+q.addEventListener("input", () => { currentPage=1; render(); });
+window.addEventListener("keydown", e => { if(e.key === "Escape"){ q.value=""; currentPage=1; render(); }});
 
-// date helpers
-function dayStartISO(d){ return new Date(new Date(d).setUTCHours(0,0,0,0)); }
-function dayEndISO(d){ return new Date(new Date(d).setUTCHours(23,59,59,999)); }
-function applyQuickRange(days){
-  if(!days){ fromI.value=""; toI.value=""; currentPage=1; render(); return; }
+/* Drawer open/close */
+function openDrawer(){ drawerBack.style.display="block"; drawer.style.display="block"; }
+function closeDrawerFn(){ drawerBack.style.display="none"; drawer.style.display="none"; }
+filtersBtn.onclick = openDrawer;
+closeDrawer.onclick = closeDrawerFn;
+drawerBack.onclick = closeDrawerFn;
+applyFilters.onclick = () => { currentPage=1; closeDrawerFn(); render(); };
+clearDatesBtn.onclick = () => { fromI.value=""; toI.value=""; quick.value=""; };
+
+quick.onchange = () => {
+  const days = parseInt(quick.value) || 0;
+  if(!days){ fromI.value=""; toI.value=""; return; }
   const today = new Date();
   const start = new Date(today.getTime() - days*86400000);
   fromI.value = start.toISOString().slice(0,10);
   toI.value   = today.toISOString().slice(0,10);
-  currentPage = 1; render();
-}
+};
 
+/* ---------- more menu ---------- */
+function toggleMenu(open){
+  moreMenu.style.display = open ? "block" : "none";
+  moreBtn.setAttribute("aria-expanded", open ? "true" : "false");
+}
+moreBtn.onclick = (e)=>{ e.stopPropagation(); toggleMenu(getComputedStyle(moreMenu).display==="none"); };
+document.addEventListener("click", (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn) toggleMenu(false); });
+
+resetAllBtn.onclick = () => {
+  q.value=""; sortKey="trend_score"; sortDir="desc"; sortKeySel.value=sortKey; sortDirBtn.textContent="↓ Desc";
+  cat.value=""; stat.value=""; fromI.value=""; toI.value=""; quick.value="";
+  pageSizeSel.value="50"; pageSize=50; currentPage=1; setView("list"); toggleMenu(false); render();
+};
+
+copyFilteredBtn.onclick = async () => {
+  const rows = getFilteredSortedRows();
+  const header = ["published","title","link","category","primary_keyword","trend_score","status"];
+  const csv = [header.join(",")].concat(rows.map(r => header.map(h => `"${(r[h]??"").toString().replace(/"/g,'""')}"`).join(","))).join("\n");
+  try {
+    await navigator.clipboard.writeText(csv);
+    copyFilteredBtn.textContent = "✅ Copied!";
+    setTimeout(()=> copyFilteredBtn.textContent="📋 Copy filtered CSV", 1500);
+  } catch {
+    // fallback: download blob
+    const blob = new Blob([csv], {type:"text/csv"});
+    const a = Object.assign(document.createElement("a"), {href:URL.createObjectURL(blob), download:"signals_filtered.csv"});
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+};
+
+/* ---------- filtering/sorting pipeline ---------- */
 function getFilteredSortedRows(){
-  const c=cat.value, s=stat.value, query=q.value;
-  const fromMs = fromI.value ? dayStartISO(fromI.value).getTime() : -Infinity;
-  const toMs   = toI.value   ? dayEndISO(toI.value).getTime()   :  Infinity;
+  const query=q.value, c=cat.value, s=stat.value;
+  const fromMs = fromI.value ? new Date(new Date(fromI.value).setUTCHours(0,0,0,0)).getTime() : -Infinity;
+  const toMs   = toI.value   ? new Date(new Date(toI.value).setUTCHours(23,59,59,999)).getTime() :  Infinity;
 
   let rows = rowsAll.filter(r => {
     if (c && r.category !== c) return false;
@@ -276,17 +400,53 @@ function getFilteredSortedRows(){
   return rows;
 }
 
+/* ---------- chips ---------- */
+function renderChips(){
+  const chips = [];
+  if(q.value) chips.push({k:"search", label:`🔎 ${q.value}`, clear:()=>{q.value="";}});
+  if(cat.value) chips.push({k:"category", label:`Category: ${cat.value}`, clear:()=>{cat.value="";}});
+  if(stat.value) chips.push({k:"status", label:`Status: ${stat.value}`, clear:()=>{stat.value="";}});
+  if(fromI.value || toI.value) chips.push({k:"dates", label:`Date: ${fromI.value||"…"} → ${toI.value||"…"}`, clear:()=>{fromI.value=""; toI.value=""; quick.value="";}});
+  chipsEl.innerHTML = chips.map(c => `<span class="pill chip">${c.label} <button title="clear" data-k="${c.k}">✕</button></span>`).join("");
+  chipsEl.querySelectorAll("button").forEach(b=>{
+    b.onclick = () => { const k=b.dataset.k; const c = chips.find(x=>x.k===k); if(c){c.clear(); currentPage=1; render();} };
+  });
+}
+
+/* ---------- render ---------- */
 function render(){
   const rows = getFilteredSortedRows();
   const total = rows.length;
 
+  // pagination
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   if (currentPage > totalPages) currentPage = totalPages;
   const start = (currentPage-1) * pageSize;
   const end   = Math.min(start + pageSize, total);
   const slice = rows.slice(start, end);
 
-  if(viewMode==="cards"){
+  // counts
+  const cats = ["fashion","beauty","wellness"].map(k => [k, rows.filter(x=>x.category===k).length]);
+  const stats= ["emerging","bubbling","mainstream"].map(k => [k, rows.filter(x=>(x.status||"").toLowerCase()===k).length]);
+  counts.textContent = `Showing ${start+1}-${end} of ${total} • ` +
+    cats.map(x=>`${x[0]} ${x[1]}`).join(" • ") + " • " +
+    stats.map(x=>`${x[0]} ${x[1]}`).join(" • ");
+  pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+  prevBtn.disabled = currentPage <= 1; nextBtn.disabled = currentPage >= totalPages;
+
+  // list
+  if(viewMode==="list"){
+    tbody.innerHTML = slice.map(r => `
+      <tr>
+        <td>${(r.published||"").slice(0,10)}</td>
+        <td><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></td>
+        <td><span class="pill">${r.category||""}</span></td>
+        <td>${highlight(r.primary_keyword||"", q.value)}</td>
+        <td>${r.trend_score ?? ""}</td>
+        <td><span class="pill">${(r.status||"").toLowerCase()}</span></td>
+      </tr>
+    `).join("");
+  } else {
     cardsEl.innerHTML = slice.map(r => `
       <div class="card">
         <div class="top">
@@ -301,54 +461,19 @@ function render(){
         </div>
       </div>
     `).join("");
-  } else {
-    tbody.innerHTML = slice.map(r => `
-      <tr>
-        <td>${(r.published||"").slice(0,10)}</td>
-        <td><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></td>
-        <td><span class="pill">${r.category||""}</span></td>
-        <td>${highlight(r.primary_keyword||"", q.value)}</td>
-        <td>${r.trend_score ?? ""}</td>
-        <td><span class="pill">${(r.status||"").toLowerCase()}</span></td>
-      </tr>
-    `).join("");
   }
 
-  // counts line
-  const cats = ["fashion","beauty","wellness"].map(k => [k, rows.filter(x=>x.category===k).length]);
-  const stats= ["emerging","bubbling","mainstream"].map(k => [k, rows.filter(x=>(x.status||"").toLowerCase()===k).length]);
-  counts.textContent = `Showing ${start+1}-${end} of ${total} • ` +
-    cats.map(x=>`${x[0]} ${x[1]}`).join(" • ") + " • " +
-    stats.map(x=>`${x[0]} ${x[1]}`).join(" • ");
-
-  // pager UI
-  pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-  prevBtn.disabled = currentPage <= 1;
-  nextBtn.disabled = currentPage >= totalPages;
+  renderChips();
 }
 
-// events
-cat.onchange = () => { currentPage=1; render(); };
-stat.onchange = () => { currentPage=1; render(); };
-q.addEventListener("input", () => { currentPage=1; render(); });
-window.addEventListener("keydown", e => { if(e.key === "Escape"){ q.value=""; currentPage=1; render(); }});
-fromI.onchange = () => { currentPage=1; render(); };
-toI.onchange   = () => { currentPage=1; render(); };
-quick.onchange = () => applyQuickRange(parseInt(quick.value) || 0);
-clearBtn.onclick = () => { fromI.value=""; toI.value=""; quick.value=""; currentPage=1; render(); };
-
+/* ---------- paging events ---------- */
 pageSizeSel.onchange = () => { pageSize = parseInt(pageSizeSel.value,10) || 50; currentPage=1; render(); };
 prevBtn.onclick = () => { if(currentPage>1){ currentPage--; render(); } };
 nextBtn.onclick = () => { currentPage++; render(); };
 
-viewListBtn.onclick  = () => setView("list");
-viewCardsBtn.onclick = () => setView("cards");
-
-sortKeySel.onchange = () => setSort(sortKeySel.value);
-sortDirBtn.onclick  = () => { sortDir = (sortDir==="asc"?"desc":"asc"); setSort(sortKey); };
-
+/* ---------- load ---------- */
 function load(){
-  const bust = new Date().toISOString().slice(0,10); // daily cache-bust
+  const bust = new Date().toISOString().slice(0,10);
   fetch("signals_simple.csv?ts="+bust)
     .then(r => r.text())
     .then(csv => Papa.parse(csv, {header:true, skipEmptyLines:true}))
