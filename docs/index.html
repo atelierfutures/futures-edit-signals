@@ -58,12 +58,13 @@
   .search{flex:1 1 320px;display:flex;gap:10px}
   .search input{width:100%}
 
-  /* Compact pills */
+  /* Compact pills + text badges */
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
   .tag, .status{ padding:4px 8px; font-size:11px; }
-  .kchip{ padding:3px 6px; font-size:11px; }
-  .kchips{ gap:6px; }
+  .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .kchips{ display:flex; gap:6px; flex-wrap:wrap; }
   .score-txt{ color: var(--muted); font-size: 12px; }
+  .date{ color:var(--muted); white-space:nowrap; }
 
   /* Drawer (dates only) */
   .drawer-back{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:80}
@@ -100,7 +101,7 @@
   th .arrow{opacity:.35;margin-left:6px}
   th.active .arrow{opacity:1}
 
-  /* Cards — inline (row-style), no images) */
+  /* Cards — inline, stacked content (no images) */
   .cards{
     display:grid;
     gap:12px;
@@ -115,23 +116,15 @@
   }
   .card--inline{
     display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:8px;
     padding:12px 14px;
   }
-  .title-wrap{ flex:1; min-width:0; }
-  .card-title{ margin:0 0 4px 0; font-weight:600; }
+  .card-title{ margin:0; font-weight:600; }
   .card-title a{ color:inherit; text-decoration:none; }
   .card-title a:hover{ text-decoration:underline; }
-  .right{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    flex-wrap:wrap;
-    justify-content:flex-end;
-  }
-  .right .date{ color:var(--muted); white-space:nowrap; }
+  .meta-line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 
   /* Pager */
   .pager{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px;flex-wrap:wrap}
@@ -144,6 +137,11 @@
   .status--emerging{background:var(--emerg-bg);border-color:var(--emerg-bd);color:var(--emerg-fg)}
   .status--bubbling{background:var(--bubbl-bg);border-color:var(--bubbl-bd);color:var(--bubbl-fg)}
   .status--mainstream{background:var(--main-bg);border-color:var(--main-bd);color:var(--main-fg)}
+
+  /* Optional subtle hover */
+  .card{ transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease; }
+  .card:hover{ transform: translateY(-1px); box-shadow: 0 10px 28px rgba(0,0,0,.08); border-color: color-mix(in oklab, var(--border) 60%, var(--fg) 40%); }
+  @media (max-width: 700px){ .cards{ grid-template-columns:1fr; } }
 </style>
 
 <div class="bar" id="bar">
@@ -211,7 +209,7 @@
     <tbody></tbody>
   </table>
 
-  <!-- Cards (inline, no images) -->
+  <!-- Cards (inline, stacked) -->
   <div id="cards" class="cards" style="display:none"></div>
 
   <!-- Bottom pager -->
@@ -529,16 +527,14 @@ function render(){
                     + (moreN ? `<span class="kchip">+${moreN}</span>` : "");
       return `
         <div class="card card--inline">
-          <div class="title-wrap">
-            <div class="card-title"><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></div>
-            ${chips ? `<div class="kchips">${chips}</div>` : ""}
-          </div>
-          <div class="right">
-            <span class="\${catClass(r.category)}">${r.category||""}</span>
+          <div class="card-title"><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></div>
+          <div class="meta-line">
+            <span class="${catClass(r.category)}">${r.category||""}</span>
             <span class="date">${(r.published||"").slice(0,10)}</span>
-            <span class="\${statusClass(r.status||"")}">${(r.status||"").toLowerCase()}</span>
+            <span class="${statusClass(r.status||"")}">${(r.status||"").toLowerCase()}</span>
             <span class="score-txt">score ${r.trend_score ?? ""}</span>
           </div>
+          ${chips ? `<div class="kchips">${chips}</div>` : ""}
         </div>
       `;
     }).join("");
