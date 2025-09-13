@@ -17,8 +17,11 @@
   th.sortable{cursor:pointer}
   th.sortable .arrow{opacity:.35;margin-left:6px}
   th.sortable.active .arrow{opacity:1}
-  #counts{font-size:14px;color:#555;margin-bottom:8px}
+  #counts{font-size:14px;color:#555;margin:8px 0}
   mark{background:#ffe58a;padding:0 .15em;border-radius:3px}
+  .pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+  .pager .btn{padding:6px 10px;border:1px solid #ddd;background:#fff;border-radius:8px;cursor:pointer}
+  .pager .btn[disabled]{opacity:.5;cursor:not-allowed}
 </style>
 
 <header>
@@ -74,6 +77,19 @@
   <tbody></tbody>
 </table>
 
+<div class="pager">
+  <span>Rows per page:</span>
+  <select id="pageSize">
+    <option>25</option>
+    <option selected>50</option>
+    <option>100</option>
+    <option>200</option>
+  </select>
+  <span id="pageInfo">Page 1 of 1</span>
+  <button class="btn" id="prevBtn">‹ Prev</button>
+  <button class="btn" id="nextBtn">Next ›</button>
+</div>
+
 <script>
 const tbody   = document.querySelector("#tbl tbody");
 const cat     = document.getElementById("cat");
@@ -87,9 +103,17 @@ const toInp   = document.getElementById("to");
 const quick   = document.getElementById("quick");
 const clearBtn= document.getElementById("clearDates");
 
+const pageSizeSel = document.getElementById("pageSize");
+const prevBtn  = document.getElementById("prevBtn");
+const nextBtn  = document.getElementById("nextBtn");
+const pageInfo = document.getElementById("pageInfo");
+
 let rowsAll = [];
-let sortKey = "trend_score";   // default
-let sortDir = "desc";          // default
+let sortKey = "trend_score";   // default sort
+let sortDir = "desc";
+let currentPage = 1;
+let pageSize = parseInt(pageSizeSel.value,10) || 50;
+
 const statusOrder = {emerging:0, bubbling:1, mainstream:2};
 
 function escRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
@@ -122,6 +146,7 @@ function setSort(key){
     sortKey = key;
     sortDir = (key === "trend_score" || key === "published") ? "desc" : "asc";
   }
+  currentPage = 1; // reset on sort
   headers.forEach(h=>{
     h.classList.toggle("active", h.dataset.key === sortKey);
     h.querySelector(".arrow").textContent = h.dataset.key === sortKey ? (sortDir==="asc"?"↑":"↓") : "↕";
@@ -155,17 +180,17 @@ function highlight(str, query){
 function dayStartISO(d){ return new Date(new Date(d).setUTCHours(0,0,0,0)); }
 function dayEndISO(d){ return new Date(new Date(d).setUTCHours(23,59,59,999)); }
 function applyQuickRange(days){
-  if(!days){ fromInp.value=""; toInp.value=""; render(); return; }
+  if(!days){ fromInp.value=""; toInp.value=""; currentPage=1; render(); return; }
   const today = new Date();
   const start = new Date(today.getTime() - days*86400000);
   fromInp.value = start.toISOString().slice(0,10);
   toInp.value   = today.toISOString().slice(0,10);
+  currentPage = 1;
   render();
 }
 
-function render(){
+function getFilteredSortedRows(){
   const c=cat.value, s=stat.value, query=q.value;
-
   const fromMs = fromInp.value ? dayStartISO(fromInp.value).getTime() : -Infinity;
   const toMs   = toInp.value   ? dayEndISO(toInp.value).getTime()   :  Infinity;
 
@@ -173,48 +198,73 @@ function render(){
     if (c && r.category !== c) return false;
     if (s && (r.status||"").toLowerCase() !== s) return false;
     if (!matches(r, query)) return false;
-
     const pubMs = Date.parse(r.published || "");
-    if (isNaN(pubMs)) return false; // drop rows without date
-    return pubMs >= fromMs && pubMs <= toMs;
+    if (fromMs !== -Infinity || toMs !== Infinity){
+      if (isNaN(pubMs)) return false;
+      if (pubMs < fromMs || pubMs > toMs) return false;
+    }
+    return true;
   });
 
   rows = rows.sort((a,b)=>cmp(a,b,sortKey));
+  return rows;
+}
 
-  tbody.innerHTML = rows.map(r => `
+function render(){
+  const rows = getFilteredSortedRows();
+  const total = rows.length;
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage-1) * pageSize;
+  const end   = Math.min(start + pageSize, total);
+  const slice = rows.slice(start, end);
+
+  tbody.innerHTML = slice.map(r => `
     <tr>
       <td>${(r.published||"").slice(0,10)}</td>
-      <td><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, query)}</a></td>
+      <td><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></td>
       <td><span class="pill">${r.category||""}</span></td>
-      <td>${highlight(r.primary_keyword||"", query)}</td>
+      <td>${highlight(r.primary_keyword||"", q.value)}</td>
       <td>${r.trend_score ?? ""}</td>
       <td><span class="pill">${(r.status||"").toLowerCase()}</span></td>
     </tr>
   `).join("");
 
+  // counts line
   const cats = ["fashion","beauty","wellness"].map(k => [k, rows.filter(x=>x.category===k).length]);
   const stats= ["emerging","bubbling","mainstream"].map(k => [k, rows.filter(x=>(x.status||"").toLowerCase()===k).length]);
-  counts.textContent = `Showing ${rows.length} • ` +
+  counts.textContent = `Showing ${start+1}-${end} of ${total} • ` +
     cats.map(x=>`${x[0]} ${x[1]}`).join(" • ") + " • " +
     stats.map(x=>`${x[0]} ${x[1]}`).join(" • ");
+
+  // pager UI
+  pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+  prevBtn.disabled = currentPage <= 1;
+  nextBtn.disabled = currentPage >= totalPages;
 }
+
+// events
+cat.onchange = () => { currentPage=1; render(); };
+stat.onchange = () => { currentPage=1; render(); };
+q.addEventListener("input", () => { currentPage=1; render(); });
+window.addEventListener("keydown", e => { if(e.key === "Escape"){ q.value=""; currentPage=1; render(); }});
+fromInp.onchange = () => { currentPage=1; render(); };
+toInp.onchange   = () => { currentPage=1; render(); };
+quick.onchange   = () => applyQuickRange(parseInt(quick.value) || 0);
+clearBtn.onclick = () => { fromInp.value=""; toInp.value=""; quick.value=""; currentPage=1; render(); };
+
+pageSizeSel.onchange = () => { pageSize = parseInt(pageSizeSel.value,10) || 50; currentPage=1; render(); };
+prevBtn.onclick = () => { if(currentPage>1){ currentPage--; render(); } };
+nextBtn.onclick = () => { currentPage++; render(); };
 
 function load(){
   const bust = new Date().toISOString().slice(0,10); // daily cache-bust
   fetch("signals_simple.csv?ts="+bust)
     .then(r => r.text())
     .then(csv => Papa.parse(csv, {header:true, skipEmptyLines:true}))
-    .then(res => { rowsAll = res.data; setSort("trend_score"); })
+    .then(res => { rowsAll = res.data; setSort("trend_score"); }) // default sort: score ↓
     .catch(() => { counts.textContent = "Failed to load CSV"; });
 }
-
-// events
-cat.onchange = stat.onchange = render;
-q.addEventListener("input", render);
-window.addEventListener("keydown", e => { if(e.key === "Escape"){ q.value=""; render(); }});
-fromInp.onchange = toInp.onchange = render;
-quick.onchange = () => applyQuickRange(parseInt(quick.value) || 0);
-clearBtn.onclick = () => { fromInp.value=""; toInp.value=""; quick.value=""; render(); };
-
 load();
 </script>
