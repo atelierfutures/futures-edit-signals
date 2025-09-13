@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # so we can commit docs/signals_simple.csv
+  contents: write   # to commit docs/signals_simple.csv
 
 jobs:
   build:
@@ -14,12 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-      - run: pip install -r requirements.txt
-      - run: python build_simple_csv.py
-      - name: Commit updated CSV
+        with: { python-version: "3.10" }
+      - run: pip install feedparser pandas python-dateutil
+      - run: python build_minimal_csv.py
+      - name: Commit updated CSV to /docs
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: update daily signals CSV"
+          commit_message: "chore: update signals_simple.csv"
           file_pattern: docs/signals_simple.csv
