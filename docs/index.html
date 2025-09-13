@@ -44,12 +44,40 @@
   /* Sticky toolbar */
   .bar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(10px);
     background:color-mix(in oklab, var(--bg) 90%, transparent); border-bottom:1px solid var(--border)}
-  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .title{font-weight:700;font-size:18px}
+  .bar-inner{
+    max-width:1100px;margin:0 auto;padding:12px 20px;
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  }
+  .title{font-weight:700;font-size:18px;grid-area:title}
   .spacer{flex:1}
+
+  /* Mobile toolbar: grid layout */
+  @media (max-width:700px){
+    .bar-inner{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      grid-template-areas:
+        "title  title"
+        "search search"
+        "view   sort"
+        "cat    stat"
+        "dates  more";
+      gap:10px;
+    }
+    .area-search{grid-area:search}
+    .area-view{grid-area:view}
+    .area-sort{grid-area:sort}
+    .area-cat{grid-area:cat}
+    .area-stat{grid-area:stat}
+    .area-dates{grid-area:dates}
+    .area-more{grid-area:more; justify-self:end}
+    .select.fixed{width:100%}
+    .seg.fixed{width:100%}
+  }
+
   .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
   .seg.fixed{width:var(--seg-w)} .seg.fixed button{flex:1 0 50%}
-  .seg button{padding:8px 12px;border:0;background:var(--card);color:var(--fg);cursor:pointer}
+  .seg button{padding:10px 12px;border:0;background:var(--card);color:var(--fg);cursor:pointer}
   .seg button.active{background:var(--accent);color:var(--bg)}
 
   .btn{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;box-shadow:var(--shadow)}
@@ -57,22 +85,6 @@
   .select.fixed{width:var(--ctl-w)}
   .search{flex:1 1 320px;display:flex;gap:10px}
   .search input{width:100%}
-
-  /* Pills + text badges */
-  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
-  .tag, .status{ padding:4px 8px; font-size:11px; }
-  .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
-  .score-txt{ color: var(--muted); font-size: 12px; }
-  .date{ color:var(--muted); white-space:nowrap; }
-  .pill-link{ color:inherit; text-decoration:none; display:inline-block; }
-
-  /* Drawer (dates only) */
-  .drawer-back{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:80}
-  .drawer{position:fixed;right:0;top:0;height:100%;width:360px;max-width:90vw;background:var(--bg);
-    border-left:1px solid var(--border);box-shadow:var(--shadow);padding:18px;display:none;z-index:90}
-  .drawer h3{margin:0 0 10px;font-size:16px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .drawer .actions{display:flex;gap:10px;margin-top:14px}
 
   /* Pretty More menu */
   .menu{ position:relative; }
@@ -89,38 +101,26 @@
   }
   .menu-panel button:hover, .menu-panel a:hover{ background:var(--pill); }
 
-  /* Chips row under bar */
+  /* Chips */
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
   .chip{display:inline-flex;align-items:center;gap:6px} .chip button{all:unset;cursor:pointer;color:var(--muted)}
 
   /* Table */
   table{width:100%;border-collapse:collapse;margin-top:10px}
   th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
   th{position:sticky;top:64px;background:var(--bg);z-index:1}
-  th.sortable{cursor:pointer; white-space:nowrap; }
-  /* Hide arrow by default; show only on the active (sorted) header */
-  th .arrow{ display:none; margin-left:6px; font-weight:600; color:var(--muted); }
-  th.active .arrow{ display:inline-block; }
-  .hlabel{ display:inline-block; vertical-align:middle; }
+  th.sortable{cursor:pointer;user-select:none}
+  th .arrow{margin-left:6px;opacity:1}
 
   /* Cards — line1 date, line2 title, line3 meta */
-  .cards{
-    display:grid;
-    gap:12px;
-    margin-top:12px;
-    grid-template-columns:repeat(auto-fill,minmax(560px,1fr));
-  }
-  .card{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:14px;
-    box-shadow:var(--shadow);
-    transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
-  }
-  .card:hover{ transform: translateY(-1px); box-shadow: 0 10px 28px rgba(0,0,0,.08); border-color: color-mix(in oklab, var(--border) 60%, var(--fg) 40%); }
+  .cards{display:grid;gap:12px;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(560px,1fr))}
+  @media (max-width:700px){ .cards{grid-template-columns:1fr;} }
 
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;}
+  .card:hover{ transform: translateY(-1px); box-shadow: 0 10px 28px rgba(0,0,0,.08); border-color: color-mix(in oklab, var(--border) 60%, var(--fg) 40%); }
   .card--inline{ display:flex; flex-direction:column; gap:6px; padding:12px 14px; }
-  .date-line{ display:flex; align-items:center; gap:8px; }
+  .date{ color:var(--muted); white-space:nowrap; }
   .card-title{ margin:0; font-weight:600; }
   .card-title a{
     color:inherit; text-decoration:none;
@@ -128,56 +128,66 @@
   }
   .card-title a:hover{ text-decoration:underline; }
   .meta-line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .score-txt{ color: var(--muted); font-size: 12px; }
+
+  /* Tag color classes */
+  .tag, .status{ padding:4px 8px; font-size:11px; }
+  .tag--fashion{background:var(--fashion-bg); border:1px solid var(--fashion-bd); color:var(--fashion-fg)}
+  .tag--beauty{ background:var(--beauty-bg);  border:1px solid var(--beauty-bd);  color:var(--beauty-fg)}
+  .tag--wellness{background:var(--wellness-bg);border:1px solid var(--wellness-bd);color:var(--wellness-fg)}
+  .status--emerging{background:var(--emerg-bg);border:1px solid var(--emerg-bd);color:var(--emerg-fg)}
+  .status--bubbling{background:var(--bubbl-bg);border:1px solid var(--bubbl-bd);color:var(--bubbl-fg)}
+  .status--mainstream{background:var(--main-bg);border:1px solid var(--main-bd);color:var(--main-fg)}
 
   /* Pager */
   .pager{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px;flex-wrap:wrap}
   .pager-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-
-  /* Tag color classes */
-  .tag--fashion{background:var(--fashion-bg); border-color:var(--fashion-bd); color:var(--fashion-fg)}
-  .tag--beauty{ background:var(--beauty-bg);  border-color:var(--beauty-bd);  color:var(--beauty-fg)}
-  .tag--wellness{background:var(--wellness-bg);border-color:var(--wellness-bd);color:var(--wellness-fg)}
-  .status--emerging{background:var(--emerg-bg);border-color:var(--emerg-bd);color:var(--emerg-fg)}
-  .status--bubbling{background:var(--bubbl-bg);border-color:var(--bubbl-bd);color:var(--bubbl-fg)}
-  .status--mainstream{background:var(--main-bg);border-color:var(--main-bd);color:var(--main-fg)}
-
-  @media (max-width: 700px){ .cards{ grid-template-columns:1fr; } }
 </style>
 
 <div class="bar" id="bar">
   <div class="bar-inner">
     <div class="title">The Futures Edit — Signals</div>
-    <div class="search"><input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" /></div>
 
-    <div class="seg fixed">
-      <button id="viewTable" class="active" type="button">Table</button>
-      <button id="viewCards" type="button">Cards</button>
+    <div class="search area-search">
+      <input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" />
     </div>
 
-    <select id="sortKey" class="select fixed">
-      <option value="trend_score" selected>Sort: Trend score</option>
-      <option value="published">Sort: Published</option>
-      <option value="title">Sort: Title</option>
-      <option value="category">Sort: Category</option>
-      <option value="primary_keyword">Sort: Keyword</option>
-      <option value="status">Sort: Status</option>
-    </select>
+    <div class="seg fixed area-view">
+      <button id="viewTable" type="button">Table</button>
+      <button id="viewCards" class="active" type="button">Cards</button>
+    </div>
 
-    <select id="barCat" class="select fixed">
-      <option value="">All categories</option>
-      <option>fashion</option><option>beauty</option><option>wellness</option>
-    </select>
+    <div class="area-sort">
+      <select id="sortKey" class="select fixed">
+        <option value="trend_score" selected>Sort: Trend score</option>
+        <option value="published">Sort: Published</option>
+        <option value="title">Sort: Title</option>
+        <option value="category">Sort: Category</option>
+        <option value="primary_keyword">Sort: Keyword</option>
+        <option value="status">Sort: Status</option>
+      </select>
+    </div>
 
-    <select id="barStatus" class="select fixed">
-      <option value="">All status</option>
-      <option>emerging</option><option>bubbling</option><option>mainstream</option>
-    </select>
+    <div class="area-cat">
+      <select id="barCat" class="select fixed">
+        <option value="">All categories</option>
+        <option>fashion</option><option>beauty</option><option>wellness</option>
+      </select>
+    </div>
 
-    <button id="filtersBtn" class="btn">Dates</button>
+    <div class="area-stat">
+      <select id="barStatus" class="select fixed">
+        <option value="">All status</option>
+        <option>emerging</option><option>bubbling</option><option>mainstream</option>
+      </select>
+    </div>
 
-    <div class="spacer"></div>
+    <div class="area-dates">
+      <button id="filtersBtn" class="btn">Dates</button>
+    </div>
 
-    <div class="menu">
+    <div class="menu area-more">
       <button class="btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">More</button>
       <div class="menu-panel" id="moreMenu" role="menu">
         <a href="signals_simple.csv" download>Download CSV</a>
@@ -196,22 +206,22 @@
   <div id="chips" class="chips"></div>
 
   <!-- Table -->
-  <table id="tbl">
+  <table id="tbl" style="display:none">
     <thead>
       <tr>
-        <th class="sortable" data-key="published"><span class="hlabel">Published</span><span class="arrow"></span></th>
-        <th class="sortable" data-key="title"><span class="hlabel">Title</span><span class="arrow"></span></th>
-        <th class="sortable" data-key="category" style="width:110px"><span class="hlabel">Category</span><span class="arrow"></span></th>
-        <th class="sortable" data-key="primary_keyword" style="width:180px"><span class="hlabel">Keyword</span><span class="arrow"></span></th>
-        <th class="sortable" data-key="trend_score" style="width:120px"><span class="hlabel">Trend score</span><span class="arrow"></span></th>
-        <th class="sortable" data-key="status" style="width:120px"><span class="hlabel">Status</span><span class="arrow"></span></th>
+        <th class="sortable" data-key="published">Published <span class="arrow">↓</span></th>
+        <th class="sortable" data-key="title">Title</th>
+        <th class="sortable" data-key="category" style="width:110px">Category</th>
+        <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword</th>
+        <th class="sortable" data-key="trend_score" style="width:120px">Trend score</th>
+        <th class="sortable" data-key="status" style="width:120px">Status</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
   <!-- Cards -->
-  <div id="cards" class="cards" style="display:none"></div>
+  <div id="cards" class="cards"></div>
 
   <!-- Bottom pager -->
   <div class="pager">
@@ -229,12 +239,12 @@
 </div>
 
 <!-- Drawer (dates only) -->
-<div class="drawer-back" id="drawerBack"></div>
-<div class="drawer" id="drawer" aria-modal="true" role="dialog">
-  <h3>Date range</h3>
-  <div class="grid">
-    <label>From <input id="from" type="date" class="input"></label>
-    <label>To <input id="to" type="date" class="input"></label>
+<div class="drawer-back" id="drawerBack" style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:80"></div>
+<div class="drawer" id="drawer" aria-modal="true" role="dialog" style="position:fixed;right:0;top:0;height:100%;width:360px;max-width:90vw;background:var(--bg);border-left:1px solid var(--border);box-shadow:var(--shadow);padding:18px;display:none;z-index:90">
+  <h3 style="margin:0 0 10px;font-size:16px">Date range</h3>
+  <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <label>From <input id="from" type="date" class="input" style="width:100%"></label>
+    <label>To <input id="to" type="date" class="input" style="width:100%"></label>
     <label style="grid-column:1 / -1">Quick
       <select id="quick" class="select" style="width:100%">
         <option value="">All time</option>
@@ -244,7 +254,7 @@
       </select>
     </label>
   </div>
-  <div class="actions">
+  <div class="actions" style="display:flex;gap:10px;margin-top:14px">
     <button id="clearDates" class="btn" type="button">Clear dates</button>
     <button id="applyFilters" class="btn" type="button">Apply</button>
     <button id="closeDrawer" class="btn" type="button">Close</button>
@@ -252,43 +262,7 @@
 </div>
 
 <script>
-/* ---------- Madrid timezone helpers (CET/CEST-safe) ---------- */
-const MADRID_TZ = "Europe/Madrid";
-function _tzOffsetMs(tz, utcDate){
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: tz, year:"numeric", month:"2-digit", day:"2-digit",
-    hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false
-  }).formatToParts(utcDate).reduce((o,p)=>(o[p.type]=p.value,o),{});
-  const asUTC = Date.UTC(parts.year, parts.month-1, parts.day, parts.hour, parts.minute, parts.second);
-  return asUTC - utcDate.getTime();
-}
-function startOfDayMadrid(ymd){
-  if(!ymd) return null;
-  const [y,m,d] = ymd.split("-").map(Number);
-  const guessUTC = new Date(Date.UTC(y, (m||1)-1, d||1, 0,0,0));
-  const off = _tzOffsetMs(MADRID_TZ, guessUTC);
-  return new Date(guessUTC.getTime() - off);
-}
-function endOfDayMadrid(ymd){
-  if(!ymd) return null;
-  const [y,m,d] = ymd.split("-").map(Number);
-  const guessUTC = new Date(Date.UTC(y, (m||1)-1, d||1, 23,59,59,999));
-  const off = _tzOffsetMs(MADRID_TZ, guessUTC);
-  return new Date(guessUTC.getTime() - off);
-}
-function fmtMadrid(iso){
-  if(!iso) return "";
-  const dt = new Date(iso);
-  if(Number.isNaN(dt)) return (iso||"").slice(0,10);
-  const p = new Intl.DateTimeFormat("en-GB", {
-    timeZone:MADRID_TZ, year:"numeric", month:"2-digit", day:"2-digit",
-    hour:"2-digit", minute:"2-digit", hour12:false
-  }).formatToParts(dt).reduce((a,x)=>(a[x.type]=x.value,a),{});
-  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
-}
-
 /* ---------- refs ---------- */
-const bar = document.getElementById("bar");
 const tbody   = document.querySelector("#tbl tbody");
 const cardsEl = document.getElementById("cards");
 const chipsEl = document.getElementById("chips");
@@ -330,7 +304,7 @@ const darkToggleBtn = document.getElementById("darkToggle");
 
 /* ---------- state ---------- */
 let rowsAll = [];
-let viewMode = "table";
+let viewMode = "cards";             // default to CARDS
 let sortKey = "trend_score";
 let sortDir = "desc";
 let currentPage = 1;
@@ -341,23 +315,30 @@ const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const catClass = c => c && ["fashion","beauty","wellness"].includes(c) ? `pill tag tag--${c}` : "pill";
 const statusClass = s => s ? `pill status status--${s.toLowerCase()}` : "pill";
 
-/* helper: make whole pill a link to a NEW TAB filtered view */
+/* helper: pill links to a NEW TAB filtered view */
 function catPill(c){
   if(!c) return "";
   const href = "./?cat=" + encodeURIComponent(c);
-  return `<a class="${catClass(c)} pill-link" href="${href}" target="_blank" rel="noopener">${c}</a>`;
+  return `<a class="${catClass(c)}" href="${href}" target="_blank" rel="noopener">${c}</a>`;
 }
 function statusPill(s){
   const v = (s||"").toLowerCase(); if(!v) return "";
   const href = "./?stat=" + encodeURIComponent(v);
-  return `<a class="${statusClass(v)} pill-link" href="${href}" target="_blank" rel="noopener">${v}</a>`;
+  return `<a class="${statusClass(v)}" href="${href}" target="_blank" rel="noopener">${v}</a>`;
 }
 
-/* Madrid display wrapper */
-function fmtDateTime(iso){ return fmtMadrid(iso); }
-
-/* sticky header compact */
-window.addEventListener("scroll", ()=> bar.classList.toggle("compact", window.scrollY > 10));
+/* date-time formatter to Madrid time (CEST/CET) */
+const madrid = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Europe/Madrid', year:'numeric', month:'2-digit', day:'2-digit',
+  hour:'2-digit', minute:'2-digit', hour12:false
+});
+function fmtDateTime(iso){
+  if(!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return (iso||"").slice(0,10);
+  const parts = madrid.formatToParts(d).reduce((o,p)=> (o[p.type]=p.value, o), {});
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
+}
 
 /* theme */
 (()=>{ const saved = localStorage.getItem("fe_theme"); if(saved==="dark") document.documentElement.classList.add("dark"); })();
@@ -379,10 +360,10 @@ document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') toggleMenu(fals
 function updateSortUI(){
   sortKeySel.value = sortKey;
   headers.forEach(h=>{
-    const isActive = h.dataset.key === sortKey;
-    h.classList.toggle("active", isActive);
     const arrow = h.querySelector(".arrow");
-    if(arrow) arrow.textContent = isActive ? (sortDir==="asc"?"▲":"▼") : "";
+    const is = h.dataset.key === sortKey;
+    if(arrow) arrow.textContent = is ? (sortDir==="asc"?"↑":"↓") : ""; // only show when active
+    h.classList.toggle("active", is);
   });
 }
 function cmp(a,b,key){
@@ -413,7 +394,7 @@ function setSort(key){
 headers.forEach(h => h.addEventListener("click", () => setSort(h.dataset.key)));
 sortKeySel.onchange = () => { sortKey = sortKeySel.value; sortDir = (sortKey==="trend_score"||sortKey==="published")?"desc":"asc"; currentPage=1; updateSortUI(); render(); };
 
-/* view */
+/* view toggle */
 function setView(mode){
   viewMode = mode;
   viewTableBtn.classList.toggle("active", mode==="table");
@@ -449,7 +430,7 @@ window.addEventListener("keydown", e => {
   }
 });
 
-/* toolbar filters */
+/* simple filters */
 barCatSel.onchange   = () => { currentPage=1; render(); };
 barStatusSel.onchange= () => { currentPage=1; render(); };
 
@@ -476,7 +457,7 @@ resetAllBtn.onclick = () => {
   sortKey="trend_score"; sortDir="desc"; updateSortUI();
   barCatSel.value=""; barStatusSel.value="";
   fromI.value=""; toI.value=""; quick.value="";
-  pageSizeSel.value="25"; pageSize=25; currentPage=1; setView("table"); toggleMenu(false); render();
+  pageSizeSel.value="25"; pageSize=25; currentPage=1; setView(defaultMobileCards() ? "cards" : "table"); toggleMenu(false); render();
 };
 copyFilteredBtn.onclick = async () => {
   const rows = getFilteredSortedRows();
@@ -498,10 +479,8 @@ copyShareBtn.onclick = async () => {
 /* pipeline */
 function getFilteredSortedRows(){
   const query=q.value, c=barCatSel.value, s=barStatusSel.value;
-
-  // Madrid day boundaries
-  const fromMs = fromI.value ? startOfDayMadrid(fromI.value).getTime() : -Infinity;
-  const toMs   = toI.value   ? endOfDayMadrid(toI.value).getTime()   :  Infinity;
+  const fromMs = fromI.value ? new Date(new Date(fromI.value).setUTCHours(0,0,0,0)).getTime() : -Infinity;
+  const toMs   = toI.value   ? new Date(new Date(toI.value).setUTCHours(23,59,59,999)).getTime() :  Infinity;
 
   let rows = rowsAll.filter(r => {
     if (c && r.category !== c) return false;
@@ -562,6 +541,8 @@ function render(){
   rangeInfo.textContent = `Showing ${start+1}-${end} of ${total}`;
 
   if(viewMode==="table"){
+    document.getElementById("tbl").style.display = "";
+    document.getElementById("cards").style.display = "none";
     tbody.innerHTML = slice.map(r => `
       <tr>
         <td>${fmtDateTime(r.published)}</td>
@@ -573,12 +554,14 @@ function render(){
       </tr>
     `).join("");
   } else {
+    document.getElementById("tbl").style.display = "none";
+    document.getElementById("cards").style.display = "grid";
     cardsEl.innerHTML = slice.map(r => {
       const allK = (r.primary_keyword||"").split(",").map(s=>s.trim()).filter(Boolean);
       const firstK = allK[0] || "";
       return `
         <div class="card card--inline">
-          <div class="date-line"><span class="date">${fmtDateTime(r.published)}</span></div>
+          <div class="date">${fmtDateTime(r.published)}</div>
           <h4 class="card-title"><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></h4>
           <div class="meta-line">
             ${catPill(r.category)}
@@ -603,6 +586,9 @@ nextBtn.onclick = () => {
   if(currentPage < totalPages){ currentPage++; render(); }
 };
 
+/* default mobile = cards */
+const defaultMobileCards = () => window.matchMedia('(max-width: 700px)').matches;
+
 /* restore + load */
 function restoreFromUrl(){
   const p = new URLSearchParams(location.search);
@@ -611,7 +597,12 @@ function restoreFromUrl(){
   if(p.get("stat")){ barStatusSel.value = p.get("stat"); }
   if(p.get("from")) fromI.value = p.get("from");
   if(p.get("to")) toI.value = p.get("to");
-  const v = p.get("view"); if(v==="cards") setView("cards"); else setView("table");
+
+  // view: if absent, default to cards on mobile
+  const vParam = p.get("view");
+  if(vParam){ setView(vParam === "cards" ? "cards" : "table"); }
+  else { setView(defaultMobileCards() ? "cards" : "table"); }
+
   const sk = p.get("sort"); if(sk){ sortKey = sk; }
   const sd = p.get("dir"); if(sd){ sortDir = sd; }
   const ps = parseInt(p.get("size")||"25",10); pageSize = ps; pageSizeSel.value = String(ps);
