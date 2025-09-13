@@ -58,7 +58,7 @@
   .search{flex:1 1 320px;display:flex;gap:10px}
   .search input{width:100%}
 
-  /* Compact pills + text badges */
+  /* Pills + text badges */
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
   .tag, .status{ padding:4px 8px; font-size:11px; }
   .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
@@ -100,7 +100,7 @@
   th .arrow{opacity:.35;margin-left:6px}
   th.active .arrow{opacity:1}
 
-  /* Cards — top row date+title, second row meta inline */
+  /* Cards — line1 date, line2 title, line3 meta */
   .cards{
     display:grid;
     gap:12px;
@@ -117,15 +117,13 @@
   .card:hover{ transform: translateY(-1px); box-shadow: 0 10px 28px rgba(0,0,0,.08); border-color: color-mix(in oklab, var(--border) 60%, var(--fg) 40%); }
 
   .card--inline{ display:flex; flex-direction:column; gap:6px; padding:12px 14px; }
-  .top-line{ display:flex; gap:10px; align-items:baseline; }
-  .top-line .date{ flex:0 0 auto; }
-  .card-title{ margin:0; font-weight:600; flex:1 1 auto; }
+  .date-line{ display:flex; align-items:center; gap:8px; }
+  .card-title{ margin:0; font-weight:600; }
   .card-title a{
     color:inherit; text-decoration:none;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
   .card-title a:hover{ text-decoration:underline; }
-
   .meta-line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 
   /* Pager */
@@ -524,10 +522,8 @@ function render(){
       const firstK = allK[0] || "";
       return `
         <div class="card card--inline">
-          <div class="top-line">
-            <span class="date">${(r.published||"").slice(0,10)}</span>
-            <h4 class="card-title"><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></h4>
-          </div>
+          <div class="date-line"><span class="date">${(r.published||"").slice(0,10)}</span></div>
+          <h4 class="card-title"><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></h4>
           <div class="meta-line">
             <span class="${catClass(r.category)}">${r.category||""}</span>
             <span class="${statusClass(r.status||"")}">${(r.status||"").toLowerCase()}</span>
