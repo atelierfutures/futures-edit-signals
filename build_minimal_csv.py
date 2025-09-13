@@ -1,8 +1,9 @@
 # builds docs/signals_simple.csv with 7 columns (no notebook needed)
-# - pulls RSS feeds
-# - sets primary_keyword using seeds OR a simple auto-extractor (no extra libs)
-# - scores recency + hits
+# - pulls RSS feeds (EN/ES/FR-friendly sources)
+# - sets primary_keyword from seeds or a tiny fallback extractor
+# - scores recency + keyword hits
 # - classifies status by percentiles (emerging / bubbling / mainstream)
+# - sorts by trend_score DESC, then published DESC for download + site
 
 import os, time, re, feedparser, pandas as pd
 from datetime import datetime, timezone
@@ -15,6 +16,7 @@ FEEDS = {
         "https://www.hypebeast.com/feed",
         "https://www.highsnobiety.com/feed",
         "https://theimpression.com/feed/",
+        # Google News (broader)
         "https://news.google.com/rss/search?q=fashion%20innovation&hl=en&gl=US&ceid=US:en",
     ],
     "beauty": [
@@ -31,12 +33,13 @@ FEEDS = {
     ],
 }
 
-# Multilingual seed hints (EN/ES/FR). Add more any time.
+# Multilingual seed hints (EN/ES/FR). Add/remove anytime.
 SEEDS = {
     "fashion": [
         "quiet luxury","stealth wealth","balletcore","coquette","blokette","mob wife",
         "archival","gorpcore","techwear","digital couture","3d knit","upcycled",
-        "deadstock","rental","resale","made-to-order","kitten heels","ballet flats","rosette","bows"
+        "deadstock","rental","resale","made-to-order","kitten heels","ballet flats",
+        "rosette","bows"
     ],
     "beauty": [
         "skin cycling","skin flooding","skin barrier","slugging","glass skin","jello skin","mochi skin",
@@ -51,19 +54,20 @@ SEEDS = {
 }
 # ---------- /CONFIG ----------
 
+# tiny multilingual stopword set (EN/ES/FR) for the fallback extractor
 STOP = {
-    # tiny multilingual stopword set (EN/ES/FR)
     "the","and","for","with","from","that","this","into","over","under","your","their","our",
     "de","la","el","los","las","un","una","en","con","por","para","del","al","y","que",
-    "le","la","les","des","du","de","et","pour","dans","sur","au","aux","une","un",
+    "le","les","des","du","et","pour","dans","sur","au","aux","une","un",
     "new","news","trend","trends","brand","brands","make","made","just","today","2025","2024"
 }
 
-def clean(txt):
+def clean(txt: str) -> str:
     return (txt or "").replace("\n", " ").strip()
 
-def recency_score(dt_iso):
-    if not dt_iso: 
+def recency_score(dt_iso: str) -> float:
+    """0..1 score, decays over ~30 days"""
+    if not dt_iso:
         return 0.5
     try:
         dt = dateparser.parse(dt_iso)
@@ -71,13 +75,12 @@ def recency_score(dt_iso):
             dt = dt.replace(tzinfo=timezone.utc)
         now = datetime.now(timezone.utc)
         days = max((now - dt).days, 0)
-        return max(0.0, 1.0 - days/30.0)  # decays over ~30 days
+        return max(0.0, 1.0 - days / 30.0)
     except Exception:
         return 0.5
 
-def simple_auto_keyword(title, summary):
-    """Very small fallback extractor: pick the most frequent non-stopword token
-    from title+summary; prefer 2–3 word phrase if the same token repeats adjacently."""
+def simple_auto_keyword(title: str, summary: str) -> str:
+    """Fallback extractor: pick a frequent bigram or token that's not a stopword."""
     text = f"{title or ''} {summary or ''}".lower()
     tokens = re.findall(r"[a-záéíóúüñç'-]{3,}", text)
     tokens = [t.strip("-'") for t in tokens if t not in STOP]
@@ -87,13 +90,14 @@ def simple_auto_keyword(title, summary):
     bigrams = [" ".join(p) for p in zip(tokens, tokens[1:])]
     bigrams = [b for b in bigrams if all(w not in STOP for w in b.split())]
     if bigrams:
-        top2 = Counter(bigrams).most_common(1)[0][0]
+        top2, _ = Counter(bigrams).most_common(1)[0]
         if len(top2.split()) >= 2:
             return top2
-    # fall back to single token
-    return Counter(tokens).most_common(1)[0][0]
+    # fallback to single token
+    top1, _ = Counter(tokens).most_common(1)[0]
+    return top1
 
-def fetch_one(url, category):
+def fetch_one(url: str, category: str):
     d = feedparser.parse(url)
     rows = []
     seeds = [s.lower() for s in SEEDS.get(category, [])]
@@ -102,13 +106,17 @@ def fetch_one(url, category):
         link  = e.get("link")
         desc  = clean(e.get("summary") or e.get("description") or "")
         pub   = e.get("published") or e.get("updated") or e.get("created")
-        pub_iso = dateparser.parse(pub).isoformat() if pub else None
+        try:
+            pub_iso = dateparser.parse(pub).isoformat() if pub else None
+        except Exception:
+            pub_iso = None
 
         text_l = f"{title} {desc}".lower()
         hits = [k for k in seeds if k in text_l]
         primary = hits[0] if hits else simple_auto_keyword(title, desc)
 
-        score = round(0.7*len(hits) + 0.3*(recency_score(pub_iso)*2.0), 2)
+        # simple score: keyword hits (70%) + recency (30%, scaled 0..2)
+        score = round(0.7 * len(hits) + 0.3 * (recency_score(pub_iso) * 2.0), 2)
 
         rows.append({
             "published": pub_iso,
@@ -117,35 +125,39 @@ def fetch_one(url, category):
             "category": category,
             "primary_keyword": primary,
             "trend_score": score,
-            "status": ""  # filled later
+            "status": ""  # filled later via percentiles
         })
     return rows
 
-# Crawl feeds
+# ---- Crawl feeds ----
 all_rows = []
 for cat, urls in FEEDS.items():
     for u in urls:
         try:
             all_rows += fetch_one(u, cat)
-            time.sleep(0.2)
+            time.sleep(0.2)  # be polite
         except Exception:
             pass
 
 df = pd.DataFrame(all_rows)
-if not df.empty:
-    df = df.sort_values(["category","published"], ascending=[True, False])
 
-    # ----- status by percentiles on trend_score -----
+if not df.empty:
+    # ----- classify status by percentiles of trend_score -----
     scores = pd.to_numeric(df["trend_score"], errors="coerce").fillna(0)
     p33 = float(scores.quantile(0.33))
     p66 = float(scores.quantile(0.66))
 
-    def status_for(x):
+    def status_for(x: float) -> str:
         if x >= p66: return "mainstream"
         if x >= p33: return "bubbling"
         return "emerging"
 
     df["status"] = scores.apply(status_for)
+
+    # ----- sort for download/site: highest score first, then newest -----
+    df["published_dt"] = pd.to_datetime(df["published"], errors="coerce")
+    df = df.sort_values(["trend_score", "published_dt"], ascending=[False, False]) \
+           .drop(columns=["published_dt"])
 
 # Save to docs/ (served by GitHub Pages)
 os.makedirs("docs", exist_ok=True)
