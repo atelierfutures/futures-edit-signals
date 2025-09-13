@@ -1,0 +1,329 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>The Futures Edit — Tags Graph</title>
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+  :root{
+    --bg:#ffffff; --fg:#141414; --muted:#6b7280;
+    --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
+    --shadow:0 8px 24px rgba(0,0,0,.06);
+    --ctl-w:180px; --seg-w:160px;
+
+    --fashion-bg:#fff1f2; --fashion-bd:#fecdd3; --fashion-fg:#9f1239;
+    --beauty-bg:#eef2ff;  --beauty-bd:#c7d2fe; --beauty-fg:#3730a3;
+    --wellness-bg:#ecfeff;--wellness-bd:#a5f3fc;--wellness-fg:#155e75;
+  }
+  :root.dark{
+    --bg:#0b0b0c; --fg:#f2f3f5; --muted:#a3a7ae;
+    --card:#121317; --border:#2b2f36; --pill:#1b1f25; --accent:#e5e7eb;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  a{color:#2563eb;text-decoration:none} a:hover{text-decoration:underline}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px}
+
+  .bar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(10px);
+    background:color-mix(in oklab, var(--bg) 90%, transparent); border-bottom:1px solid var(--border)}
+  .bar-inner{max-width:1200px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .title{font-weight:700;font-size:18px;margin-right:8px}
+  .btn{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;box-shadow:var(--shadow)}
+  .select,.input{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+  .select.fixed{width:var(--ctl-w)}
+  .spacer{flex:1}
+  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .tag--fashion{background:var(--fashion-bg); border-color:var(--fashion-bd); color:var(--fashion-fg)}
+  .tag--beauty{ background:var(--beauty-bg);  border-color:var(--beauty-bd);  color:var(--beauty-fg)}
+  .tag--wellness{background:var(--wellness-bg);border-color:var(--wellness-bd);color:var(--wellness-fg)}
+
+  .panel{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+  .panel .group{display:flex;align-items:center;gap:8px}
+  .note{color:var(--muted);}
+
+  #stage{height:70vh; min-height:540px; border:1px solid var(--border); border-radius:14px; background:var(--card); box-shadow:var(--shadow); overflow:hidden}
+  svg{width:100%;height:100%;display:block;background:var(--card)}
+  .link{stroke:#9ca3af; stroke-opacity:.35}
+  .node{cursor:pointer}
+  .label{font:12px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; fill:var(--fg); paint-order:stroke; stroke:var(--bg); stroke-width:3px}
+  .legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .legend .swatch{width:34px;height:14px;border-radius:6px;background:#9ca3af}
+  .legend .swatch.nodes{background:#3b82f6}
+</style>
+
+<div class="bar">
+  <div class="bar-inner">
+    <div class="title">Tags Graph</div>
+    <a class="btn" href="index.html" target="_self">← Signals list</a>
+
+    <select id="cat" class="select fixed">
+      <option value="">All categories</option>
+      <option>fashion</option><option>beauty</option><option>wellness</option>
+    </select>
+
+    <select id="stat" class="select fixed">
+      <option value="">All status</option>
+      <option>emerging</option><option>bubbling</option><option>mainstream</option>
+    </select>
+
+    <input id="from" class="input" type="date" />
+    <input id="to"   class="input" type="date" />
+    <select id="quick" class="select fixed">
+      <option value="">All time</option>
+      <option value="7">Last 7 days</option>
+      <option value="30">Last 30 days</option>
+      <option value="90">Last 90 days</option>
+    </select>
+    <button id="clearDates" class="btn">Clear</button>
+
+    <div class="spacer"></div>
+    <button id="darkToggle" class="btn">Toggle dark mode</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="panel">
+    <div class="group">
+      <label>Min co-occurrence</label>
+      <input id="minW" type="range" min="1" max="8" step="1" value="2">
+      <span id="minWv" class="pill">2</span>
+    </div>
+    <div class="group">
+      <label>Top keywords</label>
+      <input id="topN" type="range" min="20" max="120" step="5" value="60">
+      <span id="topNv" class="pill">60</span>
+    </div>
+    <div class="group">
+      <label>Hide labels under radius</label>
+      <input id="minR" type="range" min="0" max="18" step="1" value="6">
+      <span id="minRv" class="pill">6</span>
+    </div>
+    <div class="group">
+      <input id="search" class="input" placeholder="Find keyword…" style="width:220px">
+      <button id="reset" class="btn">Reset view</button>
+    </div>
+  </div>
+
+  <div id="stage"></div>
+  <div class="legend">
+    <span class="swatch nodes"></span><span class="note">Node size = total mentions (within filters)</span>
+    <span class="swatch"></span><span class="note">Edge width = co-occurrence count (same article)</span>
+    <span id="stats" class="note"></span>
+  </div>
+</div>
+
+<script>
+/* theme */
+(()=>{ const saved = localStorage.getItem("fe_theme"); if(saved==="dark") document.documentElement.classList.add("dark"); })();
+document.getElementById("darkToggle").onclick = () => {
+  document.documentElement.classList.toggle("dark");
+  localStorage.setItem("fe_theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
+};
+
+/* controls */
+const cat   = document.getElementById('cat');
+const stat  = document.getElementById('stat');
+const fromI = document.getElementById('from');
+const toI   = document.getElementById('to');
+const quick = document.getElementById('quick');
+const clearDates = document.getElementById('clearDates');
+const minW  = document.getElementById('minW');
+const minWv = document.getElementById('minWv');
+const topN  = document.getElementById('topN');
+const topNv = document.getElementById('topNv');
+const minR  = document.getElementById('minR');
+const minRv = document.getElementById('minRv');
+const search= document.getElementById('search');
+const statsL= document.getElementById('stats');
+document.getElementById('reset').onclick = () => { zoomTo(1, width/2, height/2); search.value=''; highlightNode(null); };
+
+[minW, topN, minR].forEach(el => el.addEventListener('input', ()=>{ minWv.textContent=minW.value; topNv.textContent=topN.value; minRv.textContent=minR.value; build(); }));
+[cat, stat].forEach(el => el.addEventListener('change', ()=>build()));
+[fromI, toI].forEach(el => el.addEventListener('change', ()=>build()));
+quick.addEventListener('change', ()=>{
+  const d = parseInt(quick.value)||0;
+  if(!d){ fromI.value=''; toI.value=''; build(); return; }
+  const now = new Date();
+  const start = new Date(now.getTime() - d*86400000);
+  fromI.value = start.toISOString().slice(0,10);
+  toI.value   = now.toISOString().slice(0,10);
+  build();
+});
+clearDates.onclick = ()=>{ fromI.value=''; toI.value=''; quick.value=''; build(); };
+
+let rows=[], width=0, height=0, svg, g, linkG, nodeG, labelG, zoom, sim;
+const stage = document.getElementById('stage');
+
+function sizeSvg(){
+  const rect = stage.getBoundingClientRect();
+  width = rect.width; height = rect.height;
+  svg.attr('viewBox', [0,0,width,height]);
+  if(sim) sim.force('center', d3.forceCenter(width/2, height/2)).alpha(0.2).restart();
+}
+
+function uniqKeywords(s){
+  return (s||'')
+    .split(',').map(x=>x.trim()).filter(Boolean)
+    .map(x=>x.toLowerCase())
+    .filter((v,i,a)=>a.indexOf(v)===i);
+}
+
+function withinDates(iso){
+  if(!fromI.value && !toI.value) return true;
+  const ts = Date.parse(iso || '');
+  if(isNaN(ts)) return false;
+  if(fromI.value && ts < Date.parse(fromI.value)) return false;
+  if(toI.value && ts > (Date.parse(toI.value)+24*60*60*1000-1)) return false;
+  return true;
+}
+
+function filterRows(){
+  return rows.filter(r=>{
+    if(cat.value && r.category !== cat.value) return false;
+    if(stat.value && (r.status||'').toLowerCase() !== stat.value) return false;
+    if(!withinDates(r.published)) return false;
+    return true;
+  });
+}
+
+function build(){
+  const subset = filterRows();
+  const counts = new Map();
+  const edges  = new Map();
+
+  for(const r of subset){
+    const kws = uniqKeywords(r.primary_keyword);
+    for(const k of kws) counts.set(k, (counts.get(k)||0)+1);
+    for(let i=0;i<kws.length;i++){
+      for(let j=i+1;j<kws.length;j++){
+        let a=kws[i], b=kws[j]; if(a>b){const t=a;a=b;b=t;}
+        const key=a+"|"+b;
+        edges.set(key, (edges.get(key)||0)+1);
+      }
+    }
+  }
+
+  let nodes = Array.from(counts, ([id,count])=>({id,count}));
+  nodes.sort((a,b)=>b.count-a.count);
+  nodes = nodes.slice(0, parseInt(topN.value));
+
+  const keep = new Set(nodes.map(n=>n.id));
+  let links = Array.from(edges, ([k,w])=>{
+    const [s,t]=k.split('|');
+    return {source:s,target:t,weight:w};
+  }).filter(e => keep.has(e.source) && keep.has(e.target) && e.weight >= parseInt(minW.value));
+
+  renderGraph(nodes, links);
+  statsL.textContent = `• ${subset.length} articles • ${nodes.length} keywords • ${links.length} connections`;
+}
+
+function renderGraph(nodes, links){
+  const maxC = d3.max(nodes, d=>d.count) || 1;
+  const maxW = d3.max(links, d=>d.weight) || 1;
+  const r = d3.scaleSqrt().domain([1, maxC]).range([3, 18]);
+  const linkW = d3.scaleLinear().domain([1, maxW]).range([0.6, 3.5]);
+  const color = d3.scaleSequential(d3.interpolateBlues).domain([1, maxC]);
+
+  sim?.stop();
+  g.selectAll("*").remove();
+
+  const link = linkG.selectAll("line")
+    .data(links, d=>d.source+"|"+d.target)
+    .join("line")
+    .attr("class","link")
+    .attr("stroke-width", d=>linkW(d.weight));
+
+  const node = nodeG.selectAll("circle")
+    .data(nodes, d=>d.id)
+    .join("circle")
+      .attr("class","node")
+      .attr("r", d=>r(d.count))
+      .attr("fill", d=>color(d.count))
+      .attr("stroke","#fff")
+      .attr("stroke-width",1.2)
+      .call(drag());
+
+  const label = labelG.selectAll("text")
+    .data(nodes, d=>d.id)
+    .join("text")
+      .attr("class","label")
+      .attr("text-anchor","middle")
+      .style("display", d => r(d.count) >= parseInt(minR.value) ? null : "none")
+      .text(d=>d.id);
+
+  node.on("mouseover", (_,d)=>{ highlightNode(d.id); })
+      .on("mouseout",  ()=>{ highlightNode(null); })
+      .on("click",     (_,d)=>{ search.value=d.id; focusSearch(); });
+
+  sim = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(links).id(d=>d.id)
+      .distance(d=> 120 - 18*Math.log(d.weight+1))
+      .strength(d=> .1 + .12*Math.log(d.weight+1)))
+    .force("charge", d3.forceManyBody().strength(-60))
+    .force("collide", d3.forceCollide().radius(d=>r(d.count)+2))
+    .force("center", d3.forceCenter(width/2, height/2))
+    .on("tick", ticked);
+
+  function ticked(){
+    link.attr("x1", d=>d.source.x).attr("y1", d=>d.source.y)
+        .attr("x2", d=>d.target.x).attr("y2", d=>d.target.y);
+    node.attr("cx", d=>d.x).attr("cy", d=>d.y);
+    label.attr("x", d=>d.x).attr("y", d=>d.y - r(d.count) - 2);
+  }
+
+  function drag(){
+    function dragstarted(event, d) {
+      if (!event.active) sim.alphaTarget(0.3).restart();
+      d.fx = d.x; d.fy = d.y;
+    }
+    function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
+    function dragended(event, d) {
+      if (!event.active) sim.alphaTarget(0);
+      d.fx = null; d.fy = null;
+    }
+    return d3.drag().on("start",dragstarted).on("drag",dragged).on("end",dragended);
+  }
+
+  // search highlight
+  search.oninput = focusSearch;
+  function focusSearch(){
+    const q = (search.value||"").trim().toLowerCase();
+    node.attr("opacity", d => !q || d.id.includes(q) ? 1 : .25);
+    label.attr("opacity", d => !q || d.id.includes(q) ? 1 : .15);
+    link.attr("opacity", l => !q || l.source.id.includes(q) || l.target.id.includes(q) ? .6 : .12);
+  }
+}
+
+function highlightNode(id){
+  g.selectAll(".node").attr("opacity", d => !id || d.id===id ? 1 : .25);
+  g.selectAll(".label").attr("opacity", d => !id || d.id===id ? 1 : .15);
+  g.selectAll(".link").attr("opacity", l => !id || l.source.id===id || l.target.id===id ? .6 : .12);
+}
+
+/* zoom/pan */
+function zoomTo(k, x, y){
+  svg.transition().duration(350).call(zoom.transform, d3.zoomIdentity.translate(width/2, height/2).scale(k).translate(-x, -y));
+}
+
+/* init svg */
+svg = d3.select("#stage").append("svg");
+g = svg.append("g");
+linkG = g.append("g");
+nodeG = g.append("g");
+labelG= g.append("g");
+
+zoom = d3.zoom().scaleExtent([0.3, 4]).on("zoom", (ev)=> g.attr("transform", ev.transform));
+svg.call(zoom).on("dblclick.zoom", null);
+window.addEventListener("resize", sizeSvg); sizeSvg();
+
+/* load csv */
+const bust = new Date().toISOString().slice(0,10);
+fetch("signals_simple.csv?ts="+bust)
+  .then(r=>r.text())
+  .then(txt => Papa.parse(txt, {header:true, skipEmptyLines:true}).data)
+  .then(data => { rows = data; build(); });
+</script>
