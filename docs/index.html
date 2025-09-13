@@ -5,12 +5,15 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <style>
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:24px;max-width:1100px}
-  header{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-  .pill{padding:6px 10px;border-radius:999px;background:#f2f2f2;font-size:12px;border:1px solid #e6e6e6;cursor:pointer}
-  .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0}
-  .search input,.controls select,.controls input[type=date]{padding:8px 10px;border:1px solid #ddd;border-radius:8px}
+  :root{--gap:12px;--pill:#f2f2f2;--border:#e6e6e6}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:24px}
+  .wrap{max-width:1100px;margin:0 auto}
+  header{display:flex;gap:var(--gap);align-items:center;justify-content:space-between;flex-wrap:wrap}
+  h1{font-size:28px;margin:0 0 8px}
+  .controls{display:grid;gap:var(--gap);grid-template-columns:repeat(6,minmax(140px,1fr));align-items:center}
   .search{display:flex;gap:8px;align-items:center}
+  .pill{padding:6px 10px;border-radius:999px;background:var(--pill);font-size:12px;border:1px solid var(--border);cursor:pointer}
+  input[type="search"],select,input[type="date"]{padding:8px 10px;border:1px solid #ddd;border-radius:8px;width:100%}
   table{width:100%;border-collapse:collapse}
   th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
   th{background:#fafafa;position:sticky;top:0}
@@ -22,76 +25,115 @@
   .pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
   .pager .btn{padding:6px 10px;border:1px solid #ddd;background:#fff;border-radius:8px;cursor:pointer}
   .pager .btn[disabled]{opacity:.5;cursor:not-allowed}
+
+  /* Cards (mobile) */
+  .mobile-sort{display:none;gap:8px;align-items:center;margin:4px 0}
+  .cards{display:none;gap:12px}
+  .card{border:1px solid var(--border);border-radius:12px;padding:12px}
+  .card .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:#555}
+  .score{padding:2px 8px;border:1px solid var(--border);border-radius:999px}
+
+  /* Responsiveness */
+  @media (max-width: 980px){
+    .controls{grid-template-columns:repeat(4,minmax(140px,1fr))}
+  }
+  @media (max-width: 720px){
+    body{margin:16px}
+    .controls{grid-template-columns:repeat(2,minmax(150px,1fr))}
+    table{display:none}
+    .cards{display:grid}
+    .mobile-sort{display:flex}
+  }
 </style>
 
-<header>
-  <h1>The Futures Edit — Signals (auto)</h1>
-  <div class="controls">
-    <label>Category:
-      <select id="cat">
-        <option value="">All</option>
-        <option>fashion</option><option>beauty</option><option>wellness</option>
-      </select>
-    </label>
-    <label>Status:
-      <select id="stat">
-        <option value="">All</option>
-        <option>emerging</option><option>bubbling</option><option>mainstream</option>
-      </select>
-    </label>
+<div class="wrap">
+  <header>
+    <h1>The Futures Edit — Signals (auto)</h1>
+    <div class="controls">
+      <label>Category:
+        <select id="cat">
+          <option value="">All</option>
+          <option>fashion</option><option>beauty</option><option>wellness</option>
+        </select>
+      </label>
+      <label>Status:
+        <select id="stat">
+          <option value="">All</option>
+          <option>emerging</option><option>bubbling</option><option>mainstream</option>
+        </select>
+      </label>
+      <label>From: <input id="from" type="date"></label>
+      <label>To: <input id="to" type="date"></label>
+      <label>Quick:
+        <select id="quick">
+          <option value="">All time</option>
+          <option value="7">Last 7 days</option>
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
+        </select>
+      </label>
+      <button id="clearDates" type="button" class="pill">Clear dates</button>
 
-    <!-- Date range -->
-    <label>From: <input id="from" type="date"></label>
-    <label>To: <input id="to" type="date"></label>
-    <label>Quick:
-      <select id="quick">
-        <option value="">All time</option>
-        <option value="7">Last 7 days</option>
-        <option value="30">Last 30 days</option>
-        <option value="90">Last 90 days</option>
-      </select>
-    </label>
-    <button id="clearDates" type="button" class="pill">Clear dates</button>
-
-    <!-- Search + download -->
-    <div class="search">
-      <input id="q" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" />
-      <a id="dl" class="pill" href="signals_simple.csv" download>Download CSV</a>
+      <div class="search" style="grid-column:1 / -1">
+        <input id="q" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" />
+        <a id="dl" class="pill" href="signals_simple.csv" download>Download CSV</a>
+      </div>
     </div>
+  </header>
+
+  <!-- Mobile sort controls -->
+  <div class="mobile-sort">
+    <label>Sort:
+      <select id="sortKeyMobile">
+        <option value="trend_score" selected>Trend score</option>
+        <option value="published">Published</option>
+        <option value="title">Title</option>
+        <option value="category">Category</option>
+        <option value="primary_keyword">Keyword</option>
+        <option value="status">Status</option>
+      </select>
+    </label>
+    <button id="sortDirMobile" class="pill" type="button">↓ Desc</button>
   </div>
-</header>
 
-<div id="counts">Loading…</div>
+  <div id="counts">Loading…</div>
 
-<table id="tbl">
-  <thead>
-    <tr>
-      <th class="sortable" data-key="published">Published <span class="arrow">↕</span></th>
-      <th class="sortable" data-key="title">Title <span class="arrow">↕</span></th>
-      <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow">↕</span></th>
-      <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow">↕</span></th>
-      <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow">↕</span></th>
-      <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow">↕</span></th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <!-- Desktop table -->
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th class="sortable" data-key="published">Published <span class="arrow">↕</span></th>
+        <th class="sortable" data-key="title">Title <span class="arrow">↕</span></th>
+        <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow">↕</span></th>
+        <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow">↕</span></th>
+        <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow">↕</span></th>
+        <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow">↕</span></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-<div class="pager">
-  <span>Rows per page:</span>
-  <select id="pageSize">
-    <option>25</option>
-    <option selected>50</option>
-    <option>100</option>
-    <option>200</option>
-  </select>
-  <span id="pageInfo">Page 1 of 1</span>
-  <button class="btn" id="prevBtn">‹ Prev</button>
-  <button class="btn" id="nextBtn">Next ›</button>
+  <!-- Mobile cards -->
+  <div id="cards" class="cards"></div>
+
+  <div class="pager">
+    <span>Rows per page:</span>
+    <select id="pageSize">
+      <option>25</option>
+      <option selected>50</option>
+      <option>100</option>
+      <option>200</option>
+    </select>
+    <span id="pageInfo">Page 1 of 1</span>
+    <button class="btn" id="prevBtn">‹ Prev</button>
+    <button class="btn" id="nextBtn">Next ›</button>
+  </div>
 </div>
 
 <script>
 const tbody   = document.querySelector("#tbl tbody");
+const cardsEl = document.getElementById("cards");
 const cat     = document.getElementById("cat");
 const stat    = document.getElementById("stat");
 const q       = document.getElementById("q");
@@ -108,6 +150,10 @@ const prevBtn  = document.getElementById("prevBtn");
 const nextBtn  = document.getElementById("nextBtn");
 const pageInfo = document.getElementById("pageInfo");
 
+// mobile sort controls
+const sortKeyMob = document.getElementById("sortKeyMobile");
+const sortDirMob = document.getElementById("sortDirMobile");
+
 let rowsAll = [];
 let sortKey = "trend_score";   // default sort
 let sortDir = "desc";
@@ -115,6 +161,7 @@ let currentPage = 1;
 let pageSize = parseInt(pageSizeSel.value,10) || 50;
 
 const statusOrder = {emerging:0, bubbling:1, mainstream:2};
+const isMobile = () => window.matchMedia("(max-width: 720px)").matches;
 
 function escRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 
@@ -146,11 +193,15 @@ function setSort(key){
     sortKey = key;
     sortDir = (key === "trend_score" || key === "published") ? "desc" : "asc";
   }
-  currentPage = 1; // reset on sort
+  currentPage = 1;
+  // desktop header arrows
   headers.forEach(h=>{
     h.classList.toggle("active", h.dataset.key === sortKey);
     h.querySelector(".arrow").textContent = h.dataset.key === sortKey ? (sortDir==="asc"?"↑":"↓") : "↕";
   });
+  // mobile selects
+  sortKeyMob.value = sortKey;
+  sortDirMob.textContent = (sortDir==="asc"?"↑ Asc":"↓ Desc");
   render();
 }
 headers.forEach(h => h.addEventListener("click", () => setSort(h.dataset.key)));
@@ -220,16 +271,35 @@ function render(){
   const end   = Math.min(start + pageSize, total);
   const slice = rows.slice(start, end);
 
-  tbody.innerHTML = slice.map(r => `
-    <tr>
-      <td>${(r.published||"").slice(0,10)}</td>
-      <td><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></td>
-      <td><span class="pill">${r.category||""}</span></td>
-      <td>${highlight(r.primary_keyword||"", q.value)}</td>
-      <td>${r.trend_score ?? ""}</td>
-      <td><span class="pill">${(r.status||"").toLowerCase()}</span></td>
-    </tr>
-  `).join("");
+  if(isMobile()){
+    // render cards
+    cardsEl.innerHTML = slice.map(r => `
+      <div class="card">
+        <div class="top">
+          <time>${(r.published||"").slice(0,10)}</time>
+          <span class="pill">${(r.status||"").toLowerCase()}</span>
+        </div>
+        <a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a>
+        <div class="meta">
+          <span class="pill">${r.category||""}</span>
+          ${r.primary_keyword ? `<span>${highlight(r.primary_keyword, q.value)}</span>` : ""}
+          <span class="score">score ${r.trend_score ?? ""}</span>
+        </div>
+      </div>
+    `).join("");
+  } else {
+    // render table rows
+    tbody.innerHTML = slice.map(r => `
+      <tr>
+        <td>${(r.published||"").slice(0,10)}</td>
+        <td><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></td>
+        <td><span class="pill">${r.category||""}</span></td>
+        <td>${highlight(r.primary_keyword||"", q.value)}</td>
+        <td>${r.trend_score ?? ""}</td>
+        <td><span class="pill">${(r.status||"").toLowerCase()}</span></td>
+      </tr>
+    `).join("");
+  }
 
   // counts line
   const cats = ["fashion","beauty","wellness"].map(k => [k, rows.filter(x=>x.category===k).length]);
@@ -257,6 +327,13 @@ clearBtn.onclick = () => { fromInp.value=""; toInp.value=""; quick.value=""; cur
 pageSizeSel.onchange = () => { pageSize = parseInt(pageSizeSel.value,10) || 50; currentPage=1; render(); };
 prevBtn.onclick = () => { if(currentPage>1){ currentPage--; render(); } };
 nextBtn.onclick = () => { currentPage++; render(); };
+
+// mobile sort controls
+sortKeyMob.onchange = () => { setSort(sortKeyMob.value); };
+sortDirMob.onclick = () => { sortDir = (sortDir==="asc"?"desc":"asc"); setSort(sortKey); };
+
+// re-render on resize when switching views
+window.addEventListener("resize", () => render());
 
 function load(){
   const bust = new Date().toISOString().slice(0,10); // daily cache-bust
