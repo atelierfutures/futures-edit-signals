@@ -62,7 +62,6 @@
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
   .tag, .status{ padding:4px 8px; font-size:11px; }
   .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
-  .kchips{ display:flex; gap:6px; flex-wrap:wrap; }
   .score-txt{ color: var(--muted); font-size: 12px; }
   .date{ color:var(--muted); white-space:nowrap; }
 
@@ -101,7 +100,7 @@
   th .arrow{opacity:.35;margin-left:6px}
   th.active .arrow{opacity:1}
 
-  /* Cards — inline, stacked content (no images) */
+  /* Cards — top row date+title, second row meta inline */
   .cards{
     display:grid;
     gap:12px;
@@ -113,17 +112,20 @@
     border:1px solid var(--border);
     border-radius:14px;
     box-shadow:var(--shadow);
+    transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
   }
-  .card--inline{
-    display:flex;
-    flex-direction:column;
-    align-items:flex-start;
-    gap:8px;
-    padding:12px 14px;
+  .card:hover{ transform: translateY(-1px); box-shadow: 0 10px 28px rgba(0,0,0,.08); border-color: color-mix(in oklab, var(--border) 60%, var(--fg) 40%); }
+
+  .card--inline{ display:flex; flex-direction:column; gap:6px; padding:12px 14px; }
+  .top-line{ display:flex; gap:10px; align-items:baseline; }
+  .top-line .date{ flex:0 0 auto; }
+  .card-title{ margin:0; font-weight:600; flex:1 1 auto; }
+  .card-title a{
+    color:inherit; text-decoration:none;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
-  .card-title{ margin:0; font-weight:600; }
-  .card-title a{ color:inherit; text-decoration:none; }
   .card-title a:hover{ text-decoration:underline; }
+
   .meta-line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 
   /* Pager */
@@ -138,9 +140,6 @@
   .status--bubbling{background:var(--bubbl-bg);border-color:var(--bubbl-bd);color:var(--bubbl-fg)}
   .status--mainstream{background:var(--main-bg);border-color:var(--main-bd);color:var(--main-fg)}
 
-  /* Optional subtle hover */
-  .card{ transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease; }
-  .card:hover{ transform: translateY(-1px); box-shadow: 0 10px 28px rgba(0,0,0,.08); border-color: color-mix(in oklab, var(--border) 60%, var(--fg) 40%); }
   @media (max-width: 700px){ .cards{ grid-template-columns:1fr; } }
 </style>
 
@@ -186,6 +185,7 @@
         <button id="resetAll">Reset all</button>
         <button id="darkToggle">Toggle dark mode</button>
         <a href="https://github.com/atelierfutures/futures-edit-signals" target="_blank" rel="noopener">Repository</a>
+        <a href="tags.html" target="_blank" rel="noopener">Tags graph</a>
       </div>
     </div>
   </div>
@@ -209,7 +209,7 @@
     <tbody></tbody>
   </table>
 
-  <!-- Cards (inline, stacked) -->
+  <!-- Cards -->
   <div id="cards" class="cards" style="display:none"></div>
 
   <!-- Bottom pager -->
@@ -521,20 +521,19 @@ function render(){
   } else {
     cardsEl.innerHTML = slice.map(r => {
       const allK = (r.primary_keyword||"").split(",").map(s=>s.trim()).filter(Boolean);
-      const shown = allK.slice(0,3);
-      const moreN = Math.max(0, allK.length - shown.length);
-      const chips = shown.map(k=>`<span class="kchip">${highlight(k, q.value)}</span>`).join("")
-                    + (moreN ? `<span class="kchip">+${moreN}</span>` : "");
+      const firstK = allK[0] || "";
       return `
         <div class="card card--inline">
-          <div class="card-title"><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></div>
+          <div class="top-line">
+            <span class="date">${(r.published||"").slice(0,10)}</span>
+            <h4 class="card-title"><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></h4>
+          </div>
           <div class="meta-line">
             <span class="${catClass(r.category)}">${r.category||""}</span>
-            <span class="date">${(r.published||"").slice(0,10)}</span>
             <span class="${statusClass(r.status||"")}">${(r.status||"").toLowerCase()}</span>
+            ${firstK ? `<span class="kchip">${highlight(firstK, q.value)}</span>` : ""}
             <span class="score-txt">score ${r.trend_score ?? ""}</span>
           </div>
-          ${chips ? `<div class="kchips">${chips}</div>` : ""}
         </div>
       `;
     }).join("");
@@ -547,7 +546,10 @@ function render(){
 /* paging */
 pageSizeSel.onchange = () => { pageSize = parseInt(pageSizeSel.value,10) || 25; currentPage=1; render(); };
 prevBtn.onclick = () => { if(currentPage>1){ currentPage--; render(); } };
-nextBtn.onclick = () => { currentPage++; render(); };
+nextBtn.onclick = () => {
+  const totalPages = Math.max(1, Math.ceil(getFilteredSortedRows().length / pageSize));
+  if(currentPage < totalPages){ currentPage++; render(); }
+};
 
 /* restore + load */
 function restoreFromUrl(){
