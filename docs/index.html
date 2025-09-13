@@ -12,12 +12,12 @@
     --shadow:0 8px 24px rgba(0,0,0,.06);
     --ctl-w:180px; --seg-w:160px;
 
-    /* Category */
+    /* Category colors */
     --fashion-bg:#fff1f2; --fashion-bd:#fecdd3; --fashion-fg:#9f1239;
     --beauty-bg:#eef2ff;  --beauty-bd:#c7d2fe; --beauty-fg:#3730a3;
     --wellness-bg:#ecfeff;--wellness-bd:#a5f3fc;--wellness-fg:#155e75;
 
-    /* Status */
+    /* Status colors */
     --emerg-bg:#ecfccb; --emerg-bd:#bef264; --emerg-fg:#3f6212;
     --bubbl-bg:#fef3c7; --bubbl-bd:#fcd34d; --bubbl-fg:#92400e;
     --main-bg:#f1f5f9;  --main-bd:#cbd5e1; --main-fg:#334155;
@@ -58,14 +58,14 @@
   .search{flex:1 1 320px;display:flex;gap:10px}
   .search input{width:100%}
 
-  /* Pills — compact */
+  /* Compact pills */
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
   .tag, .status{ padding:4px 8px; font-size:11px; }
   .kchip{ padding:3px 6px; font-size:11px; }
   .meta-right .score{ padding:2px 6px; font-size:11px; }
   .kchips{ gap:6px; }
 
-  /* Drawer */
+  /* Drawer (dates only) */
   .drawer-back{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:80}
   .drawer{position:fixed;right:0;top:0;height:100%;width:360px;max-width:90vw;background:var(--bg);
     border-left:1px solid var(--border);box-shadow:var(--shadow);padding:18px;display:none;z-index:90}
@@ -73,7 +73,7 @@
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .drawer .actions{display:flex;gap:10px;margin-top:14px}
 
-  /* More menu (pretty) */
+  /* Pretty More menu */
   .menu{ position:relative; }
   .menu-panel{
     display:none; position:absolute; right:0; top:calc(100% + 8px);
@@ -88,6 +88,10 @@
   }
   .menu-panel button:hover, .menu-panel a:hover{ background:var(--pill); }
 
+  /* Chips row under bar */
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .chip{display:inline-flex;align-items:center;gap:6px} .chip button{all:unset;cursor:pointer;color:var(--muted)}
+
   /* Table */
   table{width:100%;border-collapse:collapse;margin-top:10px}
   th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
@@ -96,22 +100,44 @@
   th .arrow{opacity:.35;margin-left:6px}
   th.active .arrow{opacity:1}
 
-  /* Cards (no cover image) */
-  .cards{display:grid;gap:14px;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
-  .card-body{padding:12px;display:flex;flex-direction:column;gap:8px}
-  .card-title{display:block;font-weight:600;margin:0}
-  .card-title a{color:inherit}
-  .meta-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .meta-right{display:flex;align-items:center;gap:8px}
-  .footer{display:flex;align-items:center;justify-content:space-between;margin-top:2px}
-  .muted{color:var(--muted)}
+  /* Cards — inline (row-style), no images) */
+  .cards{
+    display:grid;
+    gap:12px;
+    margin-top:12px;
+    grid-template-columns:repeat(auto-fill,minmax(560px,1fr));
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+  }
+  .card--inline{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 14px;
+  }
+  .title-wrap{ flex:1; min-width:0; }
+  .card-title{ margin:0 0 4px 0; font-weight:600; }
+  .card-title a{ color:inherit; text-decoration:none; }
+  .card-title a:hover{ text-decoration:underline; }
+  .right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+  .right .date{ color:var(--muted); white-space:nowrap; }
 
   /* Pager */
   .pager{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px;flex-wrap:wrap}
   .pager-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
-  /* Tag colors */
+  /* Tag color classes */
   .tag--fashion{background:var(--fashion-bg); border-color:var(--fashion-bd); color:var(--fashion-fg)}
   .tag--beauty{ background:var(--beauty-bg);  border-color:var(--beauty-bd);  color:var(--beauty-fg)}
   .tag--wellness{background:var(--wellness-bg);border-color:var(--wellness-bd);color:var(--wellness-fg)}
@@ -124,10 +150,12 @@
   <div class="bar-inner">
     <div class="title">The Futures Edit — Signals</div>
     <div class="search"><input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" /></div>
+
     <div class="seg fixed">
       <button id="viewTable" class="active" type="button">Table</button>
       <button id="viewCards" type="button">Cards</button>
     </div>
+
     <select id="sortKey" class="select fixed">
       <option value="trend_score" selected>Sort: Trend score</option>
       <option value="published">Sort: Published</option>
@@ -136,16 +164,21 @@
       <option value="primary_keyword">Sort: Keyword</option>
       <option value="status">Sort: Status</option>
     </select>
+
     <select id="barCat" class="select fixed">
       <option value="">All categories</option>
       <option>fashion</option><option>beauty</option><option>wellness</option>
     </select>
+
     <select id="barStatus" class="select fixed">
       <option value="">All status</option>
       <option>emerging</option><option>bubbling</option><option>mainstream</option>
     </select>
-    <button id="filtersBtn" class="btn">Filters</button>
+
+    <button id="filtersBtn" class="btn">Dates</button>
+
     <div class="spacer"></div>
+
     <div class="menu">
       <button class="btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">More</button>
       <div class="menu-panel" id="moreMenu" role="menu">
@@ -178,10 +211,10 @@
     <tbody></tbody>
   </table>
 
-  <!-- Cards (no images) -->
+  <!-- Cards (inline, no images) -->
   <div id="cards" class="cards" style="display:none"></div>
 
-  <!-- Pager -->
+  <!-- Bottom pager -->
   <div class="pager">
     <div class="pager-left muted" id="rangeInfo">Loading…</div>
     <div class="pager-right">
@@ -196,23 +229,11 @@
   </div>
 </div>
 
-<!-- Drawer -->
+<!-- Drawer (dates only) -->
 <div class="drawer-back" id="drawerBack"></div>
 <div class="drawer" id="drawer" aria-modal="true" role="dialog">
-  <h3>Filters & Dates</h3>
+  <h3>Date range</h3>
   <div class="grid">
-    <label>Category
-      <select id="cat" class="select">
-        <option value="">All</option>
-        <option>fashion</option><option>beauty</option><option>wellness</option>
-      </select>
-    </label>
-    <label>Status
-      <select id="stat" class="select">
-        <option value="">All status</option>
-        <option>emerging</option><option>bubbling</option><option>mainstream</option>
-      </select>
-    </label>
     <label>From <input id="from" type="date" class="input"></label>
     <label>To <input id="to" type="date" class="input"></label>
     <label style="grid-column:1 / -1">Quick
@@ -254,19 +275,18 @@ const nextBtn  = document.getElementById("nextBtn");
 const pageInfo = document.getElementById("pageInfo");
 const rangeInfo= document.getElementById("rangeInfo");
 
+/* Drawer (dates only) */
 const drawerBack = document.getElementById("drawerBack");
 const drawer = document.getElementById("drawer");
 const filtersBtn = document.getElementById("filtersBtn");
 const closeDrawer = document.getElementById("closeDrawer");
 const applyFilters = document.getElementById("applyFilters");
-
-const cat   = document.getElementById("cat");
-const stat  = document.getElementById("stat");
 const fromI = document.getElementById("from");
 const toI   = document.getElementById("to");
 const quick = document.getElementById("quick");
 const clearDatesBtn = document.getElementById("clearDates");
 
+/* More menu */
 const moreBtn  = document.getElementById("moreBtn");
 const moreMenu = document.getElementById("moreMenu");
 const copyFilteredBtn = document.getElementById("copyFiltered");
@@ -287,7 +307,7 @@ const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const catClass = c => c && ["fashion","beauty","wellness"].includes(c) ? `pill tag tag--${c}` : "pill";
 const statusClass = s => s ? `pill status status--${s.toLowerCase()}` : "pill";
 
-/* sticky header compact state */
+/* sticky header compact */
 window.addEventListener("scroll", ()=> bar.classList.toggle("compact", window.scrollY > 10));
 
 /* theme */
@@ -297,7 +317,7 @@ darkToggleBtn.onclick = () => {
   localStorage.setItem("fe_theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
 };
 
-/* More menu */
+/* pretty More menu */
 function toggleMenu(open){
   moreMenu.classList.toggle('open', open);
   moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -380,19 +400,16 @@ window.addEventListener("keydown", e => {
 });
 
 /* toolbar filters */
-barCatSel.onchange   = () => { cat.value = barCatSel.value; currentPage=1; render(); };
-barStatusSel.onchange= () => { stat.value= barStatusSel.value; currentPage=1; render(); };
+barCatSel.onchange   = () => { currentPage=1; render(); };
+barStatusSel.onchange= () => { currentPage=1; render(); };
 
-/* drawer */
+/* drawer (dates only) */
 function openDrawer(){ drawerBack.style.display="block"; drawer.style.display="block"; document.body.style.overflow="hidden"; }
 function closeDrawerFn(){ drawerBack.style.display="none"; drawer.style.display="none"; document.body.style.overflow=""; }
 filtersBtn.onclick = openDrawer;
 closeDrawer.onclick = closeDrawerFn;
 drawerBack.onclick  = closeDrawerFn;
-applyFilters.onclick = () => {
-  barCatSel.value = cat.value; barStatusSel.value = stat.value;
-  currentPage=1; closeDrawerFn(); render();
-};
+applyFilters.onclick = () => { currentPage=1; closeDrawerFn(); render(); };
 clearDatesBtn.onclick = () => { fromI.value=""; toI.value=""; quick.value=""; };
 quick.onchange = () => {
   const days = parseInt(quick.value) || 0;
@@ -407,7 +424,7 @@ quick.onchange = () => {
 resetAllBtn.onclick = () => {
   q.value="";
   sortKey="trend_score"; sortDir="desc"; updateSortUI();
-  cat.value=""; stat.value=""; barCatSel.value=""; barStatusSel.value="";
+  barCatSel.value=""; barStatusSel.value="";
   fromI.value=""; toI.value=""; quick.value="";
   pageSizeSel.value="25"; pageSize=25; currentPage=1; setView("table"); toggleMenu(false); render();
 };
@@ -454,8 +471,8 @@ function getFilteredSortedRows(){
 function renderChips(){
   const chips = [];
   if(q.value) chips.push({k:"search", label:`Search: ${q.value}`, clear:()=>{q.value="";}});
-  if(barCatSel.value) chips.push({k:"category", label:`Category: ${barCatSel.value}`, clear:()=>{barCatSel.value=""; cat.value="";}});
-  if(barStatusSel.value) chips.push({k:"status", label:`Status: ${barStatusSel.value}`, clear:()=>{barStatusSel.value=""; stat.value="";}});
+  if(barCatSel.value) chips.push({k:"category", label:`Category: ${barCatSel.value}`, clear:()=>{barCatSel.value="";}});
+  if(barStatusSel.value) chips.push({k:"status", label:`Status: ${barStatusSel.value}`, clear:()=>{barStatusSel.value="";}});
   if(fromI.value || toI.value) chips.push({k:"dates", label:`Date: ${fromI.value||"…"} → ${toI.value||"…"}`, clear:()=>{fromI.value=""; toI.value=""; quick.value="";}});
   chipsEl.innerHTML = chips.map(c => `<span class="pill chip">${c.label} <button title="clear" data-k="${c.k}">×</button></span>`).join("");
   chipsEl.querySelectorAll("button").forEach(b=>{
@@ -511,21 +528,16 @@ function render(){
       const chips = shown.map(k=>`<span class="kchip">${highlight(k, q.value)}</span>`).join("")
                     + (moreN ? `<span class="kchip">+${moreN}</span>` : "");
       return `
-        <div class="card">
-          <div class="card-body">
+        <div class="card card--inline">
+          <div class="title-wrap">
             <div class="card-title"><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></div>
-            <div class="meta-row">
-              <span class="${catClass(r.category)}">${r.category||""}</span>
-              <div class="meta-right">
-                <span class="${statusClass(r.status||"")}">${(r.status||"").toLowerCase()}</span>
-                <span class="pill" style="padding:2px 6px;">score ${r.trend_score ?? ""}</span>
-              </div>
-            </div>
             ${chips ? `<div class="kchips">${chips}</div>` : ""}
-            <div class="footer">
-              <span class="muted">${(r.published||"").slice(0,10)}</span>
-              <span></span>
-            </div>
+          </div>
+          <div class="right">
+            <span class="${catClass(r.category)}">${r.category||""}</span>
+            <span class="${statusClass(r.status||"")}">${(r.status||"").toLowerCase()}</span>
+            <span class="pill score">score ${r.trend_score ?? ""}</span>
+            <span class="date">${(r.published||"").slice(0,10)}</span>
           </div>
         </div>
       `;
@@ -545,8 +557,8 @@ nextBtn.onclick = () => { currentPage++; render(); };
 function restoreFromUrl(){
   const p = new URLSearchParams(location.search);
   if(p.get("q")) q.value = p.get("q");
-  if(p.get("cat")) { barCatSel.value = p.get("cat"); cat.value = barCatSel.value; }
-  if(p.get("stat")){ barStatusSel.value = p.get("stat"); stat.value = barStatusSel.value; }
+  if(p.get("cat")) { barCatSel.value = p.get("cat"); }
+  if(p.get("stat")){ barStatusSel.value = p.get("stat"); }
   if(p.get("from")) fromI.value = p.get("from");
   if(p.get("to")) toI.value = p.get("to");
   const v = p.get("view"); if(v==="cards") setView("cards"); else setView("table");
