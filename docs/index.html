@@ -10,7 +10,7 @@
   .wrap{max-width:1100px;margin:0 auto}
   header{display:flex;gap:var(--gap);align-items:center;justify-content:space-between;flex-wrap:wrap}
   h1{font-size:28px;margin:0 0 8px}
-  .controls{display:grid;gap:var(--gap);grid-template-columns:repeat(6,minmax(140px,1fr));align-items:center}
+  .controls{display:grid;gap:var(--gap);grid-template-columns:repeat(8,minmax(140px,1fr));align-items:center}
   .search{display:flex;gap:8px;align-items:center}
   .pill{padding:6px 10px;border-radius:999px;background:var(--pill);font-size:12px;border:1px solid var(--border);cursor:pointer}
   input[type="search"],select,input[type="date"]{padding:8px 10px;border:1px solid #ddd;border-radius:8px;width:100%}
@@ -25,26 +25,22 @@
   .pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
   .pager .btn{padding:6px 10px;border:1px solid #ddd;background:#fff;border-radius:8px;cursor:pointer}
   .pager .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .hidden{display:none}
 
-  /* Cards (mobile) */
-  .mobile-sort{display:none;gap:8px;align-items:center;margin:4px 0}
-  .cards{display:none;gap:12px}
+  /* Cards */
+  .cards{display:grid;gap:12px}
   .card{border:1px solid var(--border);border-radius:12px;padding:12px}
   .card .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
   .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:#555}
   .score{padding:2px 8px;border:1px solid var(--border);border-radius:999px}
 
-  /* Responsiveness */
-  @media (max-width: 980px){
-    .controls{grid-template-columns:repeat(4,minmax(140px,1fr))}
-  }
-  @media (max-width: 720px){
-    body{margin:16px}
-    .controls{grid-template-columns:repeat(2,minmax(150px,1fr))}
-    table{display:none}
-    .cards{display:grid}
-    .mobile-sort{display:flex}
-  }
+  /* segmented buttons */
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .seg button{padding:8px 12px;border:0;background:#fff;cursor:pointer}
+  .seg button.active{background:#111;color:#fff}
+  /* responsive grid tweaks */
+  @media (max-width: 980px){ .controls{grid-template-columns:repeat(4,minmax(140px,1fr))} }
+  @media (max-width: 720px){ body{margin:16px} .controls{grid-template-columns:repeat(2,minmax(150px,1fr))} }
 </style>
 
 <div class="wrap">
@@ -63,8 +59,13 @@
           <option>emerging</option><option>bubbling</option><option>mainstream</option>
         </select>
       </label>
+
+      <!-- Date range (Clear next to From/To) -->
       <label>From: <input id="from" type="date"></label>
       <label>To: <input id="to" type="date"></label>
+      <button id="clearDates" type="button" class="pill">Clear dates</button>
+
+      <!-- Quick after the date block -->
       <label>Quick:
         <select id="quick">
           <option value="">All time</option>
@@ -73,8 +74,31 @@
           <option value="90">Last 90 days</option>
         </select>
       </label>
-      <button id="clearDates" type="button" class="pill">Clear dates</button>
 
+      <!-- View + Sort controls (always available) -->
+      <div>
+        <label style="display:block;margin-bottom:6px">View:</label>
+        <div class="seg">
+          <button id="viewList" class="active" type="button">List</button>
+          <button id="viewCards" type="button">Cards</button>
+        </div>
+      </div>
+      <div>
+        <label style="display:block;margin-bottom:6px">Sort:</label>
+        <div style="display:flex;gap:8px">
+          <select id="sortKey">
+            <option value="trend_score" selected>Trend score</option>
+            <option value="published">Published</option>
+            <option value="title">Title</option>
+            <option value="category">Category</option>
+            <option value="primary_keyword">Keyword</option>
+            <option value="status">Status</option>
+          </select>
+          <button id="sortDir" class="pill" type="button">↓ Desc</button>
+        </div>
+      </div>
+
+      <!-- Search + download full width -->
       <div class="search" style="grid-column:1 / -1">
         <input id="q" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" />
         <a id="dl" class="pill" href="signals_simple.csv" download>Download CSV</a>
@@ -82,24 +106,9 @@
     </div>
   </header>
 
-  <!-- Mobile sort controls -->
-  <div class="mobile-sort">
-    <label>Sort:
-      <select id="sortKeyMobile">
-        <option value="trend_score" selected>Trend score</option>
-        <option value="published">Published</option>
-        <option value="title">Title</option>
-        <option value="category">Category</option>
-        <option value="primary_keyword">Keyword</option>
-        <option value="status">Status</option>
-      </select>
-    </label>
-    <button id="sortDirMobile" class="pill" type="button">↓ Desc</button>
-  </div>
-
   <div id="counts">Loading…</div>
 
-  <!-- Desktop table -->
+  <!-- Desktop table (List view) -->
   <table id="tbl">
     <thead>
       <tr>
@@ -114,8 +123,8 @@
     <tbody></tbody>
   </table>
 
-  <!-- Mobile cards -->
-  <div id="cards" class="cards"></div>
+  <!-- Cards view -->
+  <div id="cards" class="cards hidden"></div>
 
   <div class="pager">
     <span>Rows per page:</span>
@@ -132,36 +141,37 @@
 </div>
 
 <script>
-const tbody   = document.querySelector("#tbl tbody");
-const cardsEl = document.getElementById("cards");
-const cat     = document.getElementById("cat");
-const stat    = document.getElementById("stat");
-const q       = document.getElementById("q");
-const counts  = document.getElementById("counts");
-const headers = [...document.querySelectorAll("th.sortable")];
+const tbody     = document.querySelector("#tbl tbody");
+const cardsEl   = document.getElementById("cards");
+const counts    = document.getElementById("counts");
+const headers   = [...document.querySelectorAll("th.sortable")];
 
-const fromInp = document.getElementById("from");
-const toInp   = document.getElementById("to");
-const quick   = document.getElementById("quick");
-const clearBtn= document.getElementById("clearDates");
+const cat   = document.getElementById("cat");
+const stat  = document.getElementById("stat");
+const q     = document.getElementById("q");
+const fromI = document.getElementById("from");
+const toI   = document.getElementById("to");
+const quick = document.getElementById("quick");
+const clearBtn = document.getElementById("clearDates");
 
 const pageSizeSel = document.getElementById("pageSize");
 const prevBtn  = document.getElementById("prevBtn");
 const nextBtn  = document.getElementById("nextBtn");
 const pageInfo = document.getElementById("pageInfo");
 
-// mobile sort controls
-const sortKeyMob = document.getElementById("sortKeyMobile");
-const sortDirMob = document.getElementById("sortDirMobile");
+const viewListBtn  = document.getElementById("viewList");
+const viewCardsBtn = document.getElementById("viewCards");
+const sortKeySel   = document.getElementById("sortKey");
+const sortDirBtn   = document.getElementById("sortDir");
 
 let rowsAll = [];
-let sortKey = "trend_score";   // default sort
+let viewMode = "list";            // "list" or "cards"
+let sortKey = "trend_score";      // default sort
 let sortDir = "desc";
 let currentPage = 1;
 let pageSize = parseInt(pageSizeSel.value,10) || 50;
 
 const statusOrder = {emerging:0, bubbling:1, mainstream:2};
-const isMobile = () => window.matchMedia("(max-width: 720px)").matches;
 
 function escRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 
@@ -193,22 +203,28 @@ function setSort(key){
     sortKey = key;
     sortDir = (key === "trend_score" || key === "published") ? "desc" : "asc";
   }
+  sortKeySel.value = sortKey;
+  sortDirBtn.textContent = (sortDir==="asc"?"↑ Asc":"↓ Desc");
   currentPage = 1;
-  // desktop header arrows
   headers.forEach(h=>{
     h.classList.toggle("active", h.dataset.key === sortKey);
     h.querySelector(".arrow").textContent = h.dataset.key === sortKey ? (sortDir==="asc"?"↑":"↓") : "↕";
   });
-  // mobile selects
-  sortKeyMob.value = sortKey;
-  sortDirMob.textContent = (sortDir==="asc"?"↑ Asc":"↓ Desc");
   render();
 }
 headers.forEach(h => h.addEventListener("click", () => setSort(h.dataset.key)));
 
-function tokenize(s){
-  return (s||"").toLowerCase().trim().split(/\s+/).filter(Boolean);
+function setView(mode){
+  viewMode = mode;
+  viewListBtn.classList.toggle("active", mode==="list");
+  viewCardsBtn.classList.toggle("active", mode==="cards");
+  document.getElementById("tbl").classList.toggle("hidden", mode!=="list");
+  cardsEl.classList.toggle("hidden", mode!=="cards");
+  currentPage = 1;
+  render();
 }
+
+function tokenize(s){ return (s||"").toLowerCase().trim().split(/\s+/).filter(Boolean); }
 function matches(row, query){
   const toks = tokenize(query);
   if(!toks.length) return true;
@@ -231,19 +247,18 @@ function highlight(str, query){
 function dayStartISO(d){ return new Date(new Date(d).setUTCHours(0,0,0,0)); }
 function dayEndISO(d){ return new Date(new Date(d).setUTCHours(23,59,59,999)); }
 function applyQuickRange(days){
-  if(!days){ fromInp.value=""; toInp.value=""; currentPage=1; render(); return; }
+  if(!days){ fromI.value=""; toI.value=""; currentPage=1; render(); return; }
   const today = new Date();
   const start = new Date(today.getTime() - days*86400000);
-  fromInp.value = start.toISOString().slice(0,10);
-  toInp.value   = today.toISOString().slice(0,10);
-  currentPage = 1;
-  render();
+  fromI.value = start.toISOString().slice(0,10);
+  toI.value   = today.toISOString().slice(0,10);
+  currentPage = 1; render();
 }
 
 function getFilteredSortedRows(){
   const c=cat.value, s=stat.value, query=q.value;
-  const fromMs = fromInp.value ? dayStartISO(fromInp.value).getTime() : -Infinity;
-  const toMs   = toInp.value   ? dayEndISO(toInp.value).getTime()   :  Infinity;
+  const fromMs = fromI.value ? dayStartISO(fromI.value).getTime() : -Infinity;
+  const toMs   = toI.value   ? dayEndISO(toI.value).getTime()   :  Infinity;
 
   let rows = rowsAll.filter(r => {
     if (c && r.category !== c) return false;
@@ -271,8 +286,7 @@ function render(){
   const end   = Math.min(start + pageSize, total);
   const slice = rows.slice(start, end);
 
-  if(isMobile()){
-    // render cards
+  if(viewMode==="cards"){
     cardsEl.innerHTML = slice.map(r => `
       <div class="card">
         <div class="top">
@@ -288,7 +302,6 @@ function render(){
       </div>
     `).join("");
   } else {
-    // render table rows
     tbody.innerHTML = slice.map(r => `
       <tr>
         <td>${(r.published||"").slice(0,10)}</td>
@@ -319,28 +332,27 @@ cat.onchange = () => { currentPage=1; render(); };
 stat.onchange = () => { currentPage=1; render(); };
 q.addEventListener("input", () => { currentPage=1; render(); });
 window.addEventListener("keydown", e => { if(e.key === "Escape"){ q.value=""; currentPage=1; render(); }});
-fromInp.onchange = () => { currentPage=1; render(); };
-toInp.onchange   = () => { currentPage=1; render(); };
-quick.onchange   = () => applyQuickRange(parseInt(quick.value) || 0);
-clearBtn.onclick = () => { fromInp.value=""; toInp.value=""; quick.value=""; currentPage=1; render(); };
+fromI.onchange = () => { currentPage=1; render(); };
+toI.onchange   = () => { currentPage=1; render(); };
+quick.onchange = () => applyQuickRange(parseInt(quick.value) || 0);
+clearBtn.onclick = () => { fromI.value=""; toI.value=""; quick.value=""; currentPage=1; render(); };
 
 pageSizeSel.onchange = () => { pageSize = parseInt(pageSizeSel.value,10) || 50; currentPage=1; render(); };
 prevBtn.onclick = () => { if(currentPage>1){ currentPage--; render(); } };
 nextBtn.onclick = () => { currentPage++; render(); };
 
-// mobile sort controls
-sortKeyMob.onchange = () => { setSort(sortKeyMob.value); };
-sortDirMob.onclick = () => { sortDir = (sortDir==="asc"?"desc":"asc"); setSort(sortKey); };
+viewListBtn.onclick  = () => setView("list");
+viewCardsBtn.onclick = () => setView("cards");
 
-// re-render on resize when switching views
-window.addEventListener("resize", () => render());
+sortKeySel.onchange = () => setSort(sortKeySel.value);
+sortDirBtn.onclick  = () => { sortDir = (sortDir==="asc"?"desc":"asc"); setSort(sortKey); };
 
 function load(){
   const bust = new Date().toISOString().slice(0,10); // daily cache-bust
   fetch("signals_simple.csv?ts="+bust)
     .then(r => r.text())
     .then(csv => Papa.parse(csv, {header:true, skipEmptyLines:true}))
-    .then(res => { rowsAll = res.data; setSort("trend_score"); }) // default sort: score ↓
+    .then(res => { rowsAll = res.data; setSort("trend_score"); setView("list"); })
     .catch(() => { counts.textContent = "Failed to load CSV"; });
 }
 load();
