@@ -10,24 +10,37 @@
     --bg:#ffffff; --fg:#141414; --muted:#6b7280;
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
+
+    /* Category palette */
+    --fashion-bg:#fff1f2; --fashion-bd:#fecdd3; --fashion-fg:#9f1239;  /* rose */
+    --beauty-bg:#eef2ff;  --beauty-bd:#c7d2fe; --beauty-fg:#3730a3;   /* indigo */
+    --wellness-bg:#ecfeff;--wellness-bd:#a5f3fc;--wellness-fg:#155e75;/* cyan */
   }
   :root.dark{
     --bg:#0b0b0c; --fg:#f2f3f5; --muted:#a3a7ae;
     --card:#121317; --border:#2b2f36; --pill:#1b1f25; --accent:#e5e7eb;
     --shadow:0 10px 30px rgba(0,0,0,.35);
+
+    --fashion-bg:#3b0b12; --fashion-bd:#701a29; --fashion-fg:#fecdd3;
+    --beauty-bg:#1e1b4b;  --beauty-bd:#3730a3; --beauty-fg:#c7d2fe;
+    --wellness-bg:#0b3a42;--wellness-bd:#0e7490;--wellness-fg:#a5f3fc;
   }
+
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
   a{color:#2563eb;text-decoration:none} a:hover{text-decoration:underline}
   .wrap{max-width:1100px;margin:0 auto;padding:20px}
   h1{margin:0 0 8px;font-size:28px}
 
-  /* sticky toolbar */
+  /* sticky toolbar w/ compact mode */
   .bar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(10px);
-    background:color-mix(in oklab, var(--bg) 90%, transparent); border-bottom:1px solid var(--border)}
-  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .title{font-weight:700;font-size:18px}
-  .spacer{flex:1} /* pushes More to the right */
+    background:color-mix(in oklab, var(--bg) 90%, transparent); border-bottom:1px solid var(--border);
+    transition:padding .2s ease, backdrop-filter .2s ease}
+  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;transition:padding .2s ease}
+  .bar.compact .bar-inner{padding:8px 20px}
+  .title{font-weight:700;font-size:18px;transition:transform .2s ease}
+  .bar.compact .title{transform:translateY(-1px)}
+  .spacer{flex:1}
 
   .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
   .seg button{padding:8px 12px;border:0;background:var(--card);color:var(--fg);cursor:pointer}
@@ -57,6 +70,7 @@
   table{width:100%;border-collapse:collapse;margin-top:10px}
   th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
   th{position:sticky;top:64px;background:var(--bg);z-index:1}
+  .bar.compact ~ .wrap table th{top:56px}
   th.sortable{cursor:pointer}
   th .arrow{opacity:.35;margin-left:6px}
   th.active .arrow{opacity:1}
@@ -69,13 +83,19 @@
   .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;color:var(--muted)}
   .score{padding:2px 8px;border:1px solid var(--border);border-radius:999px}
 
+  /* Category tag skins */
+  .tag{font-weight:600}
+  .tag--fashion{background:var(--fashion-bg); border-color:var(--fashion-bd); color:var(--fashion-fg)}
+  .tag--beauty{ background:var(--beauty-bg);  border-color:var(--beauty-bd);  color:var(--beauty-fg)}
+  .tag--wellness{background:var(--wellness-bg);border-color:var(--wellness-bd);color:var(--wellness-fg)}
+
   /* Pager */
   .pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin:16px 0;flex-wrap:wrap}
   .muted{color:var(--muted)}
 
   /* Menu */
   .menu{position:relative}
-  .menu-panel{display:none;position:absolute;right:0;top:calc(100% + 8px);min-width:220px;background:var(--card);
+  .menu-panel{display:none;position:absolute;right:0;top:calc(100% + 8px);min-width:240px;background:var(--card);
     border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:8px;z-index:60}
   .menu-panel button,.menu-panel a{display:flex;gap:8px;align-items:center;width:100%;padding:10px;border-radius:8px;border:0;background:transparent;color:var(--fg);text-decoration:none;cursor:pointer}
   .menu-panel button:hover,.menu-panel a:hover{background:var(--pill)}
@@ -85,11 +105,11 @@
   }
 </style>
 
-<div class="bar">
+<div class="bar" id="bar">
   <div class="bar-inner">
     <div class="title">The Futures Edit — Signals</div>
 
-    <!-- search stays wide -->
+    <!-- wide search -->
     <div class="search">
       <input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" />
     </div>
@@ -109,17 +129,19 @@
     </select>
     <button id="sortDir" class="icon-btn" title="Toggle sort direction">↓ Desc</button>
 
-    <!-- Dates gets priority over Filters; More pinned right -->
+    <!-- Dates & Filters -->
     <button id="datesBtn" class="icon-btn">📅 Dates</button>
     <button id="filtersBtn" class="icon-btn">⚙️ Filters</button>
 
     <div class="spacer"></div>
 
+    <!-- More pinned right -->
     <div class="menu">
       <button class="icon-btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">⋯ More</button>
       <div class="menu-panel" id="moreMenu" role="menu">
         <a href="signals_simple.csv" download>⬇️ Download CSV</a>
         <button id="copyFiltered">📋 Copy filtered CSV</button>
+        <button id="copyShare">🔗 Copy share link</button>
         <button id="resetAll">↺ Reset all</button>
         <button id="darkToggle">🌓 Toggle dark mode</button>
         <a href="https://github.com/atelierfutures/futures-edit-signals" target="_blank" rel="noopener">ℹ️ Repository</a>
@@ -196,6 +218,7 @@
 
 <script>
 /* ---------- refs ---------- */
+const bar = document.getElementById("bar");
 const tbody   = document.querySelector("#tbl tbody");
 const cardsEl = document.getElementById("cards");
 const counts  = document.getElementById("counts");
@@ -230,6 +253,7 @@ const clearDatesBtn = document.getElementById("clearDates");
 const moreBtn  = document.getElementById("moreBtn");
 const moreMenu = document.getElementById("moreMenu");
 const copyFilteredBtn = document.getElementById("copyFiltered");
+const copyShareBtn = document.getElementById("copyShare");
 const resetAllBtn = document.getElementById("resetAll");
 const darkToggleBtn = document.getElementById("darkToggle");
 
@@ -243,18 +267,21 @@ let pageSize = parseInt(pageSizeSel.value,10) || 50;
 
 const statusOrder = {emerging:0, bubbling:1, mainstream:2};
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const catClass = c => c && ["fashion","beauty","wellness"].includes(c) ? `tag tag--${c}` : "pill";
+
+/* ---------- compact header ---------- */
+window.addEventListener("scroll", ()=> {
+  bar.classList.toggle("compact", window.scrollY > 10);
+});
 
 /* ---------- theme ---------- */
-(function initTheme(){
-  const saved = localStorage.getItem("fe_theme");
-  if(saved === "dark") document.documentElement.classList.add("dark");
-})();
+(()=>{ const saved = localStorage.getItem("fe_theme"); if(saved==="dark") document.documentElement.classList.add("dark"); })();
 darkToggleBtn.onclick = () => {
   document.documentElement.classList.toggle("dark");
   localStorage.setItem("fe_theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
 };
 
-/* ---------- sorting (fixed direction toggle) ---------- */
+/* ---------- sorting ---------- */
 function updateSortUI(){
   sortKeySel.value = sortKey;
   sortDirBtn.textContent = (sortDir==="asc" ? "↑ Asc" : "↓ Desc");
@@ -287,13 +314,11 @@ function cmp(a,b,key){
 function setSort(key){
   if(sortKey === key){ sortDir = (sortDir === "asc") ? "desc" : "asc"; }
   else { sortKey = key; sortDir = (key === "trend_score" || key === "published") ? "desc" : "asc"; }
-  currentPage = 1;
-  updateSortUI();
-  render();
+  currentPage = 1; updateSortUI(); render();
 }
 headers.forEach(h => h.addEventListener("click", () => setSort(h.dataset.key)));
-sortKeySel.onchange = () => { sortKey = sortKeySel.value; /* keep dir */ currentPage=1; updateSortUI(); render(); };
-sortDirBtn.onclick = () => { sortDir = (sortDir==="asc"?"desc":"asc"); currentPage=1; updateSortUI(); render(); };
+sortKeySel.onchange = () => { sortKey = sortKeySel.value; currentPage=1; updateSortUI(); render(); };
+sortDirBtn.onclick   = () => { sortDir = (sortDir==="asc"?"desc":"asc"); currentPage=1; updateSortUI(); render(); };
 
 /* ---------- view ---------- */
 function setView(mode){
@@ -324,9 +349,14 @@ function highlight(str, query){
   return out;
 }
 q.addEventListener("input", () => { currentPage=1; render(); });
-window.addEventListener("keydown", e => { if(e.key === "Escape"){ if(drawer.style.display==="block"){ closeDrawerFn(); } else { q.value=""; currentPage=1; render(); }}});
+window.addEventListener("keydown", e => {
+  if(e.key === "Escape"){
+    if(drawer.style.display==="block"){ closeDrawerFn(); }
+    else { q.value=""; currentPage=1; render(); }
+  }
+});
 
-/* ---------- drawer open/close (works in any view) ---------- */
+/* ---------- drawer open/close ---------- */
 function openDrawer(){ drawerBack.style.display="block"; drawer.style.display="block"; document.body.style.overflow="hidden"; }
 function closeDrawerFn(){ drawerBack.style.display="none"; drawer.style.display="none"; document.body.style.overflow=""; }
 filtersBtn.onclick = () => openDrawer();
@@ -344,7 +374,7 @@ quick.onchange = () => {
   toI.value   = today.toISOString().slice(0,10);
 };
 
-/* ---------- More menu (right) ---------- */
+/* ---------- More menu ---------- */
 function toggleMenu(open){
   moreMenu.style.display = open ? "block" : "none";
   moreBtn.setAttribute("aria-expanded", open ? "true" : "false");
@@ -352,7 +382,7 @@ function toggleMenu(open){
 moreBtn.onclick = (e)=>{ e.stopPropagation(); toggleMenu(getComputedStyle(moreMenu).display==="none"); };
 document.addEventListener("click", (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn) toggleMenu(false); });
 
-/* reset & copy */
+/* Reset / Copy CSV / Copy share link */
 resetAllBtn.onclick = () => {
   q.value=""; sortKey="trend_score"; sortDir="desc"; updateSortUI();
   cat.value=""; stat.value=""; fromI.value=""; toI.value=""; quick.value="";
@@ -362,15 +392,18 @@ copyFilteredBtn.onclick = async () => {
   const rows = getFilteredSortedRows();
   const header = ["published","title","link","category","primary_keyword","trend_score","status"];
   const csv = [header.join(",")].concat(rows.map(r => header.map(h => `"${(r[h]??"").toString().replace(/"/g,'""')}"`).join(","))).join("\n");
-  try {
-    await navigator.clipboard.writeText(csv);
-    copyFilteredBtn.textContent = "✅ Copied!";
-    setTimeout(()=> copyFilteredBtn.textContent="📋 Copy filtered CSV", 1500);
+  try { await navigator.clipboard.writeText(csv);
+    copyFilteredBtn.textContent = "✅ Copied!"; setTimeout(()=> copyFilteredBtn.textContent="📋 Copy filtered CSV", 1500);
   } catch {
-    const blob = new Blob([csv], {type:"text/csv"});
-    const a = Object.assign(document.createElement("a"), {href:URL.createObjectURL(blob), download:"signals_filtered.csv"});
-    document.body.appendChild(a); a.click(); a.remove();
+    const blob = new Blob([csv], {type:"text/csv"}); const a = Object.assign(document.createElement("a"), {href:URL.createObjectURL(blob), download:"signals_filtered.csv"}); document.body.appendChild(a); a.click(); a.remove();
   }
+};
+copyShareBtn.onclick = async () => {
+  const url = new URL(location.href);
+  url.search = buildQuery().toString();
+  try { await navigator.clipboard.writeText(url.toString());
+    copyShareBtn.textContent = "✅ Link copied!"; setTimeout(()=> copyShareBtn.textContent="🔗 Copy share link", 1500);
+  } catch { /* ignore */ }
 };
 
 /* ---------- pipeline ---------- */
@@ -407,16 +440,36 @@ function renderChips(){
   });
 }
 
+/* ---------- URL state (shareable) ---------- */
+function buildQuery(){
+  const p = new URLSearchParams();
+  if(q.value) p.set("q", q.value);
+  if(cat.value) p.set("cat", cat.value);
+  if(stat.value) p.set("stat", stat.value);
+  if(fromI.value) p.set("from", fromI.value);
+  if(toI.value) p.set("to", toI.value);
+  if(viewMode!=="list") p.set("view", viewMode);
+  if(sortKey!=="trend_score") p.set("sort", sortKey);
+  if(sortDir!=="desc") p.set("dir", sortDir);
+  if(pageSize!==50) p.set("size", String(pageSize));
+  if(currentPage!==1) p.set("page", String(currentPage));
+  return p;
+}
+function syncUrl(){ history.replaceState(null, "", "?"+buildQuery().toString()); }
+
+/* ---------- render ---------- */
 function render(){
   const rows = getFilteredSortedRows();
   const total = rows.length;
 
+  // pagination
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   if (currentPage > totalPages) currentPage = totalPages;
   const start = (currentPage-1) * pageSize;
   const end   = Math.min(start + pageSize, total);
   const slice = rows.slice(start, end);
 
+  // counts
   const cats = ["fashion","beauty","wellness"].map(k => [k, rows.filter(x=>x.category===k).length]);
   const stats= ["emerging","bubbling","mainstream"].map(k => [k, rows.filter(x=>(x.status||"").toLowerCase()===k).length]);
   counts.textContent = `Showing ${start+1}-${end} of ${total} • ` +
@@ -431,7 +484,7 @@ function render(){
       <tr>
         <td>${(r.published||"").slice(0,10)}</td>
         <td><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></td>
-        <td><span class="pill">${r.category||""}</span></td>
+        <td><span class="${catClass(r.category)}">${r.category||""}</span></td>
         <td>${highlight(r.primary_keyword||"", q.value)}</td>
         <td>${r.trend_score ?? ""}</td>
         <td><span class="pill">${(r.status||"").toLowerCase()}</span></td>
@@ -446,7 +499,7 @@ function render(){
         </div>
         <a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a>
         <div class="meta">
-          <span class="pill">${r.category||""}</span>
+          <span class="${catClass(r.category)}">${r.category||""}</span>
           ${r.primary_keyword ? `<span>${highlight(r.primary_keyword, q.value)}</span>` : ""}
           <span class="score">score ${r.trend_score ?? ""}</span>
         </div>
@@ -455,6 +508,7 @@ function render(){
   }
 
   renderChips();
+  syncUrl(); // update URL with current state
 }
 
 /* paging */
@@ -462,13 +516,28 @@ pageSizeSel.onchange = () => { pageSize = parseInt(pageSizeSel.value,10) || 50; 
 prevBtn.onclick = () => { if(currentPage>1){ currentPage--; render(); } };
 nextBtn.onclick = () => { currentPage++; render(); };
 
-/* load */
+/* load + restore state from URL */
+function restoreFromUrl(){
+  const p = new URLSearchParams(location.search);
+  if(p.get("q")) q.value = p.get("q");
+  if(p.get("cat")) cat.value = p.get("cat");
+  if(p.get("stat")) stat.value = p.get("stat");
+  if(p.get("from")) fromI.value = p.get("from");
+  if(p.get("to")) toI.value = p.get("to");
+  const v = p.get("view"); if(v==="cards") setView("cards"); else setView("list");
+  const sk = p.get("sort"); if(sk){ sortKey = sk; }
+  const sd = p.get("dir"); if(sd){ sortDir = sd; }
+  const ps = parseInt(p.get("size")||"50",10); pageSize = ps; pageSizeSel.value = String(ps);
+  const pg = parseInt(p.get("page")||"1",10); currentPage = Math.max(1, pg);
+  updateSortUI();
+}
 function load(){
+  restoreFromUrl();
   const bust = new Date().toISOString().slice(0,10);
   fetch("signals_simple.csv?ts="+bust)
     .then(r => r.text())
     .then(csv => Papa.parse(csv, {header:true, skipEmptyLines:true}))
-    .then(res => { rowsAll = res.data; updateSortUI(); setView("list"); setSort("trend_score"); })
+    .then(res => { rowsAll = res.data; render(); })
     .catch(() => { counts.textContent = "Failed to load CSV"; });
 }
 load();
