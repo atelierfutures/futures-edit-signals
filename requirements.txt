@@ -1,0 +1,10 @@
+feedparser
+beautifulsoup4
+pandas
+numpy
+pyyaml
+python-dateutil
+tqdm
+yake
+langdetect
+papermill
