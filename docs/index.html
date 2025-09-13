@@ -97,9 +97,11 @@
   table{width:100%;border-collapse:collapse;margin-top:10px}
   th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
   th{position:sticky;top:64px;background:var(--bg);z-index:1}
-  th.sortable{cursor:pointer}
-  th .arrow{opacity:.35;margin-left:6px}
-  th.active .arrow{opacity:1}
+  th.sortable{cursor:pointer; white-space:nowrap; }
+  /* Hide arrow by default; show only on the active (sorted) header */
+  th .arrow{ display:none; margin-left:6px; font-weight:600; color:var(--muted); }
+  th.active .arrow{ display:inline-block; }
+  .hlabel{ display:inline-block; vertical-align:middle; }
 
   /* Cards — line1 date, line2 title, line3 meta */
   .cards{
@@ -197,12 +199,12 @@
   <table id="tbl">
     <thead>
       <tr>
-        <th class="sortable" data-key="published">Published <span class="arrow">↕</span> <span class="muted">(Madrid)</span></th>
-        <th class="sortable" data-key="title">Title <span class="arrow">↕</span></th>
-        <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow">↕</span></th>
-        <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow">↕</span></th>
-        <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow">↕</span></th>
-        <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow">↕</span></th>
+        <th class="sortable" data-key="published"><span class="hlabel">Published</span><span class="arrow"></span></th>
+        <th class="sortable" data-key="title"><span class="hlabel">Title</span><span class="arrow"></span></th>
+        <th class="sortable" data-key="category" style="width:110px"><span class="hlabel">Category</span><span class="arrow"></span></th>
+        <th class="sortable" data-key="primary_keyword" style="width:180px"><span class="hlabel">Keyword</span><span class="arrow"></span></th>
+        <th class="sortable" data-key="trend_score" style="width:120px"><span class="hlabel">Trend score</span><span class="arrow"></span></th>
+        <th class="sortable" data-key="status" style="width:120px"><span class="hlabel">Status</span><span class="arrow"></span></th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -377,9 +379,10 @@ document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') toggleMenu(fals
 function updateSortUI(){
   sortKeySel.value = sortKey;
   headers.forEach(h=>{
-    h.classList.toggle("active", h.dataset.key === sortKey);
+    const isActive = h.dataset.key === sortKey;
+    h.classList.toggle("active", isActive);
     const arrow = h.querySelector(".arrow");
-    if(arrow) arrow.textContent = h.dataset.key === sortKey ? (sortDir==="asc"?"↑":"↓") : "↕";
+    if(arrow) arrow.textContent = isActive ? (sortDir==="asc"?"▲":"▼") : "";
   });
 }
 function cmp(a,b,key){
