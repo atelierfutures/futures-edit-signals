@@ -1,3 +1,91 @@
-<!doctype html><meta charset="utf-8">
-<h1>Futures Edit — Site is live ✅</h1>
-<p>This page proves GitHub Pages is working.</p>
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>The Futures Edit — Signals</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:24px;max-width:1100px}
+  header{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .pill{padding:2px 8px;border-radius:999px;background:#f2f2f2;font-size:12px}
+  .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left}
+  th{background:#fafafa;position:sticky;top:0}
+  #counts{font-size:14px;color:#555}
+</style>
+
+<header>
+  <h1>The Futures Edit — Signals (auto)</h1>
+  <div class="controls">
+    <label>Category:
+      <select id="cat">
+        <option value="">All</option>
+        <option>fashion</option><option>beauty</option><option>wellness</option>
+      </select>
+    </label>
+    <label>Status:
+      <select id="stat">
+        <option value="">All</option>
+        <option>emerging</option><option>bubbling</option><option>mainstream</option>
+      </select>
+    </label>
+    <a id="dl" class="pill" href="signals_simple.csv" download>Download CSV</a>
+  </div>
+</header>
+
+<div id="counts">Loading…</div>
+
+<table id="tbl">
+  <thead>
+    <tr>
+      <th style="width:110px">Published</th>
+      <th>Title</th>
+      <th style="width:110px">Category</th>
+      <th style="width:180px">Keyword</th>
+      <th style="width:120px">Trend score</th>
+      <th style="width:120px">Status</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+const tbody = document.querySelector("#tbl tbody");
+const cat   = document.getElementById("cat");
+const stat  = document.getElementById("stat");
+const counts= document.getElementById("counts");
+let rowsAll = [];
+
+function render(){
+  const c=cat.value, s=stat.value;
+  const rows = rowsAll.filter(r => (!c || r.category===c) && (!s || (r.status||"").toLowerCase()===s));
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${(r.published||"").slice(0,10)}</td>
+      <td><a href="${r.link}" target="_blank" rel="noopener">${r.title}</a></td>
+      <td><span class="pill">${r.category||""}</span></td>
+      <td>${r.primary_keyword||""}</td>
+      <td>${r.trend_score ?? ""}</td>
+      <td><span class="pill">${(r.status||"").toLowerCase()}</span></td>
+    </tr>
+  `).join("");
+
+  const cats = ["fashion","beauty","wellness"].map(k => [k, rows.filter(x=>x.category===k).length]);
+  const stats= ["emerging","bubbling","mainstream"].map(k => [k, rows.filter(x=>(x.status||"").toLowerCase()===k).length]);
+  counts.textContent = `Showing ${rows.length} • ` +
+    cats.map(x=>`${x[0]} ${x[1]}`).join(" • ") + " • " +
+    stats.map(x=>`${x[0]} ${x[1]}`).join(" • ");
+}
+
+function load(){
+  const bust = new Date().toISOString().slice(0,10); // cache-bust daily
+  fetch("signals_simple.csv?ts="+bust)
+    .then(r => r.text())
+    .then(csv => Papa.parse(csv, {header:true, skipEmptyLines:true}))
+    .then(res => { rowsAll = res.data; render(); })
+    .catch(() => { counts.textContent = "Failed to load CSV"; });
+}
+cat.onchange = stat.onchange = render;
+load();
+</script>
