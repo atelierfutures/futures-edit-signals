@@ -9,6 +9,8 @@
   header{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
   .pill{padding:2px 8px;border-radius:999px;background:#f2f2f2;font-size:12px}
   .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0}
+  .search{display:flex;gap:8px;align-items:center}
+  .search input{padding:8px 10px;border:1px solid #ddd;border-radius:8px;min-width:260px}
   table{width:100%;border-collapse:collapse}
   th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left}
   th{background:#fafafa;position:sticky;top:0}
@@ -16,6 +18,7 @@
   th.sortable .arrow{opacity:.35;margin-left:6px}
   th.sortable.active .arrow{opacity:1}
   #counts{font-size:14px;color:#555}
+  mark{background:#ffe58a;padding:0 .15em;border-radius:3px}
 </style>
 
 <header>
@@ -33,7 +36,10 @@
         <option>emerging</option><option>bubbling</option><option>mainstream</option>
       </select>
     </label>
-    <a id="dl" class="pill" href="signals_simple.csv" download>Download CSV</a>
+    <div class="search">
+      <input id="q" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" />
+      <a id="dl" class="pill" href="signals_simple.csv" download>Download CSV</a>
+    </div>
   </div>
 </header>
 
@@ -54,10 +60,11 @@
 </table>
 
 <script>
-const tbody = document.querySelector("#tbl tbody");
-const cat   = document.getElementById("cat");
-const stat  = document.getElementById("stat");
-const counts= document.getElementById("counts");
+const tbody   = document.querySelector("#tbl tbody");
+const cat     = document.getElementById("cat");
+const stat    = document.getElementById("stat");
+const q       = document.getElementById("q");
+const counts  = document.getElementById("counts");
 const headers = [...document.querySelectorAll("th.sortable")];
 
 let rowsAll = [];
@@ -65,6 +72,8 @@ let sortKey = "trend_score";   // default
 let sortDir = "desc";          // default
 
 const statusOrder = {emerging:0, bubbling:1, mainstream:2};
+
+function escRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 
 function cmp(a,b,key){
   const dir = sortDir === "asc" ? 1 : -1;
@@ -99,20 +108,41 @@ function setSort(key){
   });
   render();
 }
-
 headers.forEach(h => h.addEventListener("click", () => setSort(h.dataset.key)));
 
+function tokenize(s){
+  return (s||"").toLowerCase().trim().split(/\s+/).filter(Boolean);
+}
+function matches(row, query){
+  const toks = tokenize(query);
+  if(!toks.length) return true;
+  const hay = [
+    row.title||"", row.primary_keyword||"",
+    row.category||"", (row.status||"").toLowerCase()
+  ].join(" ").toLowerCase();
+  return toks.every(t => hay.includes(t));
+}
+function highlight(str, query){
+  let out = str||"";
+  const toks = tokenize(query);
+  toks.forEach(t=>{
+    const re = new RegExp("(" + escRegExp(t) + ")", "ig");
+    out = out.replace(re, "<mark>$1</mark>");
+  });
+  return out;
+}
+
 function render(){
-  const c=cat.value, s=stat.value;
-  let rows = rowsAll.filter(r => (!c || r.category===c) && (!s || (r.status||"").toLowerCase()===s));
+  const c=cat.value, s=stat.value, query=q.value;
+  let rows = rowsAll.filter(r => (!c || r.category===c) && (!s || (r.status||"").toLowerCase()===s) && matches(r, query));
   rows = rows.sort((a,b)=>cmp(a,b,sortKey));
 
   tbody.innerHTML = rows.map(r => `
     <tr>
       <td>${(r.published||"").slice(0,10)}</td>
-      <td><a href="${r.link}" target="_blank" rel="noopener">${r.title}</a></td>
+      <td><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, query)}</a></td>
       <td><span class="pill">${r.category||""}</span></td>
-      <td>${r.primary_keyword||""}</td>
+      <td>${highlight(r.primary_keyword||"", query)}</td>
       <td>${r.trend_score ?? ""}</td>
       <td><span class="pill">${(r.status||"").toLowerCase()}</span></td>
     </tr>
@@ -134,5 +164,9 @@ function load(){
     .catch(() => { counts.textContent = "Failed to load CSV"; });
 }
 cat.onchange = stat.onchange = render;
+q.addEventListener("input", () => { render(); });
+window.addEventListener("keydown", e => {
+  if(e.key === "Escape"){ q.value=""; render(); }
+});
 load();
 </script>
