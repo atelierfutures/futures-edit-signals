@@ -1,7 +1,7 @@
 <!doctype html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Tags Graph & Metrics</title>
+<title>Signals — Graphs & Insights</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
@@ -38,12 +38,13 @@
   canvas{max-width:100%;height:340px}
   .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
   .small{font-size:12px;color:var(--muted)}
+  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
 </style>
 
 <div class="bar">
   <div class="bar-inner">
     <a class="btn" href="./">← Signals list</a>
-    <div class="title">Tags Graph</div>
+    <div class="title">Graphs & Insights</div>
 
     <select id="cat" class="select">
       <option value="">All categories</option>
@@ -58,9 +59,9 @@
     <input id="to"   type="date" class="input">
     <select id="quick" class="select">
       <option value="">All time</option>
-      <option value="7">Last 7 days</option>
       <option value="30">Last 30 days</option>
       <option value="90">Last 90 days</option>
+      <option value="180">Last 180 days</option>
     </select>
     <button id="clear" class="btn">Clear</button>
 
@@ -70,44 +71,57 @@
 </div>
 
 <div class="wrap">
-  <!-- Controls specific to charts -->
   <div class="row">
     <label class="small">Top keywords
       <input id="topN" type="range" min="5" max="60" step="1" value="30" style="vertical-align:middle;margin-left:6px">
       <span id="topNVal" class="small">30</span>
     </label>
-    <label class="small">Find keyword…
-      <input id="kwSearch" type="search" class="input" placeholder="type to filter bar chart" style="width:220px">
+    <label class="small">Filter keywords…
+      <input id="kwSearch" type="search" class="input" placeholder="type to filter bar" style="width:220px">
     </label>
-    <button id="reset" class="btn">Reset view</button>
+    <span class="pill">Tip: click a keyword bar to open its details</span>
   </div>
 
   <div class="grid two">
     <div class="card">
-      <h3>Top keywords</h3>
-      <canvas id="chartKeywords"></canvas>
-      <div class="legend">Count of <code>primary_keyword</code> within current filters.</div>
+      <h3>Weekly trend (signals count)</h3>
+      <canvas id="chartTrend"></canvas>
+      <div class="legend">Counts per week for the current filters.</div>
     </div>
     <div class="card">
-      <h3>Signals by hour of day</h3>
-      <canvas id="chartHours"></canvas>
-      <div class="legend">Hour is derived from the article’s published timestamp (local time).</div>
+      <h3>Top rising keywords</h3>
+      <canvas id="chartRisers"></canvas>
+      <div class="legend">Change = current window vs previous window of equal length (within the same filters).</div>
     </div>
   </div>
 
   <div class="grid three" style="margin-top:16px">
     <div class="card">
-      <h3>By category</h3>
-      <canvas id="chartCats"></canvas>
+      <h3>Top keywords</h3>
+      <canvas id="chartKeywords"></canvas>
+      <div class="legend">From <code>primary_keyword</code> within filters. Click a bar to inspect that keyword.</div>
     </div>
     <div class="card">
-      <h3>By status</h3>
-      <canvas id="chartStats"></canvas>
+      <h3>Status mix by category</h3>
+      <canvas id="chartMix"></canvas>
+      <div class="legend">100% stacked bars: emerging / bubbling / mainstream share by category.</div>
     </div>
     <div class="card">
       <h3>Top sources</h3>
       <canvas id="chartSources"></canvas>
       <div class="legend">Domain extracted from <code>link</code>.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>Keyword details <span id="kwTitle" class="small" style="margin-left:8px;color:var(--muted)">(click a keyword in the chart)</span></h3>
+    <div class="grid two">
+      <div>
+        <canvas id="chartKwTrend"></canvas>
+      </div>
+      <div>
+        <canvas id="chartKwStatus"></canvas>
+      </div>
     </div>
   </div>
 </div>
@@ -120,17 +134,23 @@ document.getElementById("dark").onclick=()=>{document.documentElement.classList.
 /* --- helpers --- */
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function hostOf(u){ try{ return new URL(u).host.replace(/^www\./,''); }catch{return ""; } }
-function hourOf(iso){ const d=new Date(iso); return isNaN(d)?null:d.getHours(); }
 function inRange(iso, from, to){
   const t = Date.parse(iso||""); if(isNaN(t)) return false;
   if(from && t < new Date(from).setUTCHours(0,0,0,0)) return false;
   if(to   && t > new Date(to).setUTCHours(23,59,59,999)) return false;
   return true;
 }
+function startOfWeek(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; } // Monday
+function weekKey(d){ const s = startOfWeek(new Date(d)); return s.toISOString().slice(0,10); }
+function palette(n){
+  const base = ['#2563eb','#0891b2','#10b981','#84cc16','#f59e0b','#ef4444','#a855f7','#ec4899','#14b8a6','#22c55e','#eab308'];
+  const out = []; for(let i=0;i<n;i++) out.push(base[i%base.length]); return out;
+}
 
 /* --- state --- */
 let rowsAll = [];
 let charts = {};
+let selectedKw = ""; // for the details inspector
 const els = {
   cat:document.getElementById('cat'),
   stat:document.getElementById('stat'),
@@ -141,7 +161,7 @@ const els = {
   topN:document.getElementById('topN'),
   topNVal:document.getElementById('topNVal'),
   kwSearch:document.getElementById('kwSearch'),
-  reset:document.getElementById('reset'),
+  kwTitle:document.getElementById('kwTitle'),
 };
 
 /* --- filters --- */
@@ -156,94 +176,88 @@ function getFiltered(){
 }
 els.quick.onchange = ()=>{
   const d = parseInt(els.quick.value)||0;
-  if(!d){ els.from.value=""; els.to.value=""; return; }
+  if(!d){ els.from.value=""; els.to.value=""; render(); return; }
   const today = new Date();
   const start = new Date(today.getTime()-d*86400000);
   els.from.value = start.toISOString().slice(0,10);
   els.to.value = today.toISOString().slice(0,10);
   render();
 };
-els.clear.onclick = ()=>{ els.cat.value=""; els.stat.value=""; els.from.value=""; els.to.value=""; els.quick.value=""; els.kwSearch.value=""; render(); };
+els.clear.onclick = ()=>{ els.cat.value=""; els.stat.value=""; els.from.value=""; els.to.value=""; els.quick.value=""; els.kwSearch.value=""; selectedKw=""; render(); };
 ['cat','stat','from','to'].forEach(id => els[id].onchange=render);
 els.topN.oninput = ()=>{ els.topNVal.textContent = els.topN.value; render(); };
 els.kwSearch.oninput = ()=> render();
-els.reset.onclick = ()=>{ els.topN.value=30; els.topNVal.textContent="30"; els.kwSearch.value=""; render(); };
 
 /* --- chart helpers --- */
 function makeOrUpdate(id, type, data, opt){
   const ctx = document.getElementById(id);
-  if(charts[id]){ charts[id].data = data; charts[id].options = opt; charts[id].update(); return; }
+  if(charts[id]){ charts[id].data = data; charts[id].options = opt; charts[id].update(); return charts[id]; }
   charts[id] = new Chart(ctx, {type, data, options:opt});
-}
-function palette(n){
-  // neutral palette that works in light & dark
-  const base = ['#2563eb','#0891b2','#10b981','#84cc16','#f59e0b','#ef4444','#a855f7','#ec4899','#14b8a6','#22c55e','#eab308'];
-  const out = []; for(let i=0;i<n;i++) out.push(base[i%base.length]); return out;
+  return charts[id];
 }
 
-/* --- render --- */
-function render(){
-  const rows = getFiltered();
-
-  // Top keywords (from primary_keyword)
-  const kwMap = new Map();
-  for(const r of rows){ const k=(r.primary_keyword||"").trim(); if(!k) continue;
-    kwMap.set(k,(kwMap.get(k)||0)+1);
+/* --- computations --- */
+function weeklySeries(rows){
+  const map = new Map();
+  for(const r of rows){
+    const wk = weekKey(r.published||"");
+    if(!wk) continue;
+    map.set(wk, (map.get(wk)||0)+1);
   }
-  let kw = [...kwMap.entries()];
-  const q = els.kwSearch.value.trim().toLowerCase();
-  if(q) kw = kw.filter(([k])=>k.toLowerCase().includes(q));
-  kw.sort((a,b)=>b[1]-a[1]);
-  kw = kw.slice(0, parseInt(els.topN.value,10));
-  makeOrUpdate('chartKeywords','bar',{
-    labels: kw.map(([k])=>k),
-    datasets:[{label:'count', data: kw.map(([,v])=>v), backgroundColor: palette(kw.length)}]
-  },{
-    responsive:true, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:getComputedStyle(document.documentElement).getPropertyValue('--fg')}},y:{beginAtZero:true}}
-  });
-
-  // Hour-of-day histogram
-  const hours = Array(24).fill(0);
-  for(const r of rows){ const h=hourOf(r.published); if(h!==null) hours[h]++; }
-  makeOrUpdate('chartHours','bar',{
-    labels: [...Array(24).keys()].map(h=>`${String(h).padStart(2,'0')}:00`),
-    datasets:[{label:'signals', data: hours, backgroundColor: palette(1)[0]}]
-  },{
-    responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}
-  });
-
-  // Category distribution
+  const keys = [...map.keys()].sort();
+  return {labels: keys, data: keys.map(k=>map.get(k))};
+}
+function topKeywords(rows, limit, filterTxt){
+  const m = new Map();
+  for(const r of rows){ const k=(r.primary_keyword||"").trim(); if(!k) continue; m.set(k,(m.get(k)||0)+1); }
+  let arr = [...m.entries()];
+  if(filterTxt){ const re = new RegExp(escRe(filterTxt),'i'); arr = arr.filter(([k])=>re.test(k)); }
+  arr.sort((a,b)=>b[1]-a[1]);
+  return arr.slice(0,limit);
+}
+function statusMixByCategory(rows){
   const cats = ['fashion','beauty','wellness'];
-  const catCounts = cats.map(c=>rows.filter(r=>r.category===c).length);
-  makeOrUpdate('chartCats','doughnut',{
-    labels: cats, datasets:[{data:catCounts, backgroundColor: palette(cats.length)}]
-  },{responsive:true});
-
-  // Status distribution
   const stats = ['emerging','bubbling','mainstream'];
-  const statCounts = stats.map(s=>rows.filter(r=>(r.status||'').toLowerCase()===s).length);
-  makeOrUpdate('chartStats','doughnut',{
-    labels: stats, datasets:[{data:statCounts, backgroundColor: palette(stats.length)}]
-  },{responsive:true});
-
-  // Top sources (domains)
-  const srcMap = new Map();
-  for(const r of rows){ const h = hostOf(r.link); if(!h) continue; srcMap.set(h,(srcMap.get(h)||0)+1); }
-  const srcPairs = [...srcMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,15);
-  makeOrUpdate('chartSources','bar',{
-    labels: srcPairs.map(([h])=>h),
-    datasets:[{label:'count', data: srcPairs.map(([,v])=>v), backgroundColor: palette(srcPairs.length)}]
-  },{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}});
+  const table = cats.map(c=>{
+    const sub = rows.filter(r=>r.category===c);
+    const counts = stats.map(s=>sub.filter(r=>(r.status||'').toLowerCase()===s).length);
+    const tot = counts.reduce((a,b)=>a+b,0)||1;
+    return counts.map(v=>v/tot*100);
+  });
+  return {cats, stats, perc: table}; // perc[c-index][s-index]
 }
-
-/* --- load CSV --- */
-function load(){
-  const bust = new Date().toISOString().slice(0,10);
-  fetch('signals_simple.csv?ts='+bust)
-    .then(r=>r.text())
-    .then(csv=>Papa.parse(csv,{header:true,skipEmptyLines:true}))
-    .then(res=>{ rowsAll=res.data; render(); })
-    .catch(()=> alert('Failed to load signals_simple.csv'));
+function topSources(rows, k=15){
+  const map = new Map();
+  for(const r of rows){ const h = hostOf(r.link); if(!h) continue; map.set(h,(map.get(h)||0)+1); }
+  return [...map.entries()].sort((a,b)=>b[1]-a[1]).slice(0,k);
 }
-load();
-</script>
+function splitWindows(rows){
+  // current vs previous window of equal length based on date controls or fallback 30 days
+  const f = els.from.value ? new Date(els.from.value) : null;
+  const t = els.to.value   ? new Date(els.to.value)   : null;
+  let end = t ? new Date(t.setHours(23,59,59,999)) : new Date(Math.max(...rows.map(r=>Date.parse(r.published||0)||0)));
+  if(!isFinite(end)) end = new Date(); // in case
+  let start = f ? new Date(f.setHours(0,0,0,0)) : new Date(end.getTime()-30*86400000);
+  const span = Math.max(1, Math.round((end - start)/86400000));
+  const prevStart = new Date(start.getTime() - span*86400000);
+  const prevEnd   = new Date(end.getTime()   - span*86400000);
+  return {prevStart, prevEnd, start, end};
+}
+function topRisers(rows, topK=12){
+  const {prevStart, prevEnd, start, end} = splitWindows(rows);
+  const inWin = (iso,a,b)=>{ const t=Date.parse(iso||""); return t>=a && t<=b; };
+  const cur = new Map(), prev = new Map();
+  for(const r of rows){
+    const k=(r.primary_keyword||"").trim(); if(!k) continue;
+    const t = Date.parse(r.published||"");
+    if(isNaN(t)) continue;
+    if(t>=start && t<=end) cur.set(k,(cur.get(k)||0)+1);
+    else if(t>=prevStart && t<=prevEnd) prev.set(k,(prev.get(k)||0)+1);
+  }
+  const keys = new Set([...cur.keys(),...prev.keys()]);
+  const deltas = [...keys].map(k=>({k,delta:(cur.get(k)||0)-(prev.get(k)||0), now:(cur.get(k)||0), before:(prev.get(k)||0)}));
+  deltas.sort((a,b)=>b.delta-a.delta);
+  return deltas.slice(0, topK);
+}
+function rowsForKeyword(rows, kw){
+  return rows.filter(r => (r.primary_keyword||"").trim().toLowerCase(_
