@@ -32,10 +32,14 @@
   .select{width:var(--ctl-w)} .spacer{flex:1}
   .wrap{max-width:1100px;margin:0 auto;padding:16px 20px}
   .grid{display:grid;gap:16px}
-  @media(min-width:900px){ .grid.two{grid-template-columns:1fr 1fr} .grid.three{grid-template-columns:1fr 1fr 1fr} }
+  @media(min-width:1024px){
+    .grid.two{grid-template-columns:1fr 1fr}
+    .grid.three{grid-template-columns:1fr 1fr 1fr}
+  }
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:12px}
   .legend{color:var(--muted);font-size:12px;margin-top:6px}
-  canvas{max-width:100%;height:340px}
+  canvas{max-width:100%;height:260px}
+  .mini{height:180px}
   .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
   .small{font-size:12px;color:var(--muted)}
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
@@ -79,49 +83,43 @@
     <label class="small">Filter keywords…
       <input id="kwSearch" type="search" class="input" placeholder="type to filter bar" style="width:220px">
     </label>
-    <span class="pill">Tip: click a keyword bar to open its details</span>
+    <span id="metaCount" class="pill">…</span>
   </div>
 
+  <!-- Row 1: Top keywords + Keyword details side-by-side -->
   <div class="grid two">
     <div class="card">
-      <h3>Weekly trend (signals count)</h3>
-      <canvas id="chartTrend"></canvas>
-      <div class="legend">Counts per week for the current filters.</div>
+      <h3>Top keywords</h3>
+      <canvas id="chartKeywords" class="mini"></canvas>
+      <div class="legend">From <code>primary_keyword</code> within current filters. Click a bar to inspect that keyword.</div>
     </div>
+
     <div class="card">
-      <h3>Top rising keywords</h3>
-      <canvas id="chartRisers"></canvas>
-      <div class="legend">Change = current window vs previous window of equal length (within the same filters).</div>
+      <h3>Keyword details <span id="kwTitle" class="small" style="margin-left:8px;color:var(--muted)">(click a keyword)</span></h3>
+      <canvas id="chartKwTrend" class="mini"></canvas>
+      <canvas id="chartKwStatus" class="mini" style="margin-top:10px"></canvas>
+      <div class="legend">Weekly mini-curve + status mix for the selected keyword.</div>
     </div>
   </div>
 
+  <!-- Row 2: Rising, Mix, Sources -->
   <div class="grid three" style="margin-top:16px">
     <div class="card">
-      <h3>Top keywords</h3>
-      <canvas id="chartKeywords"></canvas>
-      <div class="legend">From <code>primary_keyword</code> within filters. Click a bar to inspect that keyword.</div>
+      <h3>Top rising keywords</h3>
+      <canvas id="chartRisers" class="mini"></canvas>
+      <div class="legend">Change = current window vs previous window of equal length (within the same filters).</div>
     </div>
+
     <div class="card">
       <h3>Status mix by category</h3>
-      <canvas id="chartMix"></canvas>
+      <canvas id="chartMix" class="mini"></canvas>
       <div class="legend">100% stacked bars: emerging / bubbling / mainstream share by category.</div>
     </div>
+
     <div class="card">
       <h3>Top sources</h3>
-      <canvas id="chartSources"></canvas>
+      <canvas id="chartSources" class="mini"></canvas>
       <div class="legend">Domain extracted from <code>link</code>.</div>
-    </div>
-  </div>
-
-  <div class="card" style="margin-top:16px">
-    <h3>Keyword details <span id="kwTitle" class="small" style="margin-left:8px;color:var(--muted)">(click a keyword in the chart)</span></h3>
-    <div class="grid two">
-      <div>
-        <canvas id="chartKwTrend"></canvas>
-      </div>
-      <div>
-        <canvas id="chartKwStatus"></canvas>
-      </div>
     </div>
   </div>
 </div>
@@ -142,6 +140,17 @@ function inRange(iso, from, to){
 }
 function startOfWeek(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; } // Monday
 function weekKey(d){ const s = startOfWeek(new Date(d)); return s.toISOString().slice(0,10); }
+function weeklySeries(rows){
+  const map = new Map();
+  for(const r of rows){
+    const wk = weekKey(r.published||"");
+    if(!wk) continue;
+    map.set(wk, (map.get(wk)||0)+1);
+  }
+  const keys = [...map.keys()].sort();
+  const counts = keys.map(k=>map.get(k));
+  return {labels: keys, counts};
+}
 function palette(n){
   const base = ['#2563eb','#0891b2','#10b981','#84cc16','#f59e0b','#ef4444','#a855f7','#ec4899','#14b8a6','#22c55e','#eab308'];
   const out = []; for(let i=0;i<n;i++) out.push(base[i%base.length]); return out;
@@ -150,7 +159,7 @@ function palette(n){
 /* --- state --- */
 let rowsAll = [];
 let charts = {};
-let selectedKw = ""; // for the details inspector
+let selectedKw = "";
 const els = {
   cat:document.getElementById('cat'),
   stat:document.getElementById('stat'),
@@ -162,6 +171,7 @@ const els = {
   topNVal:document.getElementById('topNVal'),
   kwSearch:document.getElementById('kwSearch'),
   kwTitle:document.getElementById('kwTitle'),
+  metaCount:document.getElementById('metaCount'),
 };
 
 /* --- filters --- */
@@ -188,7 +198,7 @@ els.clear.onclick = ()=>{ els.cat.value=""; els.stat.value=""; els.from.value=""
 els.topN.oninput = ()=>{ els.topNVal.textContent = els.topN.value; render(); };
 els.kwSearch.oninput = ()=> render();
 
-/* --- chart helpers --- */
+/* --- chart helper --- */
 function makeOrUpdate(id, type, data, opt){
   const ctx = document.getElementById(id);
   if(charts[id]){ charts[id].data = data; charts[id].options = opt; charts[id].update(); return charts[id]; }
@@ -197,16 +207,6 @@ function makeOrUpdate(id, type, data, opt){
 }
 
 /* --- computations --- */
-function weeklySeries(rows){
-  const map = new Map();
-  for(const r of rows){
-    const wk = weekKey(r.published||"");
-    if(!wk) continue;
-    map.set(wk, (map.get(wk)||0)+1);
-  }
-  const keys = [...map.keys()].sort();
-  return {labels: keys, data: keys.map(k=>map.get(k))};
-}
 function topKeywords(rows, limit, filterTxt){
   const m = new Map();
   for(const r of rows){ const k=(r.primary_keyword||"").trim(); if(!k) continue; m.set(k,(m.get(k)||0)+1); }
@@ -226,17 +226,16 @@ function statusMixByCategory(rows){
   });
   return {cats, stats, perc: table}; // perc[c-index][s-index]
 }
-function topSources(rows, k=15){
+function topSources(rows, k=12){
   const map = new Map();
   for(const r of rows){ const h = hostOf(r.link); if(!h) continue; map.set(h,(map.get(h)||0)+1); }
   return [...map.entries()].sort((a,b)=>b[1]-a[1]).slice(0,k);
 }
 function splitWindows(rows){
-  // current vs previous window of equal length based on date controls or fallback 30 days
   const f = els.from.value ? new Date(els.from.value) : null;
   const t = els.to.value   ? new Date(els.to.value)   : null;
   let end = t ? new Date(t.setHours(23,59,59,999)) : new Date(Math.max(...rows.map(r=>Date.parse(r.published||0)||0)));
-  if(!isFinite(end)) end = new Date(); // in case
+  if(!isFinite(end)) end = new Date();
   let start = f ? new Date(f.setHours(0,0,0,0)) : new Date(end.getTime()-30*86400000);
   const span = Math.max(1, Math.round((end - start)/86400000));
   const prevStart = new Date(start.getTime() - span*86400000);
@@ -245,17 +244,15 @@ function splitWindows(rows){
 }
 function topRisers(rows, topK=12){
   const {prevStart, prevEnd, start, end} = splitWindows(rows);
-  const inWin = (iso,a,b)=>{ const t=Date.parse(iso||""); return t>=a && t<=b; };
   const cur = new Map(), prev = new Map();
   for(const r of rows){
     const k=(r.primary_keyword||"").trim(); if(!k) continue;
-    const t = Date.parse(r.published||"");
-    if(isNaN(t)) continue;
+    const t = Date.parse(r.published||""); if(isNaN(t)) continue;
     if(t>=start && t<=end) cur.set(k,(cur.get(k)||0)+1);
     else if(t>=prevStart && t<=prevEnd) prev.set(k,(prev.get(k)||0)+1);
   }
   const keys = new Set([...cur.keys(),...prev.keys()]);
-  const deltas = [...keys].map(k=>({k,delta:(cur.get(k)||0)-(prev.get(k)||0), now:(cur.get(k)||0), before:(prev.get(k)||0)}));
+  const deltas = [...keys].map(k=>({k,delta:(cur.get(k)||0)-(prev.get(k)||0)}));
   deltas.sort((a,b)=>b.delta-a.delta);
   return deltas.slice(0, topK);
 }
@@ -266,19 +263,7 @@ function rowsForKeyword(rows, kw){
 /* --- render --- */
 function render(){
   const rows = getFiltered();
-
-  // Weekly trend
-  const w = weeklySeries(rows);
-  makeOrUpdate('chartTrend','line',{
-    labels: w.labels, datasets:[{label:'signals', data:w.data, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.15)', fill:true, tension:.25}]
-  },{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}});
-
-  // Top rising
-  const risers = topRisers(rows, 12);
-  makeOrUpdate('chartRisers','bar',{
-    labels: risers.map(x=>x.k),
-    datasets:[{label:'Δ (now vs prev)', data: risers.map(x=>x.delta), backgroundColor: risers.map(x=>x.delta>=0?'#10b981':'#ef4444')}]
-  },{indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}}});
+  els.metaCount.textContent = `${rows.length} articles in current filters`;
 
   // Top keywords (click to inspect)
   const topK = topKeywords(rows, parseInt(els.topN.value,10), els.kwSearch.value.trim());
@@ -295,6 +280,13 @@ function render(){
   };
   if(selectedKw) renderKwDetails(rows); else resetKwDetails();
 
+  // Top rising
+  const risers = topRisers(rows, 12);
+  makeOrUpdate('chartRisers','bar',{
+    labels: risers.map(x=>x.k),
+    datasets:[{label:'Δ (now vs prev)', data: risers.map(x=>x.delta), backgroundColor: risers.map(x=>x.delta>=0?'#10b981':'#ef4444')}]
+  },{indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}}});
+
   // Status mix by category
   const mix = statusMixByCategory(rows);
   makeOrUpdate('chartMix','bar',{
@@ -309,7 +301,7 @@ function render(){
   });
 
   // Top sources
-  const src = topSources(rows, 15);
+  const src = topSources(rows, 12);
   makeOrUpdate('chartSources','bar',{
     labels: src.map(([h])=>h),
     datasets:[{label:'count', data: src.map(([,v])=>v), backgroundColor: palette(src.length)}]
@@ -318,7 +310,7 @@ function render(){
 
 /* keyword inspector */
 function resetKwDetails(){
-  els.kwTitle.textContent = '(click a keyword in the chart)';
+  els.kwTitle.textContent = '(click a keyword)';
   makeOrUpdate('chartKwTrend','line',{labels:[],datasets:[]},{});
   makeOrUpdate('chartKwStatus','doughnut',{labels:[],datasets:[]},{});
 }
@@ -329,10 +321,10 @@ function renderKwDetails(allRows){
   const rows = getFiltered();
   const rkw = rowsForKeyword(rows, selectedKw);
 
-  // weekly curve
+  // weekly mini-curve
   const w = weeklySeries(rkw);
   makeOrUpdate('chartKwTrend','line',{
-    labels: w.labels, datasets:[{label:selectedKw, data:w.data, borderColor:'#a855f7', backgroundColor:'rgba(168,85,247,.18)', fill:true, tension:.25}]
+    labels: w.labels, datasets:[{label:selectedKw, data:w.counts, borderColor:'#a855f7', backgroundColor:'rgba(168,85,247,.18)', fill:true, tension:.25, pointRadius:0}]
   },{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}});
 
   // status mix
