@@ -12,6 +12,9 @@
   table{width:100%;border-collapse:collapse}
   th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left}
   th{background:#fafafa;position:sticky;top:0}
+  th.sortable{cursor:pointer}
+  th.sortable .arrow{opacity:.35;margin-left:6px}
+  th.sortable.active .arrow{opacity:1}
   #counts{font-size:14px;color:#555}
 </style>
 
@@ -39,12 +42,12 @@
 <table id="tbl">
   <thead>
     <tr>
-      <th style="width:110px">Published</th>
-      <th>Title</th>
-      <th style="width:110px">Category</th>
-      <th style="width:180px">Keyword</th>
-      <th style="width:120px">Trend score</th>
-      <th style="width:120px">Status</th>
+      <th class="sortable" data-key="published">Published <span class="arrow">↕</span></th>
+      <th class="sortable" data-key="title">Title <span class="arrow">↕</span></th>
+      <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow">↕</span></th>
+      <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow">↕</span></th>
+      <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow">↕</span></th>
+      <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow">↕</span></th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -55,11 +58,55 @@ const tbody = document.querySelector("#tbl tbody");
 const cat   = document.getElementById("cat");
 const stat  = document.getElementById("stat");
 const counts= document.getElementById("counts");
+const headers = [...document.querySelectorAll("th.sortable")];
+
 let rowsAll = [];
+let sortKey = "trend_score";   // default
+let sortDir = "desc";          // default
+
+const statusOrder = {emerging:0, bubbling:1, mainstream:2};
+
+function cmp(a,b,key){
+  const dir = sortDir === "asc" ? 1 : -1;
+  if(key === "trend_score"){
+    const x = parseFloat(a.trend_score||0), y = parseFloat(b.trend_score||0);
+    return (x<y?-1:x>y?1:0)*dir;
+  }
+  if(key === "published"){
+    const x = new Date(a.published||0).getTime(), y = new Date(b.published||0).getTime();
+    return (x<y?-1:x>y?1:0)*dir;
+  }
+  if(key === "status"){
+    const x = statusOrder[(a.status||"").toLowerCase()] ?? 99;
+    const y = statusOrder[(b.status||"").toLowerCase()] ?? 99;
+    return (x<y?-1:x>y?1:0)*dir;
+  }
+  const x = (a[key]||"").toString().toLowerCase();
+  const y = (b[key]||"").toString().toLowerCase();
+  return (x<y?-1:x>y?1:0)*dir;
+}
+
+function setSort(key){
+  if(sortKey === key){
+    sortDir = (sortDir === "asc") ? "desc" : "asc";
+  } else {
+    sortKey = key;
+    sortDir = (key === "trend_score" || key === "published") ? "desc" : "asc";
+  }
+  headers.forEach(h=>{
+    h.classList.toggle("active", h.dataset.key === sortKey);
+    h.querySelector(".arrow").textContent = h.dataset.key === sortKey ? (sortDir==="asc"?"↑":"↓") : "↕";
+  });
+  render();
+}
+
+headers.forEach(h => h.addEventListener("click", () => setSort(h.dataset.key)));
 
 function render(){
   const c=cat.value, s=stat.value;
-  const rows = rowsAll.filter(r => (!c || r.category===c) && (!s || (r.status||"").toLowerCase()===s));
+  let rows = rowsAll.filter(r => (!c || r.category===c) && (!s || (r.status||"").toLowerCase()===s));
+  rows = rows.sort((a,b)=>cmp(a,b,sortKey));
+
   tbody.innerHTML = rows.map(r => `
     <tr>
       <td>${(r.published||"").slice(0,10)}</td>
@@ -79,11 +126,11 @@ function render(){
 }
 
 function load(){
-  const bust = new Date().toISOString().slice(0,10); // cache-bust daily
+  const bust = new Date().toISOString().slice(0,10); // daily cache-bust
   fetch("signals_simple.csv?ts="+bust)
     .then(r => r.text())
     .then(csv => Papa.parse(csv, {header:true, skipEmptyLines:true}))
-    .then(res => { rowsAll = res.data; render(); })
+    .then(res => { rowsAll = res.data; setSort("trend_score"); }) // default sort: score ↓
     .catch(() => { counts.textContent = "Failed to load CSV"; });
 }
 cat.onchange = stat.onchange = render;
