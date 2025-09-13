@@ -64,7 +64,6 @@
   .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
   .score-txt{ color: var(--muted); font-size: 12px; }
   .date{ color:var(--muted); white-space:nowrap; }
-  /* make whole pill clickable but keep its color */
   .pill-link{ color:inherit; text-decoration:none; display:inline-block; }
 
   /* Drawer (dates only) */
@@ -198,7 +197,7 @@
   <table id="tbl">
     <thead>
       <tr>
-        <th class="sortable" data-key="published">Published <span class="arrow">↕</span></th>
+        <th class="sortable" data-key="published">Published <span class="arrow">↕</span> <span class="muted">(Madrid)</span></th>
         <th class="sortable" data-key="title">Title <span class="arrow">↕</span></th>
         <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow">↕</span></th>
         <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow">↕</span></th>
@@ -251,6 +250,41 @@
 </div>
 
 <script>
+/* ---------- Madrid timezone helpers (CET/CEST-safe) ---------- */
+const MADRID_TZ = "Europe/Madrid";
+function _tzOffsetMs(tz, utcDate){
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: tz, year:"numeric", month:"2-digit", day:"2-digit",
+    hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false
+  }).formatToParts(utcDate).reduce((o,p)=>(o[p.type]=p.value,o),{});
+  const asUTC = Date.UTC(parts.year, parts.month-1, parts.day, parts.hour, parts.minute, parts.second);
+  return asUTC - utcDate.getTime();
+}
+function startOfDayMadrid(ymd){
+  if(!ymd) return null;
+  const [y,m,d] = ymd.split("-").map(Number);
+  const guessUTC = new Date(Date.UTC(y, (m||1)-1, d||1, 0,0,0));
+  const off = _tzOffsetMs(MADRID_TZ, guessUTC);
+  return new Date(guessUTC.getTime() - off);
+}
+function endOfDayMadrid(ymd){
+  if(!ymd) return null;
+  const [y,m,d] = ymd.split("-").map(Number);
+  const guessUTC = new Date(Date.UTC(y, (m||1)-1, d||1, 23,59,59,999));
+  const off = _tzOffsetMs(MADRID_TZ, guessUTC);
+  return new Date(guessUTC.getTime() - off);
+}
+function fmtMadrid(iso){
+  if(!iso) return "";
+  const dt = new Date(iso);
+  if(Number.isNaN(dt)) return (iso||"").slice(0,10);
+  const p = new Intl.DateTimeFormat("en-GB", {
+    timeZone:MADRID_TZ, year:"numeric", month:"2-digit", day:"2-digit",
+    hour:"2-digit", minute:"2-digit", hour12:false
+  }).formatToParts(dt).reduce((a,x)=>(a[x.type]=x.value,a),{});
+  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
+}
+
 /* ---------- refs ---------- */
 const bar = document.getElementById("bar");
 const tbody   = document.querySelector("#tbl tbody");
@@ -317,18 +351,8 @@ function statusPill(s){
   return `<a class="${statusClass(v)} pill-link" href="${href}" target="_blank" rel="noopener">${v}</a>`;
 }
 
-/* date-time formatter (local time) */
-function fmtDateTime(iso){
-  if(!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d)) return (iso||"").slice(0,10); // fallback
-  const y  = d.getFullYear();
-  const m  = String(d.getMonth()+1).padStart(2,'0');
-  const da = String(d.getDate()).padStart(2,'0');
-  const hh = String(d.getHours()).padStart(2,'0');
-  const mm = String(d.getMinutes()).padStart(2,'0');
-  return `${y}-${m}-${da} ${hh}:${mm}`;
-}
+/* Madrid display wrapper */
+function fmtDateTime(iso){ return fmtMadrid(iso); }
 
 /* sticky header compact */
 window.addEventListener("scroll", ()=> bar.classList.toggle("compact", window.scrollY > 10));
@@ -471,8 +495,10 @@ copyShareBtn.onclick = async () => {
 /* pipeline */
 function getFilteredSortedRows(){
   const query=q.value, c=barCatSel.value, s=barStatusSel.value;
-  const fromMs = fromI.value ? new Date(new Date(fromI.value).setUTCHours(0,0,0,0)).getTime() : -Infinity;
-  const toMs   = toI.value   ? new Date(new Date(toI.value).setUTCHours(23,59,59,999)).getTime() :  Infinity;
+
+  // Madrid day boundaries
+  const fromMs = fromI.value ? startOfDayMadrid(fromI.value).getTime() : -Infinity;
+  const toMs   = toI.value   ? endOfDayMadrid(toI.value).getTime()   :  Infinity;
 
   let rows = rowsAll.filter(r => {
     if (c && r.category !== c) return false;
