@@ -12,7 +12,7 @@
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
     --ctl-w:180px;
-    --ok:#22c55e; --warn:#f59e0b; --soft:#94a3b8;
+    --ok:#22c55e; --warn:#f59e0b; --soft:#94a3b8; /* status colors */
   }
   :root.dark{
     --bg:#0b0b0c; --fg:#f2f3f5; --muted:#a3a7ae;
@@ -37,7 +37,7 @@
   @media(min-width:1024px){ .grid.two{grid-template-columns:1fr 1fr} }
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:12px}
   .legend{color:var(--muted);font-size:12px;margin-top:6px}
-  .mini{max-width:100%;height:220px !important}
+  .mini{max-width:100%}
   .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
   .small{font-size:12px;color:var(--muted)}
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
@@ -46,7 +46,6 @@
   ul.list{list-style:none; padding:0; margin:8px 0 0; max-height:160px; overflow:auto}
   ul.list li{display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px dashed var(--border)}
   .muted{color:var(--muted)}
-  .sr{position:absolute;left:-9999px}
 </style>
 
 <div class="bar">
@@ -63,9 +62,9 @@
       <option>emerging</option><option>bubbling</option><option>mainstream</option>
     </select>
 
-    <input id="from" type="date" class="input" aria-label="From date">
-    <input id="to"   type="date" class="input" aria-label="To date">
-    <select id="quick" class="select" aria-label="Quick range">
+    <input id="from" type="date" class="input">
+    <input id="to"   type="date" class="input">
+    <select id="quick" class="select">
       <option value="">All time</option>
       <option value="30">Last 30 days</option>
       <option value="90">Last 90 days</option>
@@ -81,8 +80,8 @@
 <div class="wrap">
   <div class="row">
     <label class="small">Top keywords
-      <input id="topN" type="range" min="5" max="40" step="1" value="20" style="vertical-align:middle;margin-left:6px">
-      <span id="topNVal" class="small">20</span>
+      <input id="topN" type="range" min="10" max="120" step="1" value="40" style="vertical-align:middle;margin-left:6px">
+      <span id="topNVal" class="small">40</span>
     </label>
     <label class="small">Filter keywords…
       <input id="kwSearch" type="search" class="input" placeholder="type to filter bar" style="width:220px">
@@ -114,7 +113,7 @@
     </div>
   </div>
 
-  <!-- Row 2: Rising + Sources -->
+  <!-- Row 2: Rising + Sources (pie) -->
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <h3>Top rising keywords</h3>
@@ -123,9 +122,9 @@
     </div>
 
     <div class="card">
-      <h3>Top sources</h3>
+      <h3>Top sources (share)</h3>
       <canvas id="chartSources" class="mini"></canvas>
-      <div class="legend">Domain extracted from <code>link</code>.</div>
+      <div class="legend">Top 10 domains by share (others grouped).</div>
     </div>
   </div>
 
@@ -142,6 +141,11 @@
 (()=>{ const s=localStorage.getItem("fe_theme"); if(s==="dark") document.documentElement.classList.add("dark"); })();
 document.getElementById("dark").onclick=()=>{document.documentElement.classList.toggle("dark");localStorage.setItem("fe_theme",document.documentElement.classList.contains("dark")?"dark":"light");};
 
+/* --- css var resolver (fixes black bars) --- */
+function cssVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || name;
+}
+
 /* --- helpers --- */
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function hostOf(u){ try{ return new URL(u).host.replace(/^www\./,''); }catch{return ""; } }
@@ -152,11 +156,10 @@ function inRange(iso, from, to){
   return true;
 }
 function palette(n){
+  // pleasant looping palette
   const base = ['#2563eb','#0891b2','#10b981','#84cc16','#f59e0b','#ef4444','#a855f7','#ec4899','#14b8a6','#22c55e','#eab308'];
   const out = []; for(let i=0;i<n;i++) out.push(base[i%base.length]); return out;
 }
-const STATUS = ['emerging','bubbling','mainstream'];
-const CAT = ['fashion','beauty','wellness'];
 
 /* --- state --- */
 let rowsAll = [];
@@ -180,6 +183,7 @@ const els = {
   kpis:document.getElementById('kwKpis'),
   openList:document.getElementById('openList'),
   kwList:document.getElementById('kwList'),
+  kwCanvas:document.getElementById('chartKeywords')
 };
 
 /* --- filters --- */
@@ -205,6 +209,7 @@ els.clear.onclick = ()=>{ els.cat.value=""; els.stat.value=""; els.from.value=""
 ['cat','stat','from','to'].forEach(id => els[id].onchange=render);
 els.topN.oninput = ()=>{ els.topNVal.textContent = els.topN.value; render(); };
 els.kwSearch.oninput = ()=> render();
+window.addEventListener('resize', ()=> adjustKeywordsHeight());
 
 /* --- chart helper --- */
 function makeOrUpdate(id, type, data, opt){
@@ -224,18 +229,24 @@ function topKeywords(rows, limit, filterTxt){
   return arr.slice(0,limit);
 }
 function statusMixByCategory(rows){
-  const table = CAT.map(c=>{
+  const cats = ['fashion','beauty','wellness'];
+  const stats = ['emerging','bubbling','mainstream'];
+  const table = cats.map(c=>{
     const sub = rows.filter(r=>r.category===c);
-    const counts = STATUS.map(s=>sub.filter(r=>(r.status||'').toLowerCase()===s).length);
+    const counts = stats.map(s=>sub.filter(r=>(r.status||'').toLowerCase()===s).length);
     const tot = counts.reduce((a,b)=>a+b,0)||1;
     return counts.map(v=>v/tot*100);
   });
-  return {cats:CAT, perc: table}; // perc[c-index][s-index]
+  return {cats, stats, perc: table}; // perc[c-index][s-index]
 }
-function topSources(rows, k=12){
+function topSourcesShare(rows){
   const map = new Map();
   for(const r of rows){ const h = hostOf(r.link); if(!h) continue; map.set(h,(map.get(h)||0)+1); }
-  return [...map.entries()].sort((a,b)=>b[1]-a[1]).slice(0,k);
+  const sorted = [...map.entries()].sort((a,b)=>b[1]-a[1]);
+  const top = sorted.slice(0,10);
+  const others = sorted.slice(10).reduce((s,[,v])=>s+v,0);
+  if(others>0) top.push(["others", others]);
+  return top;
 }
 function splitWindows(rows){
   const f = els.from.value ? new Date(els.from.value) : null;
@@ -276,13 +287,22 @@ function topCat(rows){
   return best||"–";
 }
 
+/* --- dynamic height for Top keywords --- */
+function adjustKeywordsHeight(labelsCount=0){
+  const n = labelsCount || (charts.chartKeywords?.data?.labels?.length || 0);
+  // ~22px per row + padding, clamp
+  const h = Math.min(1200, Math.max(220, 22*n + 40));
+  els.kwCanvas.style.height = h+"px";
+}
+
 /* --- render --- */
 function render(){
   const rows = getFiltered();
-  els.metaCount.textContent = `${rows.length} articles in current filters`;
+  document.getElementById('metaCount').textContent = `${rows.length} articles in current filters`;
 
-  // Top keywords (horizontal)
+  // Top keywords (horizontal, dynamic height)
   const topK = topKeywords(rows, parseInt(els.topN.value,10), els.kwSearch.value.trim());
+  adjustKeywordsHeight(topK.length);
   const kwChart = makeOrUpdate('chartKeywords','bar',{
     labels: topK.map(([k])=>k),
     datasets:[{label:'count', data: topK.map(([,v])=>v), backgroundColor: palette(topK.length)}]
@@ -291,6 +311,7 @@ function render(){
     plugins:{legend:{display:false}},
     scales:{x:{beginAtZero:true}}
   });
+  charts.chartKeywords = kwChart;
   kwChart.options.onClick = (e)=>{
     const p = kwChart.getElementsAtEventForMode(e,'nearest',{intersect:true},true);
     if(!p.length) return;
@@ -309,26 +330,27 @@ function render(){
     indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}}
   });
 
-  // Top sources (horizontal)
-  const src = topSources(rows, 12);
-  makeOrUpdate('chartSources','bar',{
+  // Top sources — doughnut share
+  const src = topSourcesShare(rows);
+  makeOrUpdate('chartSources','doughnut',{
     labels: src.map(([h])=>h),
-    datasets:[{label:'count', data: src.map(([,v])=>v), backgroundColor: palette(src.length)}]
+    datasets:[{label:'share', data: src.map(([,v])=>v), backgroundColor: palette(src.length)}]
   },{
-    indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}}
+    plugins:{legend:{position:'bottom'}}
   });
 
-  // Status mix by category (100% stacked)
+  // Status mix by category (100% stacked) — use resolved CSS colors
+  const ok = cssVar('--ok'), warn = cssVar('--warn'), soft = cssVar('--soft');
   const mix = statusMixByCategory(rows);
   makeOrUpdate('chartMix','bar',{
     labels: mix.cats,
     datasets: [
-      {label:'emerging',  data: mix.perc.map(r=>r[0]), backgroundColor:'var(--ok)'},
-      {label:'bubbling',  data: mix.perc.map(r=>r[1]), backgroundColor:'var(--warn)'},
-      {label:'mainstream',data: mix.perc.map(r=>r[2]), backgroundColor:'var(--soft)'},
+      {label:'emerging',  data: mix.perc.map(r=>r[0]), backgroundColor:ok},
+      {label:'bubbling',  data: mix.perc.map(r=>r[1]), backgroundColor:warn},
+      {label:'mainstream',data: mix.perc.map(r=>r[2]), backgroundColor:soft},
     ]
   },{
-    responsive:true, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,max:100}}, plugins:{tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%`}}}
+    responsive:true, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,max:100}}, plugins:{tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%`}}, legend:{position:'bottom'}}
   });
 }
 
@@ -350,7 +372,6 @@ function renderKwDetails(allRows){
   els.kpiTotal.textContent = `Total: ${rkw.length}`;
   els.kpiAvg.textContent   = `Avg score: ${avgScore(rkw)}`;
   els.kpiCat.textContent   = `Top category: ${topCat(rkw)}`;
-  // open in list (keep current filters & add q=kw)
   const p = new URLSearchParams();
   p.set('q', selectedKw);
   if(els.cat.value)  p.set('cat', els.cat.value);
@@ -361,14 +382,16 @@ function renderKwDetails(allRows){
   els.openList.href = './?'+p.toString();
   els.kpis.style.display='flex';
 
-  // status stacked bar for this keyword
-  const counts = STATUS.map(s=>rkw.filter(r=>(r.status||'').toLowerCase()===s).length);
+  // status stacked bar for this keyword (resolved CSS colors)
+  const ok = cssVar('--ok'), warn = cssVar('--warn'), soft = cssVar('--soft');
+  const stats = ['emerging','bubbling','mainstream'];
+  const counts = stats.map(s=>rkw.filter(r=>(r.status||'').toLowerCase()===s).length);
   makeOrUpdate('chartKwStatus','bar',{
     labels:['status mix'],
     datasets:[
-      {label:'emerging',  data:[counts[0]], backgroundColor:'var(--ok)'},
-      {label:'bubbling',  data:[counts[1]], backgroundColor:'var(--warn)'},
-      {label:'mainstream',data:[counts[2]], backgroundColor:'var(--soft)'},
+      {label:'emerging',  data:[counts[0]], backgroundColor:ok},
+      {label:'bubbling',  data:[counts[1]], backgroundColor:warn},
+      {label:'mainstream',data:[counts[2]], backgroundColor:soft},
     ]
   },{
     indexAxis:'y', scales:{x:{stacked:true,beginAtZero:true}, y:{stacked:true}},
