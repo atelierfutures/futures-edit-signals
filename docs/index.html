@@ -7,17 +7,17 @@
 <style>
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:24px;max-width:1100px}
   header{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-  .pill{padding:2px 8px;border-radius:999px;background:#f2f2f2;font-size:12px}
+  .pill{padding:6px 10px;border-radius:999px;background:#f2f2f2;font-size:12px;border:1px solid #e6e6e6;cursor:pointer}
   .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0}
+  .search input,.controls select,.controls input[type=date]{padding:8px 10px;border:1px solid #ddd;border-radius:8px}
   .search{display:flex;gap:8px;align-items:center}
-  .search input{padding:8px 10px;border:1px solid #ddd;border-radius:8px;min-width:260px}
   table{width:100%;border-collapse:collapse}
-  th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left}
+  th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
   th{background:#fafafa;position:sticky;top:0}
   th.sortable{cursor:pointer}
   th.sortable .arrow{opacity:.35;margin-left:6px}
   th.sortable.active .arrow{opacity:1}
-  #counts{font-size:14px;color:#555}
+  #counts{font-size:14px;color:#555;margin-bottom:8px}
   mark{background:#ffe58a;padding:0 .15em;border-radius:3px}
 </style>
 
@@ -36,6 +36,21 @@
         <option>emerging</option><option>bubbling</option><option>mainstream</option>
       </select>
     </label>
+
+    <!-- Date range -->
+    <label>From: <input id="from" type="date"></label>
+    <label>To: <input id="to" type="date"></label>
+    <label>Quick:
+      <select id="quick">
+        <option value="">All time</option>
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+    </label>
+    <button id="clearDates" type="button" class="pill">Clear dates</button>
+
+    <!-- Search + download -->
     <div class="search">
       <input id="q" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" />
       <a id="dl" class="pill" href="signals_simple.csv" download>Download CSV</a>
@@ -67,10 +82,14 @@ const q       = document.getElementById("q");
 const counts  = document.getElementById("counts");
 const headers = [...document.querySelectorAll("th.sortable")];
 
+const fromInp = document.getElementById("from");
+const toInp   = document.getElementById("to");
+const quick   = document.getElementById("quick");
+const clearBtn= document.getElementById("clearDates");
+
 let rowsAll = [];
 let sortKey = "trend_score";   // default
 let sortDir = "desc";          // default
-
 const statusOrder = {emerging:0, bubbling:1, mainstream:2};
 
 function escRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
@@ -82,7 +101,8 @@ function cmp(a,b,key){
     return (x<y?-1:x>y?1:0)*dir;
   }
   if(key === "published"){
-    const x = new Date(a.published||0).getTime(), y = new Date(b.published||0).getTime();
+    const x = Date.parse(a.published||"") || 0;
+    const y = Date.parse(b.published||"") || 0;
     return (x<y?-1:x>y?1:0)*dir;
   }
   if(key === "status"){
@@ -124,17 +144,41 @@ function matches(row, query){
 }
 function highlight(str, query){
   let out = str||"";
-  const toks = tokenize(query);
-  toks.forEach(t=>{
+  tokenize(query).forEach(t=>{
     const re = new RegExp("(" + escRegExp(t) + ")", "ig");
     out = out.replace(re, "<mark>$1</mark>");
   });
   return out;
 }
 
+// date helpers
+function dayStartISO(d){ return new Date(new Date(d).setUTCHours(0,0,0,0)); }
+function dayEndISO(d){ return new Date(new Date(d).setUTCHours(23,59,59,999)); }
+function applyQuickRange(days){
+  if(!days){ fromInp.value=""; toInp.value=""; render(); return; }
+  const today = new Date();
+  const start = new Date(today.getTime() - days*86400000);
+  fromInp.value = start.toISOString().slice(0,10);
+  toInp.value   = today.toISOString().slice(0,10);
+  render();
+}
+
 function render(){
   const c=cat.value, s=stat.value, query=q.value;
-  let rows = rowsAll.filter(r => (!c || r.category===c) && (!s || (r.status||"").toLowerCase()===s) && matches(r, query));
+
+  const fromMs = fromInp.value ? dayStartISO(fromInp.value).getTime() : -Infinity;
+  const toMs   = toInp.value   ? dayEndISO(toInp.value).getTime()   :  Infinity;
+
+  let rows = rowsAll.filter(r => {
+    if (c && r.category !== c) return false;
+    if (s && (r.status||"").toLowerCase() !== s) return false;
+    if (!matches(r, query)) return false;
+
+    const pubMs = Date.parse(r.published || "");
+    if (isNaN(pubMs)) return false; // drop rows without date
+    return pubMs >= fromMs && pubMs <= toMs;
+  });
+
   rows = rows.sort((a,b)=>cmp(a,b,sortKey));
 
   tbody.innerHTML = rows.map(r => `
@@ -160,13 +204,17 @@ function load(){
   fetch("signals_simple.csv?ts="+bust)
     .then(r => r.text())
     .then(csv => Papa.parse(csv, {header:true, skipEmptyLines:true}))
-    .then(res => { rowsAll = res.data; setSort("trend_score"); }) // default sort: score ↓
+    .then(res => { rowsAll = res.data; setSort("trend_score"); })
     .catch(() => { counts.textContent = "Failed to load CSV"; });
 }
+
+// events
 cat.onchange = stat.onchange = render;
-q.addEventListener("input", () => { render(); });
-window.addEventListener("keydown", e => {
-  if(e.key === "Escape"){ q.value=""; render(); }
-});
+q.addEventListener("input", render);
+window.addEventListener("keydown", e => { if(e.key === "Escape"){ q.value=""; render(); }});
+fromInp.onchange = toInp.onchange = render;
+quick.onchange = () => applyQuickRange(parseInt(quick.value) || 0);
+clearBtn.onclick = () => { fromInp.value=""; toInp.value=""; quick.value=""; render(); };
+
 load();
 </script>
