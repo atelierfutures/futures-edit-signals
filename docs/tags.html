@@ -260,4 +260,97 @@ function topRisers(rows, topK=12){
   return deltas.slice(0, topK);
 }
 function rowsForKeyword(rows, kw){
-  return rows.filter(r => (r.primary_keyword||"").trim().toLowerCase(_
+  return rows.filter(r => (r.primary_keyword||"").trim().toLowerCase() === kw.toLowerCase());
+}
+
+/* --- render --- */
+function render(){
+  const rows = getFiltered();
+
+  // Weekly trend
+  const w = weeklySeries(rows);
+  makeOrUpdate('chartTrend','line',{
+    labels: w.labels, datasets:[{label:'signals', data:w.data, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.15)', fill:true, tension:.25}]
+  },{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}});
+
+  // Top rising
+  const risers = topRisers(rows, 12);
+  makeOrUpdate('chartRisers','bar',{
+    labels: risers.map(x=>x.k),
+    datasets:[{label:'Δ (now vs prev)', data: risers.map(x=>x.delta), backgroundColor: risers.map(x=>x.delta>=0?'#10b981':'#ef4444')}]
+  },{indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}}});
+
+  // Top keywords (click to inspect)
+  const topK = topKeywords(rows, parseInt(els.topN.value,10), els.kwSearch.value.trim());
+  const kwChart = makeOrUpdate('chartKeywords','bar',{
+    labels: topK.map(([k])=>k),
+    datasets:[{label:'count', data: topK.map(([,v])=>v), backgroundColor: palette(topK.length)}]
+  },{responsive:true, plugins:{legend:{display:false}}});
+  kwChart.options.onClick = (e)=>{
+    const p = kwChart.getElementsAtEventForMode(e,'nearest',{intersect:true},true);
+    if(!p.length) return;
+    const idx = p[0].index;
+    selectedKw = kwChart.data.labels[idx];
+    renderKwDetails(rows);
+  };
+  if(selectedKw) renderKwDetails(rows); else resetKwDetails();
+
+  // Status mix by category
+  const mix = statusMixByCategory(rows);
+  makeOrUpdate('chartMix','bar',{
+    labels: mix.cats,
+    datasets: [
+      {label:'emerging',  data: mix.perc.map(r=>r[0]), backgroundColor:'#86efac'},
+      {label:'bubbling',  data: mix.perc.map(r=>r[1]), backgroundColor:'#fde68a'},
+      {label:'mainstream',data: mix.perc.map(r=>r[2]), backgroundColor:'#cbd5e1'},
+    ]
+  },{
+    responsive:true, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,max:100}}, plugins:{tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%`}}}
+  });
+
+  // Top sources
+  const src = topSources(rows, 15);
+  makeOrUpdate('chartSources','bar',{
+    labels: src.map(([h])=>h),
+    datasets:[{label:'count', data: src.map(([,v])=>v), backgroundColor: palette(src.length)}]
+  },{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}});
+}
+
+/* keyword inspector */
+function resetKwDetails(){
+  els.kwTitle.textContent = '(click a keyword in the chart)';
+  makeOrUpdate('chartKwTrend','line',{labels:[],datasets:[]},{});
+  makeOrUpdate('chartKwStatus','doughnut',{labels:[],datasets:[]},{});
+}
+function renderKwDetails(allRows){
+  if(!selectedKw){ resetKwDetails(); return; }
+  els.kwTitle.textContent = selectedKw;
+
+  const rows = getFiltered();
+  const rkw = rowsForKeyword(rows, selectedKw);
+
+  // weekly curve
+  const w = weeklySeries(rkw);
+  makeOrUpdate('chartKwTrend','line',{
+    labels: w.labels, datasets:[{label:selectedKw, data:w.data, borderColor:'#a855f7', backgroundColor:'rgba(168,85,247,.18)', fill:true, tension:.25}]
+  },{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}});
+
+  // status mix
+  const stats = ['emerging','bubbling','mainstream'];
+  const counts = stats.map(s=>rkw.filter(r=>(r.status||'').toLowerCase()===s).length);
+  makeOrUpdate('chartKwStatus','doughnut',{
+    labels: stats, datasets:[{data:counts, backgroundColor:['#86efac','#fde68a','#cbd5e1']}]
+  },{responsive:true});
+}
+
+/* --- load CSV --- */
+function load(){
+  const bust = new Date().toISOString().slice(0,10);
+  fetch('signals_simple.csv?ts='+bust)
+    .then(r=>r.text())
+    .then(csv=>Papa.parse(csv,{header:true,skipEmptyLines:true}))
+    .then(res=>{ rowsAll=res.data; render(); })
+    .catch(()=> alert('Failed to load signals_simple.csv'));
+}
+load();
+</script>
