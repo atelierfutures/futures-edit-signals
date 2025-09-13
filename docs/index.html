@@ -61,7 +61,7 @@
   .search{flex:1 1 320px;display:flex;gap:10px;min-width:0}
   .search input{width:100%}
 
-  /* More menu */
+  /* Pretty “More” menu */
   .menu{ position:relative; }
   .menu-panel{
     display:none; position:absolute; right:0; top:calc(100% + 8px);
@@ -81,12 +81,23 @@
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
   .chip{display:inline-flex;align-items:center;gap:6px} .chip button{all:unset;cursor:pointer;color:var(--muted)}
 
-  /* Table */
-  table{width:100%;border-collapse:collapse;margin-top:10px}
+  /* --- Horizontal scroll only for the table --- */
+  .table-scroll{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    margin-top:10px;
+    border-radius:10px;
+  }
+  .table-scroll table{ min-width:980px; } /* Ajusta si quieres */
+
+  /* Table (desktop) */
+  table{width:100%;border-collapse:collapse}
   th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
-  th{position:sticky;top:64px;background:var(--bg);z-index:1}
-  th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
-  th .arrow{margin-left:6px;opacity:1}
+  th{position:sticky;top:64px;background:var(--bg);z-index:1;white-space:nowrap;user-select:none}
+  th.sortable{cursor:pointer}
+  /* Oculta flechas por defecto, muéstralas solo en la columna activa */
+  th .arrow{display:none;margin-left:6px}
+  th.active .arrow{display:inline-block}
 
   /* Cards */
   .cards{display:grid;gap:12px;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(560px,1fr))}
@@ -110,7 +121,7 @@
   .tag, .status{ padding:4px 8px; font-size:11px; }
   .tag--fashion{background:var(--fashion-bg); border:1px solid var(--fashion-bd); color:var(--fashion-fg)}
   .tag--beauty{ background:var(--beauty-bg);  border:1px solid var(--beauty-bd);  color:var(--beauty-fg)}
-  .tag--wellness{background:var(--wellness-bg);border-color:var(--wellness-bd);color:var(--wellness-fg)}
+  .tag--wellness{background:var(--wellness-bg);border:1px solid var(--wellness-bd);color:var(--wellness-fg)}
   .status--emerging{background:var(--emerg-bg);border:1px solid var(--emerg-bd);color:var(--emerg-fg)}
   .status--bubbling{background:var(--bubbl-bg);border:1px solid var(--bubbl-bd);color:var(--bubbl-fg)}
   .status--mainstream{background:var(--main-bg);border:1px solid var(--main-bd);color:var(--main-fg)}
@@ -119,7 +130,7 @@
   .pager{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px;flex-wrap:wrap}
   .pager-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
-  /* ---------- MOBILE LAYOUT POLISH ---------- */
+  /* ---------- MOBILE-FIRST TOOLBAR GRID ---------- */
   @media (max-width:700px){
     .bar-inner{
       display:grid;
@@ -141,14 +152,8 @@
     .area-dates{grid-area:dates}
     .area-more{grid-area:more; justify-self:end}
 
-    /* Controles pueden ocupar su columna sin romper la grilla */
     .select.fixed{width:100%}
     .seg.fixed{width:100%}
-
-    /* Tabla compacta: ocultar Keyword (4) y Trend score (5) */
-    th:nth-child(4), td:nth-child(4),
-    th:nth-child(5), td:nth-child(5){ display:none; }
-    th,td{ padding:8px 10px; }
   }
 </style>
 
@@ -156,9 +161,7 @@
   <div class="bar-inner">
     <div class="title">The Futures Edit — Signals</div>
 
-    <div class="search area-search">
-      <input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" />
-    </div>
+    <div class="search area-search"><input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" /></div>
 
     <div class="seg fixed area-view">
       <button id="viewTable" type="button">Table</button>
@@ -212,23 +215,25 @@
 <div class="wrap">
   <div id="chips" class="chips"></div>
 
-  <!-- Table -->
-  <table id="tbl" style="display:none">
-    <thead>
-      <tr>
-        <th class="sortable" data-key="published">Published <span class="arrow"></span></th>
-        <th class="sortable" data-key="title">Title <span class="arrow"></span></th>
-        <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow"></span></th>
-        <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow"></span></th>
-        <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow"></span></th>
-        <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow"></span></th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <!-- TABLE with horizontal scroll container -->
+  <div class="table-scroll">
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th class="sortable" data-key="published">Published <span class="arrow">↓</span></th>
+          <th class="sortable" data-key="title">Title <span class="arrow">↓</span></th>
+          <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow">↓</span></th>
+          <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow">↓</span></th>
+          <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow">↓</span></th>
+          <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow">↓</span></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-  <!-- Cards -->
-  <div id="cards" class="cards"></div>
+  <!-- CARDS -->
+  <div id="cards" class="cards" style="display:none"></div>
 
   <!-- Bottom pager -->
   <div class="pager">
@@ -246,10 +251,10 @@
 </div>
 
 <!-- Drawer (dates only) -->
-<div class="drawer-back" id="drawerBack" style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:80"></div>
-<div class="drawer" id="drawer" aria-modal="true" role="dialog" style="position:fixed;right:0;top:0;height:100%;width:360px;max-width:90vw;background:var(--bg);border-left:1px solid var(--border);box-shadow:var(--shadow);padding:18px;display:none;z-index:90">
+<div class="drawer-back" id="drawerBack" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:80"></div>
+<div class="drawer" id="drawer" aria-modal="true" role="dialog" style="display:none">
   <h3 style="margin:0 0 10px;font-size:16px">Date range</h3>
-  <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
     <label>From <input id="from" type="date" class="input" style="width:100%"></label>
     <label>To <input id="to" type="date" class="input" style="width:100%"></label>
     <label style="grid-column:1 / -1">Quick
@@ -261,7 +266,7 @@
       </select>
     </label>
   </div>
-  <div class="actions" style="display:flex;gap:10px;margin-top:14px">
+  <div style="display:flex;gap:10px;margin-top:14px">
     <button id="clearDates" class="btn" type="button">Clear dates</button>
     <button id="applyFilters" class="btn" type="button">Apply</button>
     <button id="closeDrawer" class="btn" type="button">Close</button>
@@ -270,6 +275,7 @@
 
 <script>
 /* ---------- refs ---------- */
+const bar = document.getElementById("bar");
 const tbody   = document.querySelector("#tbl tbody");
 const cardsEl = document.getElementById("cards");
 const chipsEl = document.getElementById("chips");
@@ -277,10 +283,8 @@ const headers = [...document.querySelectorAll("th.sortable")];
 
 const q = document.getElementById("q");
 const sortKeySel = document.getElementById("sortKey");
-
 const viewTableBtn = document.getElementById("viewTable");
 const viewCardsBtn = document.getElementById("viewCards");
-
 const barCatSel = document.getElementById("barCat");
 const barStatusSel = document.getElementById("barStatus");
 
@@ -311,7 +315,7 @@ const darkToggleBtn = document.getElementById("darkToggle");
 
 /* ---------- state ---------- */
 let rowsAll = [];
-let viewMode = "cards";             // default: Cards
+let viewMode = "table";
 let sortKey = "trend_score";
 let sortDir = "desc";
 let currentPage = 1;
@@ -322,7 +326,7 @@ const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const catClass = c => c && ["fashion","beauty","wellness"].includes(c) ? `pill tag tag--${c}` : "pill";
 const statusClass = s => s ? `pill status status--${s.toLowerCase()}` : "pill";
 
-/* helper: pill links to a NEW TAB filtered view */
+/* Pills linking to filtered view in new tab */
 function catPill(c){
   if(!c) return "";
   const href = "./?cat=" + encodeURIComponent(c);
@@ -334,18 +338,21 @@ function statusPill(s){
   return `<a class="${statusClass(v)}" href="${href}" target="_blank" rel="noopener">${v}</a>`;
 }
 
-/* date-time formatter to Madrid */
-const madrid = new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'Europe/Madrid', year:'numeric', month:'2-digit', day:'2-digit',
-  hour:'2-digit', minute:'2-digit', hour12:false
+/* Madrid time formatter (DST safe) */
+const madridFmt = new Intl.DateTimeFormat("en-GB",{
+  timeZone:"Europe/Madrid", year:"numeric", month:"2-digit", day:"2-digit",
+  hour:"2-digit", minute:"2-digit", hour12:false
 });
-function fmtDateTime(iso){
+function fmtMadrid(iso){
   if(!iso) return "";
   const d = new Date(iso);
   if (isNaN(d)) return (iso||"").slice(0,10);
-  const parts = madrid.formatToParts(d).reduce((o,p)=> (o[p.type]=p.value, o), {});
+  const parts = madridFmt.formatToParts(d).reduce((a,p)=> (a[p.type]=p.value, a), {});
   return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
+
+/* sticky header compact shadow */
+window.addEventListener("scroll", ()=> bar.classList.toggle("compact", window.scrollY > 10));
 
 /* theme */
 (()=>{ const saved = localStorage.getItem("fe_theme"); if(saved==="dark") document.documentElement.classList.add("dark"); })();
@@ -354,7 +361,7 @@ darkToggleBtn.onclick = () => {
   localStorage.setItem("fe_theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
 };
 
-/* More menu */
+/* pretty More menu */
 function toggleMenu(open){
   moreMenu.classList.toggle('open', open);
   moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -367,10 +374,10 @@ document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') toggleMenu(fals
 function updateSortUI(){
   sortKeySel.value = sortKey;
   headers.forEach(h=>{
+    const active = h.dataset.key === sortKey;
+    h.classList.toggle("active", active);
     const arrow = h.querySelector(".arrow");
-    const is = h.dataset.key === sortKey;
-    if(arrow) arrow.textContent = is ? (sortDir==="asc"?"↑":"↓") : "";
-    h.classList.toggle("active", is);
+    if(arrow) arrow.textContent = active ? (sortDir==="asc"?"↑":"↓") : "";
   });
 }
 function cmp(a,b,key){
@@ -401,12 +408,12 @@ function setSort(key){
 headers.forEach(h => h.addEventListener("click", () => setSort(h.dataset.key)));
 sortKeySel.onchange = () => { sortKey = sortKeySel.value; sortDir = (sortKey==="trend_score"||sortKey==="published")?"desc":"asc"; currentPage=1; updateSortUI(); render(); };
 
-/* view toggle */
+/* view */
 function setView(mode){
   viewMode = mode;
   viewTableBtn.classList.toggle("active", mode==="table");
   viewCardsBtn.classList.toggle("active", mode==="cards");
-  document.getElementById("tbl").style.display = mode==="table" ? "" : "none";
+  document.getElementById("tbl").closest(".table-scroll").style.display = mode==="table" ? "" : "none";
   document.getElementById("cards").style.display = mode==="cards" ? "grid" : "none";
   currentPage = 1; render();
 }
@@ -437,7 +444,7 @@ window.addEventListener("keydown", e => {
   }
 });
 
-/* simple filters */
+/* toolbar filters */
 barCatSel.onchange   = () => { currentPage=1; render(); };
 barStatusSel.onchange= () => { currentPage=1; render(); };
 
@@ -464,7 +471,7 @@ resetAllBtn.onclick = () => {
   sortKey="trend_score"; sortDir="desc"; updateSortUI();
   barCatSel.value=""; barStatusSel.value="";
   fromI.value=""; toI.value=""; quick.value="";
-  pageSizeSel.value="25"; pageSize=25; currentPage=1; setView(defaultMobileCards() ? "cards" : "table"); toggleMenu(false); render();
+  pageSizeSel.value="25"; pageSize=25; currentPage=1; setView("table"); toggleMenu(false); render();
 };
 copyFilteredBtn.onclick = async () => {
   const rows = getFilteredSortedRows();
@@ -548,11 +555,9 @@ function render(){
   rangeInfo.textContent = `Showing ${start+1}-${end} of ${total}`;
 
   if(viewMode==="table"){
-    document.getElementById("tbl").style.display = "";
-    document.getElementById("cards").style.display = "none";
     tbody.innerHTML = slice.map(r => `
       <tr>
-        <td>${fmtDateTime(r.published)}</td>
+        <td>${fmtMadrid(r.published)}</td>
         <td><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></td>
         <td>${catPill(r.category)}</td>
         <td>${highlight(r.primary_keyword||"", q.value)}</td>
@@ -561,14 +566,12 @@ function render(){
       </tr>
     `).join("");
   } else {
-    document.getElementById("tbl").style.display = "none";
-    document.getElementById("cards").style.display = "grid";
     cardsEl.innerHTML = slice.map(r => {
       const allK = (r.primary_keyword||"").split(",").map(s=>s.trim()).filter(Boolean);
       const firstK = allK[0] || "";
       return `
         <div class="card card--inline">
-          <div class="date">${fmtDateTime(r.published)}</div>
+          <div class="date">${fmtMadrid(r.published)}</div>
           <h4 class="card-title"><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></h4>
           <div class="meta-line">
             ${catPill(r.category)}
@@ -593,9 +596,6 @@ nextBtn.onclick = () => {
   if(currentPage < totalPages){ currentPage++; render(); }
 };
 
-/* default mobile = cards (si no hay ?view=) */
-const defaultMobileCards = () => window.matchMedia('(max-width: 700px)').matches;
-
 /* restore + load */
 function restoreFromUrl(){
   const p = new URLSearchParams(location.search);
@@ -605,9 +605,13 @@ function restoreFromUrl(){
   if(p.get("from")) fromI.value = p.get("from");
   if(p.get("to")) toI.value = p.get("to");
 
-  const vParam = p.get("view");
-  if(vParam){ setView(vParam === "cards" ? "cards" : "table"); }
-  else { setView(defaultMobileCards() ? "cards" : "table"); }
+  const v = p.get("view");
+  if(v==="cards") setView("cards");
+  else if(v==="table") setView("table");
+  else { // default: cards in small screens, table otherwise
+    if(window.matchMedia("(max-width:700px)").matches) setView("cards");
+    else setView("table");
+  }
 
   const sk = p.get("sort"); if(sk){ sortKey = sk; }
   const sd = p.get("dir"); if(sd){ sortDir = sd; }
