@@ -62,8 +62,8 @@
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
   .tag, .status{ padding:4px 8px; font-size:11px; }
   .kchip{ padding:3px 6px; font-size:11px; }
-  .meta-right .score{ padding:2px 6px; font-size:11px; }
   .kchips{ gap:6px; }
+  .score-txt{ color: var(--muted); font-size: 12px; }
 
   /* Drawer (dates only) */
   .drawer-back{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:80}
@@ -534,10 +534,10 @@ function render(){
             ${chips ? `<div class="kchips">${chips}</div>` : ""}
           </div>
           <div class="right">
-            <span class="${catClass(r.category)}">${r.category||""}</span>
-            <span class="${statusClass(r.status||"")}">${(r.status||"").toLowerCase()}</span>
-            <span class="pill score">score ${r.trend_score ?? ""}</span>
+            <span class="\${catClass(r.category)}">${r.category||""}</span>
             <span class="date">${(r.published||"").slice(0,10)}</span>
+            <span class="\${statusClass(r.status||"")}">${(r.status||"").toLowerCase()}</span>
+            <span class="score-txt">score ${r.trend_score ?? ""}</span>
           </div>
         </div>
       `;
