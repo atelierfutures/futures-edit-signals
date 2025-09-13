@@ -11,15 +11,19 @@
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
 
+    /* fixed control widths to prevent jumping */
+    --ctl-w: 180px;  /* selects */
+    --seg-w: 160px;  /* view segmented */
+
     /* Category palette */
     --fashion-bg:#fff1f2; --fashion-bd:#fecdd3; --fashion-fg:#9f1239;
     --beauty-bg:#eef2ff;  --beauty-bd:#c7d2fe; --beauty-fg:#3730a3;
     --wellness-bg:#ecfeff;--wellness-bd:#a5f3fc;--wellness-fg:#155e75;
 
     /* Status palette */
-    --emerg-bg:#ecfccb; --emerg-bd:#bef264; --emerg-fg:#3f6212;   /* emerging (lime) */
-    --bubbl-bg:#fef3c7; --bubbl-bd:#fcd34d; --bubbl-fg:#92400e;   /* bubbling (amber) */
-    --main-bg:#f1f5f9;  --main-bd:#cbd5e1; --main-fg:#334155;     /* mainstream (slate) */
+    --emerg-bg:#ecfccb; --emerg-bd:#bef264; --emerg-fg:#3f6212;   /* emerging */
+    --bubbl-bg:#fef3c7; --bubbl-bd:#fcd34d; --bubbl-fg:#92400e;   /* bubbling  */
+    --main-bg:#f1f5f9;  --main-bd:#cbd5e1; --main-fg:#334155;     /* mainstream */
   }
   :root.dark{
     --bg:#0b0b0c; --fg:#f2f3f5; --muted:#a3a7ae;
@@ -51,14 +55,18 @@
   .spacer{flex:1}
 
   .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+  .seg.fixed{width:var(--seg-w)}
+  .seg.fixed button{flex:1 0 50%}
   .seg button{padding:8px 12px;border:0;background:var(--card);color:var(--fg);cursor:pointer}
   .seg button.active{background:var(--accent);color:var(--bg)}
 
-  .btn,.icon-btn{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;box-shadow:var(--shadow)}
-  .icon-btn{padding:8px 10px;display:flex;align-items:center;gap:8px}
+  .btn{background:var(--card);color:var(--fg);border:1px solid var(--border);
+    border-radius:10px;padding:10px 12px;cursor:pointer;box-shadow:var(--shadow)}
   .btn:disabled{opacity:.5;cursor:not-allowed}
 
   .select,.input{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+  .select.fixed{width:var(--ctl-w)}
+  .input.fixed{width:var(--ctl-w)}
   .search{flex:1 1 320px;display:flex;gap:10px}
   .search input{width:100%}
 
@@ -91,7 +99,7 @@
   .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;color:var(--muted)}
   .score{padding:2px 8px;border:1px solid var(--border);border-radius:999px}
 
-  /* Tags */
+  /* Tag skins */
   .tag{font-weight:600}
   .tag--fashion{background:var(--fashion-bg); border-color:var(--fashion-bd); color:var(--fashion-fg)}
   .tag--beauty{ background:var(--beauty-bg);  border-color:var(--beauty-bd);  color:var(--beauty-fg)}
@@ -123,12 +131,12 @@
       <input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" />
     </div>
 
-    <div class="seg" id="viewSeg">
-      <button id="viewList" class="active" type="button">List</button>
+    <div class="seg fixed" id="viewSeg">
+      <button id="viewTable" class="active" type="button">Table</button>
       <button id="viewCards" type="button">Cards</button>
     </div>
 
-    <select id="sortKey" class="select">
+    <select id="sortKey" class="select fixed">
       <option value="trend_score" selected>Sort: Trend score</option>
       <option value="published">Sort: Published</option>
       <option value="title">Sort: Title</option>
@@ -137,18 +145,28 @@
       <option value="status">Sort: Status</option>
     </select>
 
-    <button id="filtersBtn" class="icon-btn">⚙️ Filters</button>
+    <select id="barCat" class="select fixed">
+      <option value="">All categories</option>
+      <option>fashion</option><option>beauty</option><option>wellness</option>
+    </select>
+
+    <select id="barStatus" class="select fixed">
+      <option value="">All statuses</option>
+      <option>emerging</option><option>bubbling</option><option>mainstream</option>
+    </select>
+
+    <button id="filtersBtn" class="btn">Filters</button>
     <div class="spacer"></div>
 
     <div class="menu">
-      <button class="icon-btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">⋯ More</button>
+      <button class="btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">More</button>
       <div class="menu-panel" id="moreMenu" role="menu">
-        <a href="signals_simple.csv" download>⬇️ Download CSV</a>
-        <button id="copyFiltered">📋 Copy filtered CSV</button>
-        <button id="copyShare">🔗 Copy share link</button>
-        <button id="resetAll">↺ Reset all</button>
-        <button id="darkToggle">🌓 Toggle dark mode</button>
-        <a href="https://github.com/atelierfutures/futures-edit-signals" target="_blank" rel="noopener">ℹ️ Repository</a>
+        <a href="signals_simple.csv" download>Download CSV</a>
+        <button id="copyFiltered">Copy filtered CSV</button>
+        <button id="copyShare">Copy share link</button>
+        <button id="resetAll">Reset all</button>
+        <button id="darkToggle">Toggle dark mode</button>
+        <a href="https://github.com/atelierfutures/futures-edit-signals" target="_blank" rel="noopener">Repository</a>
       </div>
     </div>
   </div>
@@ -157,15 +175,6 @@
 <div class="wrap">
   <div id="chips" class="chips"></div>
   <div id="counts" class="muted">Loading…</div>
-  <!-- tiny legend -->
-  <div class="muted" style="display:flex;gap:12px;flex-wrap:wrap;margin:6px 0 12px">
-    <span class="pill tag tag--fashion">fashion</span>
-    <span class="pill tag tag--beauty">beauty</span>
-    <span class="pill tag tag--wellness">wellness</span>
-    <span class="pill status status--emerging">emerging</span>
-    <span class="pill status status--bubbling">bubbling</span>
-    <span class="pill status status--mainstream">mainstream</span>
-  </div>
 
   <table id="tbl">
     <thead>
@@ -185,12 +194,12 @@
 
   <div class="pager">
     <span>Rows per page:</span>
-    <select id="pageSize" class="select">
+    <select id="pageSize" class="select fixed">
       <option>25</option><option selected>50</option><option>100</option><option>200</option>
     </select>
     <span id="pageInfo" class="muted">Page 1 of 1</span>
-    <button class="btn" id="prevBtn">‹ Prev</button>
-    <button class="btn" id="nextBtn">Next ›</button>
+    <button class="btn" id="prevBtn">Prev</button>
+    <button class="btn" id="nextBtn">Next</button>
   </div>
 </div>
 
@@ -240,8 +249,12 @@ const headers = [...document.querySelectorAll("th.sortable")];
 
 const q = document.getElementById("q");
 const sortKeySel = document.getElementById("sortKey");
-const viewListBtn = document.getElementById("viewList");
-const viewCardsBtn= document.getElementById("viewCards");
+
+const viewTableBtn = document.getElementById("viewTable");
+const viewCardsBtn = document.getElementById("viewCards");
+
+const barCatSel = document.getElementById("barCat");
+const barStatusSel = document.getElementById("barStatus");
 
 const pageSizeSel = document.getElementById("pageSize");
 const prevBtn  = document.getElementById("prevBtn");
@@ -270,9 +283,9 @@ const darkToggleBtn = document.getElementById("darkToggle");
 
 /* ---------- state ---------- */
 let rowsAll = [];
-let viewMode = "list";
+let viewMode = "table";         // "table" | "cards"
 let sortKey = "trend_score";
-let sortDir = "desc";         // toggled by clicking table headers
+let sortDir = "desc";           // toggled by clicking table headers
 let currentPage = 1;
 let pageSize = parseInt(pageSizeSel.value,10) || 50;
 
@@ -331,14 +344,14 @@ sortKeySel.onchange = () => { sortKey = sortKeySel.value; sortDir = (sortKey==="
 /* view */
 function setView(mode){
   viewMode = mode;
-  viewListBtn.classList.toggle("active", mode==="list");
+  viewTableBtn.classList.toggle("active", mode==="table");
   viewCardsBtn.classList.toggle("active", mode==="cards");
-  document.getElementById("tbl").style.display = mode==="list" ? "" : "none";
+  document.getElementById("tbl").style.display = mode==="table" ? "" : "none";
   document.getElementById("cards").style.display = mode==="cards" ? "grid" : "none";
   currentPage = 1; render();
 }
-viewListBtn.onclick  = () => setView("list");
-viewCardsBtn.onclick = () => setView("cards");
+viewTableBtn.onclick  = () => setView("table");
+viewCardsBtn.onclick  = () => setView("cards");
 
 /* search & filters */
 const tokenize = s => (s||"").toLowerCase().trim().split(/\s+/).filter(Boolean);
@@ -364,13 +377,22 @@ window.addEventListener("keydown", e => {
   }
 });
 
+/* toolbar cat/status -> drawer sync */
+barCatSel.onchange   = () => { cat.value = barCatSel.value; currentPage=1; render(); };
+barStatusSel.onchange= () => { stat.value= barStatusSel.value; currentPage=1; render(); };
+
 /* drawer */
 function openDrawer(){ drawerBack.style.display="block"; drawer.style.display="block"; document.body.style.overflow="hidden"; }
 function closeDrawerFn(){ drawerBack.style.display="none"; drawer.style.display="none"; document.body.style.overflow=""; }
 filtersBtn.onclick = openDrawer;
 closeDrawer.onclick = closeDrawerFn;
 drawerBack.onclick  = closeDrawerFn;
-applyFilters.onclick = () => { currentPage=1; closeDrawerFn(); render(); };
+applyFilters.onclick = () => {
+  // mirror to toolbar selects
+  barCatSel.value = cat.value;
+  barStatusSel.value = stat.value;
+  currentPage=1; closeDrawerFn(); render();
+};
 clearDatesBtn.onclick = () => { fromI.value=""; toI.value=""; quick.value=""; };
 quick.onchange = () => {
   const days = parseInt(quick.value) || 0;
@@ -391,16 +413,18 @@ document.addEventListener("click", (e)=>{ if(!moreMenu.contains(e.target) && e.t
 
 /* reset / copy csv / copy share */
 resetAllBtn.onclick = () => {
-  q.value=""; sortKey="trend_score"; sortDir="desc"; updateSortUI();
-  cat.value=""; stat.value=""; fromI.value=""; toI.value=""; quick.value="";
-  pageSizeSel.value="50"; pageSize=50; currentPage=1; setView("list"); toggleMenu(false); render();
+  q.value="";
+  sortKey="trend_score"; sortDir="desc"; updateSortUI();
+  cat.value=""; stat.value=""; barCatSel.value=""; barStatusSel.value="";
+  fromI.value=""; toI.value=""; quick.value="";
+  pageSizeSel.value="50"; pageSize=50; currentPage=1; setView("table"); toggleMenu(false); render();
 };
 copyFilteredBtn.onclick = async () => {
   const rows = getFilteredSortedRows();
   const header = ["published","title","link","category","primary_keyword","trend_score","status"];
   const csv = [header.join(",")].concat(rows.map(r => header.map(h => `"${(r[h]??"").toString().replace(/"/g,'""')}"`).join(","))).join("\n");
   try { await navigator.clipboard.writeText(csv);
-    copyFilteredBtn.textContent = "✅ Copied!"; setTimeout(()=> copyFilteredBtn.textContent="📋 Copy filtered CSV", 1500);
+    copyFilteredBtn.textContent = "Copied!"; setTimeout(()=> copyFilteredBtn.textContent="Copy filtered CSV", 1500);
   } catch {
     const blob = new Blob([csv], {type:"text/csv"}); const a = Object.assign(document.createElement("a"), {href:URL.createObjectURL(blob), download:"signals_filtered.csv"}); document.body.appendChild(a); a.click(); a.remove();
   }
@@ -408,13 +432,13 @@ copyFilteredBtn.onclick = async () => {
 copyShareBtn.onclick = async () => {
   const url = new URL(location.href); url.search = buildQuery().toString();
   try { await navigator.clipboard.writeText(url.toString());
-    copyShareBtn.textContent = "✅ Link copied!"; setTimeout(()=> copyShareBtn.textContent="🔗 Copy share link", 1500);
+    copyShareBtn.textContent = "Link copied!"; setTimeout(()=> copyShareBtn.textContent="Copy share link", 1500);
   } catch {}
 };
 
 /* pipeline */
 function getFilteredSortedRows(){
-  const query=q.value, c=cat.value, s=stat.value;
+  const query=q.value, c=barCatSel.value, s=barStatusSel.value;
   const fromMs = fromI.value ? new Date(new Date(fromI.value).setUTCHours(0,0,0,0)).getTime() : -Infinity;
   const toMs   = toI.value   ? new Date(new Date(toI.value).setUTCHours(23,59,59,999)).getTime() :  Infinity;
 
@@ -436,11 +460,11 @@ function getFilteredSortedRows(){
 
 function renderChips(){
   const chips = [];
-  if(q.value) chips.push({k:"search", label:`🔎 ${q.value}`, clear:()=>{q.value="";}});
-  if(cat.value) chips.push({k:"category", label:`Category: ${cat.value}`, clear:()=>{cat.value="";}});
-  if(stat.value) chips.push({k:"status", label:`Status: ${stat.value}`, clear:()=>{stat.value="";}});
+  if(q.value) chips.push({k:"search", label:`Search: ${q.value}`, clear:()=>{q.value="";}});
+  if(barCatSel.value) chips.push({k:"category", label:`Category: ${barCatSel.value}`, clear:()=>{barCatSel.value=""; cat.value="";}});
+  if(barStatusSel.value) chips.push({k:"status", label:`Status: ${barStatusSel.value}`, clear:()=>{barStatusSel.value=""; stat.value="";}});
   if(fromI.value || toI.value) chips.push({k:"dates", label:`Date: ${fromI.value||"…"} → ${toI.value||"…"}`, clear:()=>{fromI.value=""; toI.value=""; quick.value="";}});
-  chipsEl.innerHTML = chips.map(c => `<span class="pill chip">${c.label} <button title="clear" data-k="${c.k}">✕</button></span>`).join("");
+  chipsEl.innerHTML = chips.map(c => `<span class="pill chip">${c.label} <button title="clear" data-k="${c.k}">×</button></span>`).join("");
   chipsEl.querySelectorAll("button").forEach(b=>{
     b.onclick = () => { const k=b.dataset.k; const c = chips.find(x=>x.k===k); if(c){c.clear(); currentPage=1; render();} };
   });
@@ -450,11 +474,11 @@ function renderChips(){
 function buildQuery(){
   const p = new URLSearchParams();
   if(q.value) p.set("q", q.value);
-  if(cat.value) p.set("cat", cat.value);
-  if(stat.value) p.set("stat", stat.value);
+  if(barCatSel.value) p.set("cat", barCatSel.value);
+  if(barStatusSel.value) p.set("stat", barStatusSel.value);
   if(fromI.value) p.set("from", fromI.value);
   if(toI.value) p.set("to", toI.value);
-  if(viewMode!=="list") p.set("view", viewMode);
+  if(viewMode!=="table") p.set("view", viewMode);
   if(sortKey!=="trend_score") p.set("sort", sortKey);
   if(sortDir!=="desc") p.set("dir", sortDir);
   if(pageSize!==50) p.set("size", String(pageSize));
@@ -483,7 +507,7 @@ function render(){
   pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
   prevBtn.disabled = currentPage <= 1; nextBtn.disabled = currentPage >= totalPages;
 
-  if(viewMode==="list"){
+  if(viewMode==="table"){
     tbody.innerHTML = slice.map(r => `
       <tr>
         <td>${(r.published||"").slice(0,10)}</td>
@@ -524,11 +548,12 @@ nextBtn.onclick = () => { currentPage++; render(); };
 function restoreFromUrl(){
   const p = new URLSearchParams(location.search);
   if(p.get("q")) q.value = p.get("q");
-  if(p.get("cat")) cat.value = p.get("cat");
-  if(p.get("stat")) stat.value = p.get("stat");
+  if(p.get("cat")) { barCatSel.value = p.get("cat"); cat.value = barCatSel.value; }
+  if(p.get("stat")){ barStatusSel.value = p.get("stat"); stat.value = barStatusSel.value; }
   if(p.get("from")) fromI.value = p.get("from");
   if(p.get("to")) toI.value = p.get("to");
-  const v = p.get("view"); if(v==="cards") setView("cards"); else setView("list");
+  const v = p.get("view");
+  if(v==="cards") setView("cards"); else setView("table"); // backward compat
   const sk = p.get("sort"); if(sk){ sortKey = sk; }
   const sd = p.get("dir"); if(sd){ sortDir = sd; }
   const ps = parseInt(p.get("size")||"50",10); pageSize = ps; pageSizeSel.value = String(ps);
