@@ -10,45 +10,41 @@
     --bg:#ffffff; --fg:#141414; --muted:#6b7280;
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
-    --ok:#22c55e; --warn:#f59e0b; --soft:#94a3b8;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
   a{color:#2563eb;text-decoration:none}
   .bar{position:sticky;top:0;z-index:20;backdrop-filter:saturate(180%) blur(10px);
     background:color-mix(in oklab, var(--bg) 92%, transparent); border-bottom:1px solid var(--border)}
-  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .title{font-weight:700}
   .btn, .select, .input{
     background:var(--card); color:var(--fg); border:1px solid var(--border);
     border-radius:10px; padding:10px 12px; box-shadow:var(--shadow);
   }
   .btn.primary{background:#111827;color:#fff;border-color:#111827}
-  .btn.ghost{background:transparent}
-  .select{min-width:160px}
+  .select{min-width:140px}
   .spacer{flex:1}
   .wrap{max-width:1100px;margin:0 auto;padding:16px 20px}
   .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
   .small{font-size:12px;color:var(--muted)}
-  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .pill{padding:4px 8px;font-size:11px;line-height:1;border:1px solid var(--border);
+        border-radius:999px;background:var(--pill);}
   .grid{display:grid;gap:14px}
   @media(min-width:900px){ .grid.cards{grid-template-columns:1fr 1fr} }
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:14px}
+  .card{background:var(--card);border:1px solid var(--border);
+        border-radius:14px;box-shadow:var(--shadow);padding:14px}
   .muted{color:var(--muted)}
-  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
-  th, td{padding:10px;border-bottom:1px dashed var(--border);vertical-align:top}
-  th{font-weight:600;text-align:left;background:#fafafa}
-  tr:last-child td{border-bottom:none}
 
-  /* Modal */
-  .modal-back{position:fixed;inset:0;background:rgba(0,0,0,.25);display:none;align-items:center;justify-content:center;padding:20px}
-  .modal{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);max-width:720px;width:100%;padding:16px}
-  .modal h3{margin:0 0 8px 0}
-  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .form-grid > label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}
-  .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
-  .help{font-size:12px;color:var(--muted)}
-  code.k{background:#f3f4f6;border:1px solid var(--border);border-radius:6px;padding:2px 6px}
+  /* Table view */
+  .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px;
+              box-shadow:var(--shadow);background:var(--card)}
+  table{border-collapse:collapse;min-width:900px;width:100%}
+  th, td{padding:10px;border-bottom:1px dashed var(--border);vertical-align:top;text-align:left}
+  th{font-weight:600;background:#fafafa;position:sticky;top:0;z-index:5}
+  tr:last-child td{border-bottom:none}
 </style>
 
 <div class="bar">
@@ -73,7 +69,7 @@
     </select>
 
     <label class="small">Search
-      <input id="q" type="search" class="input" placeholder="title / keyword / source" style="min-width:260px">
+      <input id="q" type="search" class="input" placeholder="title / keyword / source" style="min-width:200px">
     </label>
 
     <select id="view" class="select">
@@ -84,19 +80,18 @@
     <button id="clear" class="btn">Clear</button>
     <div class="spacer"></div>
     <a class="btn" href="./tags.html">Graphs & Insights →</a>
-    <button id="addBtn" class="btn primary">+ Add signal</button>
   </div>
 </div>
 
 <div class="wrap">
   <div class="row">
     <span id="metaCount" class="pill">…</span>
-    <span class="small">Use filters above. Tip: set dates, then switch to <b>table</b> for CSV-like review.</span>
   </div>
 
   <div id="cards" class="grid cards"></div>
-  <div id="tableWrap" style="display:none">
-    <table id="tbl">
+
+  <div id="tableWrap" class="table-wrap" style="display:none">
+    <table>
       <thead>
         <tr>
           <th>Published</th>
@@ -113,315 +108,94 @@
   </div>
 </div>
 
-<!-- Modal: Add Signal -->
-<div id="modalBack" class="modal-back" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addTitle">
-    <h3 id="addTitle">Add signal</h3>
-    <div class="help">This creates a CSV row you can paste into <code class="k">signals_simple.csv</code>. Keywords use a controlled vocabulary with alias mapping.</div>
-    <div class="form-grid" style="margin-top:10px">
-      <label>Title
-        <input id="f_title" class="input" placeholder="Article title" required>
-      </label>
-      <label>Published (YYYY-MM-DD)
-        <input id="f_date" type="date" class="input" required>
-      </label>
-      <label>Link
-        <input id="f_link" class="input" placeholder="https://…" required>
-      </label>
-      <label>Source (domain)
-        <input id="f_source" class="input" placeholder="vogue.com, allure.com …">
-      </label>
-      <label>Category
-        <select id="f_cat" class="select" required>
-          <option value="fashion">fashion</option>
-          <option value="beauty">beauty</option>
-          <option value="wellness">wellness</option>
-        </select>
-      </label>
-      <label>Status
-        <select id="f_status" class="select" required>
-          <option value="emerging">emerging</option>
-          <option value="bubbling">bubbling</option>
-          <option value="mainstream">mainstream</option>
-        </select>
-      </label>
-      <label>Primary keyword
-        <input id="f_kw" class="input" list="kwList" placeholder="start typing…" required>
-        <datalist id="kwList">
-          <!-- Seed list — extend anytime -->
-          <option value="quiet luxury"></option>
-          <option value="western"></option>
-          <option value="longevity"></option>
-          <option value="lip oil"></option>
-          <option value="retinoid routines"></option>
-          <option value="sleep optimization"></option>
-          <option value="ai"></option>
-          <option value="scalp care"></option>
-          <option value="skin barrier"></option>
-          <option value="microbiome"></option>
-          <option value="functional fragrance"></option>
-          <option value="mushroom wellness"></option>
-          <option value="ceramide care"></option>
-          <option value="bio-based materials"></option>
-          <option value="upcycled beauty"></option>
-          <option value="hair cycling"></option>
-        </datalist>
-      </label>
-      <label>Trend score (1–5)
-        <input id="f_score" type="number" min="1" max="5" step="0.1" class="input" value="3">
-      </label>
-    </div>
-    <div class="form-actions">
-      <button id="cancelAdd" class="btn">Cancel</button>
-      <button id="saveAdd" class="btn primary">Create CSV row</button>
-    </div>
-    <div id="addResult" class="help" style="margin-top:8px;display:none"></div>
-  </div>
-</div>
-
 <script>
-/* ===== Keyword normalization (shared logic with tags.html) ===== */
+/* --- Keyword normalization --- */
 const KW_MAP = new Map([
-  // beauty
-  ['anti aging','longevity'], ['anti-ageing','longevity'], ['anti ageing','longevity'],
+  ['anti aging','longevity'], ['anti-ageing','longevity'],
   ['lip-oil','lip oil'], ['lip oils','lip oil'],
-  ['skin cycling','retinoid routines'], ['retinol routine','retinoid routines'],
-  ['scalp-care','scalp care'],
-  // wellness
-  ['biohacking','longevity'], ['sleep tech','sleep optimization'],
-  // fashion
   ['old money','quiet luxury'], ['stealth wealth','quiet luxury'],
   ['westernwear','western'], ['cowboy core','western'],
-  // ai variants
-  ['gen ai','ai'], ['gen-ai','ai'], ['generative ai','ai'],
-]);
-const KW_STOP = new Set([
-  'trend','trends','report','collection','editorial','new','drop','style','looks',
-  'runway','season','fall','winter','spring','summer','2024','2025','brand','product',
-  'line','launch','best','top','dress','shirt','pants','jean','skirt','bag','shoe'
+  ['gen ai','ai'], ['gen-ai','ai'], ['generative ai','ai']
 ]);
 function normalizeKw(raw){
   if(!raw) return '';
-  let s = String(raw).toLowerCase().trim();
-  s = s.replace(/[–—]/g,'-').replace(/\s+/g,' ');
-  if (s.endsWith('s') && s.length > 4) s = s.slice(0,-1);
-  if (KW_MAP.has(s)) s = KW_MAP.get(s);
-  if (s.length < 3 || KW_STOP.has(s)) return '';
+  let s=String(raw).toLowerCase().trim();
+  if(KW_MAP.has(s)) s=KW_MAP.get(s);
   return s;
 }
+function hostOf(u){try{return new URL(u).host.replace(/^www\./,'');}catch{return '';}}
 
-/* ===== State / elements ===== */
-let rowsAll = [];
-const els = {
-  cat: byId('cat'), stat: byId('stat'), from: byId('from'), to: byId('to'),
-  quick: byId('quick'), q: byId('q'), view: byId('view'), clear: byId('clear'),
-  cards: byId('cards'), tableWrap: byId('tableWrap'), tbody: byId('tbody'),
-  meta: byId('metaCount'),
-  addBtn: byId('addBtn'), modalBack: byId('modalBack'), cancelAdd: byId('cancelAdd'),
-  saveAdd: byId('saveAdd'),
-  f_title: byId('f_title'), f_date: byId('f_date'), f_link: byId('f_link'),
-  f_source: byId('f_source'), f_cat: byId('f_cat'), f_status: byId('f_status'),
-  f_kw: byId('f_kw'), f_score: byId('f_score'), addResult: byId('addResult')
-};
-
-/* ===== Utils ===== */
-function byId(id){ return document.getElementById(id); }
-function inRange(iso, from, to){
-  const t = Date.parse(iso||""); if(isNaN(t)) return false;
-  if(from && t < new Date(from).setUTCHours(0,0,0,0)) return false;
-  if(to   && t > new Date(to).setUTCHours(23,59,59,999)) return false;
-  return true;
-}
-function hostOf(u){ try{ return new URL(u).host.replace(/^www\./,''); }catch{return ""; } }
-function escRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
-function params(){ return new URLSearchParams(location.search); }
-function setFromParams(){
-  const p = params();
-  if(p.has('cat')) els.cat.value = p.get('cat');
-  if(p.has('stat')) els.stat.value = p.get('stat');
-  if(p.has('from')) els.from.value = p.get('from');
-  if(p.has('to')) els.to.value = p.get('to');
-  if(p.has('q')) els.q.value = p.get('q');
-  if(p.get('view')==='table') els.view.value='table';
-}
-
-/* ===== Filtering ===== */
+let rowsAll=[];
 function getFiltered(){
-  const c = els.cat.value, s = els.stat.value, f=els.from.value, t=els.to.value;
-  const q = els.q.value.trim();
-  let rows = rowsAll.filter(r=>{
+  const c=byId('cat').value, s=byId('stat').value, f=byId('from').value, t=byId('to').value;
+  const q=byId('q').value.trim();
+  let rows=rowsAll.filter(r=>{
     if(c && r.category!==c) return false;
     if(s && (r.status||'').toLowerCase()!==s) return false;
-    if(f || t){ if(!inRange(r.published, f, t)) return false; }
+    if(f && r.published<f) return false;
+    if(t && r.published>t) return false;
     return true;
   });
-  // text search on title / normalized keyword / source host
   if(q){
-    const re = new RegExp(escRe(q),'i');
-    rows = rows.filter(r=>{
-      const kw = normalizeKw(r.primary_keyword||'');
-      return re.test(r.title||'') || re.test(kw) || re.test(hostOf(r.link||''));
+    const re=new RegExp(q,'i');
+    rows=rows.filter(r=>{
+      return re.test(r.title||'') || re.test(normalizeKw(r.primary_keyword||'')) || re.test(hostOf(r.link||''));
     });
   }
   return rows;
 }
 
-/* ===== Rendering ===== */
 function render(){
-  const rows = getFiltered();
-  els.meta.textContent = `${rows.length} articles`;
-  const isTable = els.view.value === 'table';
-  els.tableWrap.style.display = isTable ? '' : 'none';
-  els.cards.style.display = isTable ? 'none' : 'grid';
+  const rows=getFiltered();
+  byId('metaCount').textContent=`${rows.length} articles`;
+  const isTable=byId('view').value==='table';
+  byId('cards').style.display=isTable?'none':'grid';
+  byId('tableWrap').style.display=isTable?'':'block';
   if(isTable) renderTable(rows); else renderCards(rows);
-  // reflect current filters in URL (so tags.html links feel consistent)
-  const p = new URLSearchParams();
-  if(els.cat.value) p.set('cat', els.cat.value);
-  if(els.stat.value) p.set('stat', els.stat.value);
-  if(els.from.value) p.set('from', els.from.value);
-  if(els.to.value) p.set('to', els.to.value);
-  if(els.q.value.trim()) p.set('q', els.q.value.trim());
-  if(isTable) p.set('view','table');
-  const u = location.pathname + (p.toString() ? `?${p.toString()}` : '');
-  history.replaceState(null,'',u);
 }
-
 function renderCards(rows){
-  els.cards.innerHTML = rows.map(r=>{
-    const d = (r.published||'').slice(0,10);
-    const host = hostOf(r.link);
-    const kw = normalizeKw(r.primary_keyword||'') || '—';
-    const score = r.trend_score ? Number(r.trend_score).toFixed(1) : '—';
+  byId('cards').innerHTML=rows.map(r=>{
+    const d=(r.published||'').slice(0,10);
+    const host=hostOf(r.link);
+    const kw=normalizeKw(r.primary_keyword||'')||'—';
     return `<article class="card">
-      <div class="small muted">${d || '—'} · ${host || '—'}</div>
-      <h3 style="margin:6px 0 8px"><a href="${r.link}" target="_blank" rel="noopener">${r.title||'(untitled)'}</a></h3>
-      <div class="row" style="margin:6px 0 0">
+      <div class="small muted">${d||'—'} · ${host||'—'}</div>
+      <h3 style="margin:6px 0"><a href="${r.link}" target="_blank">${r.title||'(untitled)'}</a></h3>
+      <div class="row">
         <span class="pill">${kw}</span>
         <span class="pill">${(r.status||'').toLowerCase()||'status?'}</span>
         <span class="pill">${r.category||'—'}</span>
-        <span class="pill">score: ${score}</span>
+        <span class="pill">score: ${r.trend_score||'—'}</span>
       </div>
     </article>`;
-  }).join('') || `<div class="muted">No results.</div>`;
+  }).join('')||`<div class="muted">No results.</div>`;
 }
-
 function renderTable(rows){
-  els.tbody.innerHTML = rows.map(r=>{
-    const d = (r.published||'').slice(0,10);
-    const host = hostOf(r.link);
-    const kw = normalizeKw(r.primary_keyword||'') || '—';
-    const score = r.trend_score ? Number(r.trend_score).toFixed(1) : '—';
+  byId('tbody').innerHTML=rows.map(r=>{
+    const d=(r.published||'').slice(0,10);
+    const host=hostOf(r.link);
+    const kw=normalizeKw(r.primary_keyword||'')||'—';
     return `<tr>
       <td>${d||'—'}</td>
-      <td><a href="${r.link}" target="_blank" rel="noopener">${r.title||'(untitled)'}</a></td>
+      <td><a href="${r.link}" target="_blank">${r.title||'(untitled)'}</a></td>
       <td>${kw}</td>
       <td>${(r.status||'').toLowerCase()}</td>
       <td>${r.category||''}</td>
-      <td>${score}</td>
+      <td>${r.trend_score||''}</td>
       <td>${host||''}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="7" class="muted">No results.</td></tr>`;
+  }).join('')||`<tr><td colspan="7" class="muted">No results.</td></tr>`;
 }
 
-/* ===== Event wiring ===== */
-['cat','stat','from','to','view'].forEach(id => els[id].addEventListener('change', render));
-['q'].forEach(id => els[id].addEventListener('input', render));
-els.quick.onchange = ()=>{
-  const d = parseInt(els.quick.value)||0;
-  if(!d){ els.from.value=""; els.to.value=""; render(); return; }
-  const today = new Date();
-  const start = new Date(today.getTime()-d*86400000);
-  els.from.value = start.toISOString().slice(0,10);
-  els.to.value = today.toISOString().slice(0,10);
-  render();
-};
-els.clear.onclick = ()=>{
-  els.cat.value=""; els.stat.value=""; els.from.value=""; els.to.value="";
-  els.quick.value=""; els.q.value=""; render();
-};
+function byId(id){return document.getElementById(id);}
+['cat','stat','from','to','view','q'].forEach(id=>byId(id).addEventListener('input',render));
+byId('clear').onclick=()=>{['cat','stat','from','to','q'].forEach(id=>byId(id).value='');render();};
 
-/* ===== Add Signal modal ===== */
-els.addBtn.onclick = ()=> openModal(true);
-els.cancelAdd.onclick = ()=> openModal(false);
-function openModal(show){
-  els.modalBack.style.display = show ? 'flex' : 'none';
-  els.addResult.style.display = 'none';
-  if(show){
-    // small helpers: prefill date with today
-    els.f_date.value = new Date().toISOString().slice(0,10);
-  }
-}
-els.saveAdd.onclick = ()=>{
-  // Canonicalize keyword & basic validation
-  const title = (els.f_title.value||'').trim();
-  const published = els.f_date.value;
-  const link = (els.f_link.value||'').trim();
-  const category = els.f_cat.value;
-  const status = els.f_status.value;
-  const score = (els.f_score.value||'').trim();
-  let kw = normalizeKw(els.f_kw.value);
-  if(!title || !published || !link || !category || !status || !kw){
-    alert('Please fill title, date, link, category, status, and a valid keyword.');
-    return;
-  }
-  // Source domain (auto if empty)
-  let source = (els.f_source.value||'').trim();
-  if(!source){ source = hostOf(link) || ''; }
-
-  // Build CSV row using current headers in signals_simple.csv
-  // Expected columns (adapt if yours differ): title,link,published,category,status,primary_keyword,trend_score,source
-  const cols = [
-    csvEscape(title),
-    csvEscape(link),
-    csvEscape(published),
-    csvEscape(category),
-    csvEscape(status),
-    csvEscape(kw),
-    csvEscape(score||''),
-    csvEscape(source||'')
-  ];
-  const row = cols.join(',') + '\n';
-
-  // Download file
-  const blob = new Blob([row], {type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'signal_row.csv';
-  a.click();
-  URL.revokeObjectURL(a.href);
-
-  // Copy to clipboard as convenience
-  navigator.clipboard?.writeText(row).catch(()=>{});
-
-  els.addResult.style.display = 'block';
-  els.addResult.innerHTML = `CSV row created & copied. Paste into <code class="k">signals_simple.csv</code>.<br><code>${row.replace(/</g,'&lt;')}</code>`;
-};
-
-function csvEscape(s){
-  if(s==null) return '';
-  s = String(s);
-  if(s.includes('"') || s.includes(',') || s.includes('\n')){
-    return '"' + s.replaceAll('"','""') + '"';
-  }
-  return s;
-}
-
-/* ===== Load CSV ===== */
 function load(){
-  setFromParams();
-  const bust = new Date().toISOString().slice(0,10);
-  fetch('signals_simple.csv?ts='+bust)
+  fetch('signals_simple.csv?ts='+new Date().toISOString().slice(0,10))
     .then(r=>r.text())
     .then(csv=>Papa.parse(csv,{header:true,skipEmptyLines:true}))
-    .then(res=>{
-      // Normalize keywords for display/search only (we do not mutate the original file)
-      rowsAll = res.data.map(r=>({
-        ...r,
-        primary_keyword: normalizeKw(r.primary_keyword||'') || r.primary_keyword || ''
-      }));
-      render();
-    })
-    .catch(()=> alert('Failed to load signals_simple.csv'));
+    .then(res=>{rowsAll=res.data; render();});
 }
 load();
 </script>
