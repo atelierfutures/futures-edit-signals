@@ -11,7 +11,7 @@
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
     --ctl-w:180px; --seg-w:160px;
-    --bar-h:64px; /* respaldo para sticky header */
+    --bar-h: 72px;   /* se recalcula por JS con el alto real de la barra */
 
     /* Category colors */
     --fashion-bg:#fff1f2; --fashion-bd:#fecdd3; --fashion-fg:#9f1239;
@@ -41,28 +41,35 @@
   body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
   a{color:#2563eb;text-decoration:none} a:hover{text-decoration:underline}
   .wrap{max-width:1100px;margin:0 auto;padding:20px}
+  .muted{color:var(--muted)}
 
   /* Sticky toolbar */
   .bar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(10px);
-    background:color-mix(in oklab, var(--bg) 90%, transparent); border-bottom:1px solid var(--border)}
-  .bar-inner{
-    max-width:1100px;margin:0 auto;padding:12px 20px;
-    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
-  }
+    background:color-mix(in oklab, var(--bg) 90%, transparent);
+    border-bottom:1px solid var(--border)}
+  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .title{font-weight:700;font-size:18px}
-
+  .spacer{flex:1}
   .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
   .seg.fixed{width:var(--seg-w)} .seg.fixed button{flex:1 0 50%}
-  .seg button{padding:10px 12px;border:0;background:var(--card);color:var(--fg);cursor:pointer}
+  .seg button{padding:8px 12px;border:0;background:var(--card);color:var(--fg);cursor:pointer}
   .seg button.active{background:var(--accent);color:var(--bg)}
 
   .btn{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;box-shadow:var(--shadow)}
-  .select,.input{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);box-shadow:var(--shadow);min-width:0}
+  .select,.input{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
   .select.fixed{width:var(--ctl-w)}
-  .search{flex:1 1 320px;display:flex;gap:10px;min-width:0}
+  .search{flex:1 1 320px;display:flex;gap:10px}
   .search input{width:100%}
 
-  /* Pretty “More” menu */
+  /* Pills + text badges */
+  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .tag, .status{ padding:4px 8px; font-size:11px; }
+  .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .score-txt{ color: var(--muted); font-size: 12px; }
+  .date{ color:var(--muted); white-space:nowrap; }
+  .pill-link{ color:inherit; text-decoration:none; display:inline-block; }
+
+  /* Pretty More menu */
   .menu{ position:relative; }
   .menu-panel{
     display:none; position:absolute; right:0; top:calc(100% + 8px);
@@ -77,24 +84,35 @@
   }
   .menu-panel button:hover, .menu-panel a:hover{ background:var(--pill); }
 
-  /* Chips */
+  /* Chips row */
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
   .chip{display:inline-flex;align-items:center;gap:6px} .chip button{all:unset;cursor:pointer;color:var(--muted)}
 
   /* --- Scroll horizontal solo para la tabla --- */
   .table-scroll{
     overflow-x:auto;
     -webkit-overflow-scrolling:touch;
-    margin-top:10px;
+    margin-top:0;
     border-radius:10px;
   }
   .table-scroll table{ min-width:980px; }
 
+  /* Espaciador sticky justo debajo de la barra */
+  .spacer-stick{
+    position:sticky;
+    top:0;
+    height:var(--bar-h);
+    background:var(--bg);
+    z-index:6;
+    box-shadow: 0 1px 0 var(--border);
+  }
+
   /* Tabla */
   table{width:100%;border-collapse:collapse}
   thead{
-    position:sticky; top:var(--bar-h); z-index:7;
+    position:sticky;
+    top:0;                 /* se apoya en el hueco del spacer */
+    z-index:7;
     background:var(--bg);
     box-shadow: 0 1px 0 var(--border), 0 4px 10px rgba(0,0,0,.04);
   }
@@ -105,14 +123,24 @@
   th .arrow{display:none;margin-left:6px}
   th.active .arrow{display:inline-block}
 
-  /* Cards */
-  .cards{display:grid;gap:12px;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(560px,1fr))}
-  @media (max-width:700px){ .cards{grid-template-columns:1fr;} }
-
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;}
+  /* Cards — line1 date, line2 title, line3 meta */
+  .cards{
+    display:grid;
+    gap:12px;
+    margin-top:12px;
+    grid-template-columns:repeat(auto-fill,minmax(560px,1fr));
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+    transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+  }
   .card:hover{ transform: translateY(-1px); box-shadow: 0 10px 28px rgba(0,0,0,.08); border-color: color-mix(in oklab, var(--border) 60%, var(--fg) 40%); }
+
   .card--inline{ display:flex; flex-direction:column; gap:6px; padding:12px 14px; }
-  .date{ color:var(--muted); white-space:nowrap; }
+  .date-line{ display:flex; align-items:center; gap:8px; }
   .card-title{ margin:0; font-weight:600; }
   .card-title a{
     color:inherit; text-decoration:none;
@@ -120,46 +148,22 @@
   }
   .card-title a:hover{ text-decoration:underline; }
   .meta-line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-  .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
-  .score-txt{ color: var(--muted); font-size: 12px; }
-
-  /* Color pills */
-  .tag, .status{ padding:4px 8px; font-size:11px; }
-  .tag--fashion{background:var(--fashion-bg); border:1px solid var(--fashion-bd); color:var(--fashion-fg)}
-  .tag--beauty{ background:var(--beauty-bg);  border:1px solid var(--beauty-bd);  color:var(--beauty-fg)}
-  .tag--wellness{background:var(--wellness-bg);border:1px solid var(--wellness-bd);color:var(--wellness-fg)}
-  .status--emerging{background:var(--emerg-bg);border:1px solid var(--emerg-bd);color:var(--emerg-fg)}
-  .status--bubbling{background:var(--bubbl-bg);border:1px solid var(--bubbl-bd);color:var(--bubbl-fg)}
-  .status--mainstream{background:var(--main-bg);border:1px solid var(--main-bd);color:var(--main-fg)}
 
   /* Pager */
   .pager{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px;flex-wrap:wrap}
   .pager-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
-  /* ---------- MOBILE-FIRST TOOLBAR GRID ---------- */
-  @media (max-width:700px){
-    .bar-inner{
-      display:grid;
-      grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-      grid-template-areas:
-        "title  title"
-        "search search"
-        "view   sort"
-        "cat    stat"
-        "dates  more";
-      gap:10px;
-    }
-    .title{grid-area:title}
-    .area-search{grid-area:search}
-    .area-view{grid-area:view}
-    .area-sort{grid-area:sort}
-    .area-cat{grid-area:cat}
-    .area-stat{grid-area:stat}
-    .area-dates{grid-area:dates}
-    .area-more{grid-area:more; justify-self:end}
+  /* Tag color classes */
+  .tag--fashion{background:var(--fashion-bg); border-color:var(--fashion-bd); color:var(--fashion-fg)}
+  .tag--beauty{ background:var(--beauty-bg);  border-color:var(--beauty-bd);  color:var(--beauty-fg)}
+  .tag--wellness{background:var(--wellness-bg);border-color:var(--wellness-bd);color:var(--wellness-fg)}
+  .status--emerging{background:var(--emerg-bg);border-color:var(--emerg-bd);color:var(--emerg-fg)}
+  .status--bubbling{background:var(--bubbl-bg);border-color:var(--bubbl-bd);color:var(--bubbl-fg)}
+  .status--mainstream{background:var(--main-bg);border-color:var(--main-bd);color:var(--main-fg)}
 
-    .select.fixed{width:100%}
-    .seg.fixed{width:100%}
+  @media (max-width: 700px){
+    .cards{ grid-template-columns:1fr; }
+    .select.fixed{ width: 48vw; max-width: 220px; }
   }
 </style>
 
@@ -167,43 +171,37 @@
   <div class="bar-inner">
     <div class="title">The Futures Edit — Signals</div>
 
-    <div class="search area-search"><input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" /></div>
+    <div class="search"><input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" /></div>
 
-    <div class="seg fixed area-view">
-      <button id="viewTable" type="button">Table</button>
-      <button id="viewCards" class="active" type="button">Cards</button>
+    <div class="seg fixed">
+      <button id="viewTable" class="active" type="button">Table</button>
+      <button id="viewCards" type="button">Cards</button>
     </div>
 
-    <div class="area-sort">
-      <select id="sortKey" class="select fixed">
-        <option value="trend_score" selected>Sort: Trend score</option>
-        <option value="published">Sort: Published</option>
-        <option value="title">Sort: Title</option>
-        <option value="category">Sort: Category</option>
-        <option value="primary_keyword">Sort: Keyword</option>
-        <option value="status">Sort: Status</option>
-      </select>
-    </div>
+    <select id="sortKey" class="select fixed">
+      <option value="trend_score" selected>Sort: Trend score</option>
+      <option value="published">Sort: Published</option>
+      <option value="title">Sort: Title</option>
+      <option value="category">Sort: Category</option>
+      <option value="primary_keyword">Sort: Keyword</option>
+      <option value="status">Sort: Status</option>
+    </select>
 
-    <div class="area-cat">
-      <select id="barCat" class="select fixed">
-        <option value="">All categories</option>
-        <option>fashion</option><option>beauty</option><option>wellness</option>
-      </select>
-    </div>
+    <select id="barCat" class="select fixed">
+      <option value="">All categories</option>
+      <option>fashion</option><option>beauty</option><option>wellness</option>
+    </select>
 
-    <div class="area-stat">
-      <select id="barStatus" class="select fixed">
-        <option value="">All status</option>
-        <option>emerging</option><option>bubbling</option><option>mainstream</option>
-      </select>
-    </div>
+    <select id="barStatus" class="select fixed">
+      <option value="">All status</option>
+      <option>emerging</option><option>bubbling</option><option>mainstream</option>
+    </select>
 
-    <div class="area-dates">
-      <button id="filtersBtn" class="btn">Dates</button>
-    </div>
+    <button id="filtersBtn" class="btn">Dates</button>
 
-    <div class="menu area-more">
+    <div class="spacer"></div>
+
+    <div class="menu">
       <button class="btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">More</button>
       <div class="menu-panel" id="moreMenu" role="menu">
         <a href="signals_simple.csv" download>Download CSV</a>
@@ -221,17 +219,20 @@
 <div class="wrap">
   <div id="chips" class="chips"></div>
 
+  <!-- ESPACIADOR sticky debajo de la barra -->
+  <div class="spacer-stick" aria-hidden="true"></div>
+
   <!-- TABLE (con scroll horizontal) -->
   <div class="table-scroll">
     <table id="tbl">
       <thead>
         <tr>
-          <th class="sortable" data-key="published">Published <span class="arrow"></span></th>
-          <th class="sortable" data-key="title">Title <span class="arrow"></span></th>
-          <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow"></span></th>
-          <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow"></span></th>
-          <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow"></span></th>
-          <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow"></span></th>
+          <th class="sortable" data-key="published">Published <span class="arrow">↓</span></th>
+          <th class="sortable" data-key="title">Title <span class="arrow">↓</span></th>
+          <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow">↓</span></th>
+          <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow">↓</span></th>
+          <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow">↓</span></th>
+          <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow">↓</span></th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -256,13 +257,13 @@
   </div>
 </div>
 
-<!-- Drawer (dates only) -->
-<div class="drawer-back" id="drawerBack" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:80"></div>
+<!-- Drawer (dates) -->
+<div class="drawer-back" id="drawerBack"></div>
 <div class="drawer" id="drawer" aria-modal="true" role="dialog" style="display:none">
-  <h3 style="margin:0 0 10px;font-size:16px">Date range</h3>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-    <label>From <input id="from" type="date" class="input" style="width:100%"></label>
-    <label>To <input id="to" type="date" class="input" style="width:100%"></label>
+  <h3>Date range</h3>
+  <div class="grid">
+    <label>From <input id="from" type="date" class="input"></label>
+    <label>To <input id="to" type="date" class="input"></label>
     <label style="grid-column:1 / -1">Quick
       <select id="quick" class="select" style="width:100%">
         <option value="">All time</option>
@@ -272,7 +273,7 @@
       </select>
     </label>
   </div>
-  <div style="display:flex;gap:10px;margin-top:14px">
+  <div class="actions">
     <button id="clearDates" class="btn" type="button">Clear dates</button>
     <button id="applyFilters" class="btn" type="button">Apply</button>
     <button id="closeDrawer" class="btn" type="button">Close</button>
@@ -289,8 +290,10 @@ const headers = [...document.querySelectorAll("th.sortable")];
 
 const q = document.getElementById("q");
 const sortKeySel = document.getElementById("sortKey");
+
 const viewTableBtn = document.getElementById("viewTable");
 const viewCardsBtn = document.getElementById("viewCards");
+
 const barCatSel = document.getElementById("barCat");
 const barStatusSel = document.getElementById("barStatus");
 
@@ -332,36 +335,38 @@ const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const catClass = c => c && ["fashion","beauty","wellness"].includes(c) ? `pill tag tag--${c}` : "pill";
 const statusClass = s => s ? `pill status status--${s.toLowerCase()}` : "pill";
 
-/* Pills con enlace a vista filtrada */
+/* bar height -> CSS var --bar-h */
+const ro = new ResizeObserver(() => {
+  const h = bar.getBoundingClientRect().height || 64;
+  document.documentElement.style.setProperty('--bar-h', `${Math.round(h)}px`);
+});
+ro.observe(bar);
+
+/* pills as links (new tab) */
 function catPill(c){
   if(!c) return "";
   const href = "./?cat=" + encodeURIComponent(c);
-  return `<a class="${catClass(c)}" href="${href}" target="_blank" rel="noopener">${c}</a>`;
+  return `<a class="${catClass(c)} pill-link" href="${href}" target="_blank" rel="noopener">${c}</a>`;
 }
 function statusPill(s){
   const v = (s||"").toLowerCase(); if(!v) return "";
   const href = "./?stat=" + encodeURIComponent(v);
-  return `<a class="${statusClass(v)}" href="${href}" target="_blank" rel="noopener">${v}</a>`;
+  return `<a class="${statusClass(v)} pill-link" href="${href}" target="_blank" rel="noopener">${v}</a>`;
 }
 
-/* Hora Madrid (DST safe) */
-const madridFmt = new Intl.DateTimeFormat("en-GB",{
-  timeZone:"Europe/Madrid", year:"numeric", month:"2-digit", day:"2-digit",
-  hour:"2-digit", minute:"2-digit", hour12:false
-});
+/* Madrid time (Europe/Madrid) */
 function fmtMadrid(iso){
   if(!iso) return "";
   const d = new Date(iso);
-  if (isNaN(d)) return (iso||"").slice(0,10);
-  const parts = madridFmt.formatToParts(d).reduce((a,p)=> (a[p.type]=p.value, a), {});
-  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
+  if (isNaN(d)) return (iso||"").slice(0,16).replace("T"," ");
+  const s = d.toLocaleString('es-ES',{
+    timeZone:'Europe/Madrid', year:'numeric', month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', hourCycle:'h23'
+  });
+  const [date, time] = s.split(', ');
+  const [dd,mm,yy] = date.split('/');
+  return `${yy}-${mm}-${dd} ${time}`;
 }
-
-/* sticky bar compacto + recalcular offset */
-window.addEventListener("scroll", ()=>{
-  bar.classList.toggle("compact", window.scrollY > 10);
-  queueBarHeight();
-});
 
 /* theme */
 (()=>{ const saved = localStorage.getItem("fe_theme"); if(saved==="dark") document.documentElement.classList.add("dark"); })();
@@ -370,7 +375,7 @@ darkToggleBtn.onclick = () => {
   localStorage.setItem("fe_theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
 };
 
-/* More menu */
+/* pretty More menu */
 function toggleMenu(open){
   moreMenu.classList.toggle('open', open);
   moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -383,10 +388,10 @@ document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') toggleMenu(fals
 function updateSortUI(){
   sortKeySel.value = sortKey;
   headers.forEach(h=>{
-    const active = h.dataset.key === sortKey;
+    const active = (h.dataset.key === sortKey);
     h.classList.toggle("active", active);
     const arrow = h.querySelector(".arrow");
-    if(arrow) arrow.textContent = active ? (sortDir==="asc"?"↑":"↓") : "";
+    if(arrow) arrow.textContent = active ? (sortDir==="asc"?"↑":"↓") : "↓";
   });
 }
 function cmp(a,b,key){
@@ -417,12 +422,12 @@ function setSort(key){
 headers.forEach(h => h.addEventListener("click", () => setSort(h.dataset.key)));
 sortKeySel.onchange = () => { sortKey = sortKeySel.value; sortDir = (sortKey==="trend_score"||sortKey==="published")?"desc":"asc"; currentPage=1; updateSortUI(); render(); };
 
-/* vista */
+/* view */
 function setView(mode){
   viewMode = mode;
   viewTableBtn.classList.toggle("active", mode==="table");
   viewCardsBtn.classList.toggle("active", mode==="cards");
-  document.getElementById("tbl").closest(".table-scroll").style.display = mode==="table" ? "" : "none";
+  document.getElementById("tbl").parentElement.style.display = mode==="table" ? "" : "none";
   document.getElementById("cards").style.display = mode==="cards" ? "grid" : "none";
   currentPage = 1; render();
 }
@@ -580,7 +585,7 @@ function render(){
       const firstK = allK[0] || "";
       return `
         <div class="card card--inline">
-          <div class="date">${fmtMadrid(r.published)}</div>
+          <div class="date-line"><span class="date">${fmtMadrid(r.published)}</span></div>
           <h4 class="card-title"><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></h4>
           <div class="meta-line">
             ${catPill(r.category)}
@@ -605,21 +610,6 @@ nextBtn.onclick = () => {
   if(currentPage < totalPages){ currentPage++; render(); }
 };
 
-/* ----- altura dinámica de la barra para sticky table header ----- */
-function setBarHeightVar(){
-  const barEl = document.getElementById('bar');
-  if(!barEl) return;
-  const h = Math.ceil(barEl.getBoundingClientRect().height);
-  document.documentElement.style.setProperty('--bar-h', h + 'px');
-}
-let __barHTo;
-function queueBarHeight(){
-  clearTimeout(__barHTo);
-  __barHTo = setTimeout(setBarHeightVar, 60);
-}
-window.addEventListener('load', setBarHeightVar);
-window.addEventListener('resize', setBarHeightVar);
-
 /* restore + load */
 function restoreFromUrl(){
   const p = new URLSearchParams(location.search);
@@ -628,15 +618,7 @@ function restoreFromUrl(){
   if(p.get("stat")){ barStatusSel.value = p.get("stat"); }
   if(p.get("from")) fromI.value = p.get("from");
   if(p.get("to")) toI.value = p.get("to");
-
-  const v = p.get("view");
-  if(v==="cards") setView("cards");
-  else if(v==="table") setView("table");
-  else {
-    if(window.matchMedia("(max-width:700px)").matches) setView("cards");
-    else setView("table");
-  }
-
+  const v = p.get("view"); if(v==="cards") setView("cards"); else setView("table");
   const sk = p.get("sort"); if(sk){ sortKey = sk; }
   const sd = p.get("dir"); if(sd){ sortDir = sd; }
   const ps = parseInt(p.get("size")||"25",10); pageSize = ps; pageSizeSel.value = String(ps);
@@ -645,7 +627,6 @@ function restoreFromUrl(){
 }
 function load(){
   restoreFromUrl();
-  setBarHeightVar(); // por si la barra cambia al pintar
   const bust = new Date().toISOString().slice(0,10);
   fetch("signals_simple.csv?ts="+bust)
     .then(r => r.text())
