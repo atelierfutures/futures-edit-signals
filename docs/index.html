@@ -11,7 +11,6 @@
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
     --ctl-w:180px; --seg-w:160px;
-    --bar-h: 86px; /* sticky toolbar height (approx) */
 
     /* Category colors */
     --fashion-bg:#fff1f2; --fashion-bd:#fecdd3; --fashion-fg:#9f1239;
@@ -40,22 +39,44 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
   a{color:#2563eb;text-decoration:none} a:hover{text-decoration:underline}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px}
 
   /* Sticky toolbar */
   .bar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(10px);
     background:color-mix(in oklab, var(--bg) 90%, transparent); border-bottom:1px solid var(--border)}
-  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:grid;grid-template-columns:1fr auto auto auto auto;gap:10px;align-items:center}
-  .title{grid-column:1/-1;font-weight:700;font-size:18px}
+  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .title{font-weight:700;font-size:18px}
+  .spacer{flex:1}
   .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
   .seg.fixed{width:var(--seg-w)} .seg.fixed button{flex:1 0 50%}
   .seg button{padding:8px 12px;border:0;background:var(--card);color:var(--fg);cursor:pointer}
   .seg button.active{background:var(--accent);color:var(--bg)}
+
   .btn{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;box-shadow:var(--shadow)}
-  .select,.input{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+  .select,.input{border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+  .input{padding:10px 12px;}
+  /* CHANGE #1 — more breathing room for the native dropdown chevron */
+  .select{padding:10px 22px 10px 12px;} /* right padding was 12px */
+
   .select.fixed{width:var(--ctl-w)}
-  .search{grid-column:1/-1;display:flex;gap:10px}
+  .search{flex:1 1 320px;display:flex;gap:10px}
   .search input{width:100%}
-  .bar-row{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap}
+
+  /* Pills + text badges */
+  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .tag, .status{ padding:4px 8px; font-size:11px; }
+  .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .score-txt{ color: var(--muted); font-size: 12px; }
+  .date{ color:var(--muted); white-space:nowrap; }
+  .pill-link{ color:inherit; text-decoration:none; display:inline-block; }
+
+  /* Drawer (dates only) */
+  .drawer-back{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:80}
+  .drawer{position:fixed;right:0;top:0;height:100%;width:360px;max-width:90vw;background:var(--bg);
+    border-left:1px solid var(--border);box-shadow:var(--shadow);padding:18px;display:none;z-index:90}
+  .drawer h3{margin:0 0 10px;font-size:16px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .drawer .actions{display:flex;gap:10px;margin-top:14px}
 
   /* Pretty More menu */
   .menu{ position:relative; }
@@ -72,38 +93,59 @@
   }
   .menu-panel button:hover, .menu-panel a:hover{ background:var(--pill); }
 
-  /* Chips under toolbar */
-  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+  /* Chips row */
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-  .chip{display:inline-flex;align-items:center;gap:6px}
-  .chip button{all:unset;cursor:pointer;color:var(--muted)}
-  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .chip{display:inline-flex;align-items:center;gap:6px} .chip button{all:unset;cursor:pointer;color:var(--muted)}
 
-  /* table container = removes the big blank space + allows horizontal scroll on mobile */
-  .table-wrap{margin-top:8px; overflow-x:auto; -webkit-overflow-scrolling:touch; background:var(--bg);}
-
-  table{min-width:900px;width:100%;border-collapse:collapse}
-  thead th{background:var(--bg);position:static; /* no sticky header now */ }
+  /* Table */
+  .table-wrap{ overflow-x:auto; }  /* CHANGE #2 (enables horizontal scroll if needed) */
+  table{width:100%;border-collapse:collapse;margin-top:10px}
   th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
-  th.sortable{cursor:pointer;user-select:none}
-  th .arrow{opacity:1;margin-left:6px;display:none}
-  th.active .arrow{display:inline}
+  th{position:sticky;top:64px;background:var(--bg);z-index:1}
+  th.sortable{cursor:pointer}
 
-  /* Cards (still available) */
-  .cards{display:grid;gap:12px;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);}
-  .card--inline{display:flex;flex-direction:column;gap:6px;padding:12px 14px;}
-  .date-line{display:flex;align-items:center;gap:8px;}
-  .card-title{margin:0;font-weight:600;}
-  .card-title a{color:inherit;text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-  .card-title a:hover{text-decoration:underline;}
-  .meta-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
-  .score-txt{ color: var(--muted); font-size: 12px; }
-  .date{ color:var(--muted); white-space:nowrap; }
-  .pill-link{ color:inherit; text-decoration:none; display:inline-block; }
+  /* CHANGE #2 — keep label + arrow on one line */
+  #tbl th{ white-space:nowrap; }
+  #tbl th .arrow{ display:inline-block; margin-left:6px; vertical-align:middle; }
 
-  /* Tag color classes */
+  /* Column min-widths so headers never wrap (and table can scroll) */
+  #tbl th:nth-child(1), #tbl td:nth-child(1){ min-width:160px; }  /* Published */
+  #tbl th:nth-child(2), #tbl td:nth-child(2){ min-width:360px; }  /* Title (flex) */
+  #tbl th:nth-child(3), #tbl td:nth-child(3){ min-width:120px; }  /* Category */
+  #tbl th:nth-child(4), #tbl td:nth-child(4){ min-width:160px; }  /* Keyword */
+  #tbl th:nth-child(5), #tbl td:nth-child(5){ min-width:120px; text-align:right; } /* Trend score */
+  #tbl th:nth-child(6), #tbl td:nth-child(6){ min-width:130px; }  /* Status */
+
+  /* Cards */
+  .cards{
+    display:grid;
+    gap:12px;
+    margin-top:12px;
+    grid-template-columns:repeat(auto-fill,minmax(560px,1fr));
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+    transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+  }
+  .card:hover{ transform: translateY(-1px); box-shadow: 0 10px 28px rgba(0,0,0,.08); border-color: color-mix(in oklab, var(--border) 60%, var(--fg) 40%); }
+  .card--inline{ display:flex; flex-direction:column; gap:6px; padding:12px 14px; }
+  .date-line{ display:flex; align-items:center; gap:8px; }
+  .card-title{ margin:0; font-weight:600; }
+  .card-title a{
+    color:inherit; text-decoration:none;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .card-title a:hover{ text-decoration:underline; }
+  .meta-line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+  /* Pager */
+  .pager{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px;flex-wrap:wrap}
+  .pager-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+  /* Tag color helpers */
   .tag--fashion{background:var(--fashion-bg); border-color:var(--fashion-bd); color:var(--fashion-fg)}
   .tag--beauty{ background:var(--beauty-bg);  border-color:var(--beauty-bd);  color:var(--beauty-fg)}
   .tag--wellness{background:var(--wellness-bg);border-color:var(--wellness-bd);color:var(--wellness-fg)}
@@ -111,26 +153,13 @@
   .status--bubbling{background:var(--bubbl-bg);border-color:var(--bubbl-bd);color:var(--bubbl-fg)}
   .status--mainstream{background:var(--main-bg);border-color:var(--main-bd);color:var(--main-fg)}
 
-  /* pager */
-  .pager{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px;flex-wrap:wrap}
-  .pager-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-
-  @media (max-width: 860px){
-    .bar-inner{grid-template-columns:1fr 1fr;gap:8px}
-    .title{grid-column:1/-1}
-    .search{grid-column:1/-1}
-    .table-wrap{margin-top:6px}
-    .cards{grid-template-columns:1fr}
-  }
+  @media (max-width: 700px){ .cards{ grid-template-columns:1fr; } }
 </style>
 
 <div class="bar" id="bar">
   <div class="bar-inner">
     <div class="title">The Futures Edit — Signals</div>
-
-    <div class="search">
-      <input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" />
-    </div>
+    <div class="search"><input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" /></div>
 
     <div class="seg fixed">
       <button id="viewTable" class="active" type="button">Table</button>
@@ -146,30 +175,30 @@
       <option value="status">Sort: Status</option>
     </select>
 
-    <div class="bar-row">
-      <select id="barCat" class="select fixed">
-        <option value="">All categories</option>
-        <option>fashion</option><option>beauty</option><option>wellness</option>
-      </select>
+    <select id="barCat" class="select fixed">
+      <option value="">All categories</option>
+      <option>fashion</option><option>beauty</option><option>wellness</option>
+    </select>
 
-      <select id="barStatus" class="select fixed">
-        <option value="">All status</option>
-        <option>emerging</option><option>bubbling</option><option>mainstream</option>
-      </select>
+    <select id="barStatus" class="select fixed">
+      <option value="">All status</option>
+      <option>emerging</option><option>bubbling</option><option>mainstream</option>
+    </select>
 
-      <button id="filtersBtn" class="btn">Dates</button>
+    <button id="filtersBtn" class="btn">Dates</button>
 
-      <div class="menu" style="margin-left:auto">
-        <button class="btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">More</button>
-        <div class="menu-panel" id="moreMenu" role="menu">
-          <a href="signals_simple.csv" download>Download CSV</a>
-          <button id="copyFiltered">Copy filtered CSV</button>
-          <button id="copyShare">Copy share link</button>
-          <button id="resetAll">Reset all</button>
-          <button id="darkToggle">Toggle dark mode</button>
-          <a href="https://github.com/atelierfutures/futures-edit-signals" target="_blank" rel="noopener">Repository</a>
-          <a href="tags.html" target="_blank" rel="noopener">Tags graph</a>
-        </div>
+    <div class="spacer"></div>
+
+    <div class="menu">
+      <button class="btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">More</button>
+      <div class="menu-panel" id="moreMenu" role="menu">
+        <a href="signals_simple.csv" download>Download CSV</a>
+        <button id="copyFiltered">Copy filtered CSV</button>
+        <button id="copyShare">Copy share link</button>
+        <button id="resetAll">Reset all</button>
+        <button id="darkToggle">Toggle dark mode</button>
+        <a href="https://github.com/atelierfutures/futures-edit-signals" target="_blank" rel="noopener">Repository</a>
+        <a href="tags.html" target="_blank" rel="noopener">Tags graph</a>
       </div>
     </div>
   </div>
@@ -178,24 +207,24 @@
 <div class="wrap">
   <div id="chips" class="chips"></div>
 
-  <!-- TABLE (wrapped so it sits right under the controls and can scroll on mobile) -->
+  <!-- Table (wrapped for horizontal scroll) -->
   <div class="table-wrap">
     <table id="tbl">
       <thead>
         <tr>
           <th class="sortable" data-key="published">Published <span class="arrow">↕</span></th>
           <th class="sortable" data-key="title">Title <span class="arrow">↕</span></th>
-          <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow">↕</span></th>
-          <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow">↕</span></th>
-          <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow">↕</span></th>
-          <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="category">Category <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="primary_keyword">Keyword <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="trend_score" style="text-align:right">Trend score <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="status">Status <span class="arrow">↕</span></th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
 
-  <!-- CARDS -->
+  <!-- Cards -->
   <div id="cards" class="cards" style="display:none"></div>
 
   <!-- Bottom pager -->
@@ -214,11 +243,13 @@
 </div>
 
 <!-- Drawer (dates only) -->
-<div class="menu-panel" id="drawer" style="position:fixed;left:50%;transform:translateX(-50%);top:90px;max-width:420px;width:92%;display:none">
-  <div style="display:grid;gap:10px">
-    <label>From <input id="from" type="date" class="input" style="width:100%"></label>
-    <label>To <input id="to" type="date" class="input" style="width:100%"></label>
-    <label>Quick
+<div class="drawer-back" id="drawerBack"></div>
+<div class="drawer" id="drawer" aria-modal="true" role="dialog">
+  <h3>Date range</h3>
+  <div class="grid">
+    <label>From <input id="from" type="date" class="input"></label>
+    <label>To <input id="to" type="date" class="input"></label>
+    <label style="grid-column:1 / -1">Quick
       <select id="quick" class="select" style="width:100%">
         <option value="">All time</option>
         <option value="7">Last 7 days</option>
@@ -226,16 +257,17 @@
         <option value="90">Last 90 days</option>
       </select>
     </label>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button id="clearDates" class="btn" type="button">Clear</button>
-      <button id="applyFilters" class="btn" type="button">Apply</button>
-      <button id="closeDrawer" class="btn" type="button">Close</button>
-    </div>
+  </div>
+  <div class="actions">
+    <button id="clearDates" class="btn" type="button">Clear dates</button>
+    <button id="applyFilters" class="btn" type="button">Apply</button>
+    <button id="closeDrawer" class="btn" type="button">Close</button>
   </div>
 </div>
 
 <script>
 /* ---------- refs ---------- */
+const bar = document.getElementById("bar");
 const tbody   = document.querySelector("#tbl tbody");
 const cardsEl = document.getElementById("cards");
 const chipsEl = document.getElementById("chips");
@@ -257,6 +289,7 @@ const pageInfo = document.getElementById("pageInfo");
 const rangeInfo= document.getElementById("rangeInfo");
 
 /* Drawer (dates only) */
+const drawerBack = document.getElementById("drawerBack");
 const drawer = document.getElementById("drawer");
 const filtersBtn = document.getElementById("filtersBtn");
 const closeDrawer = document.getElementById("closeDrawer");
@@ -287,7 +320,7 @@ const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const catClass = c => c && ["fashion","beauty","wellness"].includes(c) ? `pill tag tag--${c}` : "pill";
 const statusClass = s => s ? `pill status status--${s.toLowerCase()}` : "pill";
 
-/* linkable pills */
+/* helper: make whole pill a link to a NEW TAB filtered view */
 function catPill(c){
   if(!c) return "";
   const href = "./?cat=" + encodeURIComponent(c);
@@ -299,17 +332,21 @@ function statusPill(s){
   return `<a class="${statusClass(v)} pill-link" href="${href}" target="_blank" rel="noopener">${v}</a>`;
 }
 
-/* Madrid time */
+/* Madrid time formatting (Europe/Madrid, handles DST) */
+const tz = "Europe/Madrid";
 function fmtDateTime(iso){
   if(!iso) return "";
   const d = new Date(iso);
-  if (isNaN(d)) return (iso||"").slice(0,10);
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone:'Europe/Madrid',
-    year:'numeric', month:'2-digit', day:'2-digit',
+  if (isNaN(d)) return (iso||"").slice(0,16).replace("T"," ");
+  const fmt = new Intl.DateTimeFormat('en-GB',{
+    timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit',
     hour:'2-digit', minute:'2-digit', hour12:false
-  }).format(d).replace(',', '');
+  }).formatToParts(d).reduce((a,p)=>{a[p.type]=p.value;return a;},{});
+  return `${fmt.year}-${fmt.month}-${fmt.day} ${fmt.hour}:${fmt.minute}`;
 }
+
+/* sticky header compact */
+window.addEventListener("scroll", ()=> bar.classList.toggle("compact", window.scrollY > 10));
 
 /* theme */
 (()=>{ const saved = localStorage.getItem("fe_theme"); if(saved==="dark") document.documentElement.classList.add("dark"); })();
@@ -333,7 +370,7 @@ function updateSortUI(){
   headers.forEach(h=>{
     h.classList.toggle("active", h.dataset.key === sortKey);
     const arrow = h.querySelector(".arrow");
-    if(arrow) arrow.textContent = h.dataset.key === sortKey ? (sortDir==="asc"?"↑":"↓") : "";
+    if(arrow) arrow.textContent = h.dataset.key === sortKey ? (sortDir==="asc"?"↑":"↓") : "↕";
   });
 }
 function cmp(a,b,key){
@@ -369,7 +406,7 @@ function setView(mode){
   viewMode = mode;
   viewTableBtn.classList.toggle("active", mode==="table");
   viewCardsBtn.classList.toggle("active", mode==="cards");
-  document.querySelector(".table-wrap").style.display = mode==="table" ? "" : "none";
+  document.getElementById("tbl").style.display = mode==="table" ? "" : "none";
   document.getElementById("cards").style.display = mode==="cards" ? "grid" : "none";
   currentPage = 1; render();
 }
@@ -395,7 +432,7 @@ function highlight(str, query){
 q.addEventListener("input", () => { currentPage=1; render(); });
 window.addEventListener("keydown", e => {
   if(e.key === "Escape"){
-    if(drawer.style.display==="block"){ drawer.style.display="none"; }
+    if(drawer.style.display==="block"){ closeDrawerFn(); }
     else { q.value=""; currentPage=1; render(); }
   }
 });
@@ -405,9 +442,12 @@ barCatSel.onchange   = () => { currentPage=1; render(); };
 barStatusSel.onchange= () => { currentPage=1; render(); };
 
 /* drawer (dates only) */
-filtersBtn.onclick = ()=>{ drawer.style.display='block'; };
-closeDrawer.onclick = ()=>{ drawer.style.display='none'; };
-applyFilters.onclick = () => { currentPage=1; drawer.style.display='none'; render(); };
+function openDrawer(){ drawerBack.style.display="block"; drawer.style.display="block"; document.body.style.overflow="hidden"; }
+function closeDrawerFn(){ drawerBack.style.display="none"; drawer.style.display="none"; document.body.style.overflow=""; }
+filtersBtn.onclick = openDrawer;
+closeDrawer.onclick = closeDrawerFn;
+drawerBack.onclick  = closeDrawerFn;
+applyFilters.onclick = () => { currentPage=1; closeDrawerFn(); render(); };
 clearDatesBtn.onclick = () => { fromI.value=""; toI.value=""; quick.value=""; };
 quick.onchange = () => {
   const days = parseInt(quick.value) || 0;
@@ -514,7 +554,7 @@ function render(){
         <td><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></td>
         <td>${catPill(r.category)}</td>
         <td>${highlight(r.primary_keyword||"", q.value)}</td>
-        <td>${r.trend_score ?? ""}</td>
+        <td style="text-align:right">${r.trend_score ?? ""}</td>
         <td>${statusPill(r.status)}</td>
       </tr>
     `).join("");
@@ -538,6 +578,7 @@ function render(){
   }
 
   renderChips();
+  updateSortUI();
   syncUrl();
 }
 
