@@ -32,7 +32,7 @@
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:12px}
   .legend{color:var(--muted);font-size:12px;margin-top:6px}
   .mini{max-width:100%}
-  .mini.sm{height:170px !important}      /* compact for small charts */
+  .mini.sm{height:170px !important} /* compact small charts */
   .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
   .small{font-size:12px;color:var(--muted)}
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
@@ -154,7 +154,7 @@ function palette(n){
   const out = []; for(let i=0;i<n;i++) out.push(base[i%base.length]); return out;
 }
 
-/* --- Keyword normalization (downstream clean-up) --- */
+/* --- Keyword normalization --- */
 const KW_MAP = new Map([
   ['anti aging','longevity'], ['anti-ageing','longevity'], ['anti ageing','longevity'],
   ['retinol routine','retinoid routines'], ['skin cycling','retinoid routines'],
@@ -253,7 +253,7 @@ const widenYLabels = {
   beforeInit(chart, _args, opts){
     const y = chart.options.scales?.y;
     if(!y) return;
-    const minWidth = opts?.minWidth ?? 150;
+    const minWidth = opts?.minWidth ?? 140;
     y.afterFit = (scale)=>{ scale.width = Math.max(scale.width, minWidth); };
   }
 };
@@ -342,11 +342,11 @@ function newcomerKeywords(curRows, prevRows, limit=20){
   return out.slice(0, limit);
 }
 
-/* --- dynamic height for Top keywords (roomy) --- */
+/* --- dynamic height for Top keywords (compact/normal) --- */
 function adjustKeywordsHeight(labelsCount=0){
-  // ~26px per bar, min 340px, max 620px
+  // ~20px per bar, min 240px, max 420px
   const n = labelsCount || (charts.chartKeywords?.data?.labels?.length || 0);
-  const h = Math.min(620, Math.max(340, Math.round(26*n + 60)));
+  const h = Math.min(420, Math.max(240, Math.round(20*n + 60)));
   els.kwCanvas.style.height = h+"px";
 }
 
@@ -355,7 +355,7 @@ function render(){
   const rows = getFiltered();
   document.getElementById('metaCount').textContent = `${rows.length} articles in current filters`;
 
-  // 1) Top keywords (horizontal, roomy labels & spacing)
+  // 1) Top keywords (horizontal, compact spacing)
   const topK = topKeywords(rows, parseInt(els.topN.value,10), els.kwSearch.value.trim());
   adjustKeywordsHeight(topK.length);
   const kwChart = makeOrUpdate('chartKeywords','bar',{
@@ -365,19 +365,19 @@ function render(){
       data: topK.map(([,v])=>v),
       backgroundColor: palette(topK.length),
       categoryPercentage: 0.9,
-      barPercentage: 0.65
+      barPercentage: 0.78
     }]
   },{
     maintainAspectRatio:false,
     indexAxis:'y',
-    layout:{ padding:{ left: 8, right: 8, top: 8, bottom: 8 } },
+    layout:{ padding:{ left: 6, right: 6, top: 6, bottom: 6 } },
     plugins:{
       legend:{display:false},
-      widenYLabels:{ minWidth: 160 }
+      widenYLabels:{ minWidth: 150 }
     },
     scales:{
       x:{ beginAtZero:true, ticks:{ precision:0 } },
-      y:{ ticks:{ autoSkip:false, padding:6, font:{ size:13 } }, grid:{ drawBorder:false } }
+      y:{ ticks:{ autoSkip:false, padding:4, font:{ size:12 } }, grid:{ drawBorder:false } }
     }
   });
   charts.chartKeywords = kwChart;
