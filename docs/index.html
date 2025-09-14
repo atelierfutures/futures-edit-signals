@@ -2,6 +2,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>The Futures Edit — Signals</title>
+
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
@@ -11,7 +12,7 @@
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
     --ctl-w:180px; --seg-w:160px;
-    --bar-h: 72px;   /* se recalcula por JS con el alto real de la barra */
+    --bar-h: 72px; /* se ajusta por JS */
 
     /* Category colors */
     --fashion-bg:#fff1f2; --fashion-bd:#fecdd3; --fashion-fg:#9f1239;
@@ -41,12 +42,10 @@
   body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
   a{color:#2563eb;text-decoration:none} a:hover{text-decoration:underline}
   .wrap{max-width:1100px;margin:0 auto;padding:20px}
-  .muted{color:var(--muted)}
 
   /* Sticky toolbar */
   .bar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(10px);
-    background:color-mix(in oklab, var(--bg) 90%, transparent);
-    border-bottom:1px solid var(--border)}
+    background:color-mix(in oklab, var(--bg) 90%, transparent); border-bottom:1px solid var(--border)}
   .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .title{font-weight:700;font-size:18px}
   .spacer{flex:1}
@@ -60,14 +59,6 @@
   .select.fixed{width:var(--ctl-w)}
   .search{flex:1 1 320px;display:flex;gap:10px}
   .search input{width:100%}
-
-  /* Pills + text badges */
-  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
-  .tag, .status{ padding:4px 8px; font-size:11px; }
-  .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
-  .score-txt{ color: var(--muted); font-size: 12px; }
-  .date{ color:var(--muted); white-space:nowrap; }
-  .pill-link{ color:inherit; text-decoration:none; display:inline-block; }
 
   /* Pretty More menu */
   .menu{ position:relative; }
@@ -84,52 +75,35 @@
   }
   .menu-panel button:hover, .menu-panel a:hover{ background:var(--pill); }
 
-  /* Chips row */
+  /* Chips bajo barra */
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
   .chip{display:inline-flex;align-items:center;gap:6px} .chip button{all:unset;cursor:pointer;color:var(--muted)}
 
-  /* --- Scroll horizontal solo para la tabla --- */
-  .table-scroll{
-    overflow-x:auto;
-    -webkit-overflow-scrolling:touch;
-    margin-top:0;
-    border-radius:10px;
-  }
-  .table-scroll table{ min-width:980px; }
-
-  /* Espaciador sticky justo debajo de la barra */
-  .spacer-stick{
-    position:sticky;
-    top:0;
-    height:var(--bar-h);
-    background:var(--bg);
-    z-index:6;
-    box-shadow: 0 1px 0 var(--border);
-  }
-
-  /* Tabla */
-  table{width:100%;border-collapse:collapse}
+  /* Table */
+  .table-scroll{width:100%;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;margin-top:10px; min-width:820px;}
   thead{
     position:sticky;
-    top:0;                 /* se apoya en el hueco del spacer */
+    top: var(--bar-h);
     z-index:7;
     background:var(--bg);
     box-shadow: 0 1px 0 var(--border), 0 4px 10px rgba(0,0,0,.04);
   }
-  th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left;background:transparent}
-  th{white-space:nowrap; user-select:none;}
+  th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
+  th{font-weight:600; user-select:none;}
   th.sortable{cursor:pointer}
-  /* flecha solo en la columna activa */
-  th .arrow{display:none;margin-left:6px}
-  th.active .arrow{display:inline-block}
+  th .dir{margin-left:6px; opacity:.9}
+  th:not(.active) .dir{display:none}
 
-  /* Cards — line1 date, line2 title, line3 meta */
-  .cards{
-    display:grid;
-    gap:12px;
-    margin-top:12px;
-    grid-template-columns:repeat(auto-fill,minmax(560px,1fr));
-  }
+  /* Pills + badges */
+  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .pill-link{ color:inherit; text-decoration:none; display:inline-block; }
+  .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .score-txt{ color: var(--muted); font-size: 12px; }
+  .date{ color:var(--muted); white-space:nowrap; }
+
+  /* Cards — fecha (línea 1), título (línea 2), meta (línea 3) */
+  .cards{ display:grid; gap:12px; margin-top:12px; grid-template-columns:repeat(auto-fill,minmax(560px,1fr)); }
   .card{
     background:var(--card);
     border:1px solid var(--border);
@@ -138,7 +112,6 @@
     transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
   }
   .card:hover{ transform: translateY(-1px); box-shadow: 0 10px 28px rgba(0,0,0,.08); border-color: color-mix(in oklab, var(--border) 60%, var(--fg) 40%); }
-
   .card--inline{ display:flex; flex-direction:column; gap:6px; padding:12px 14px; }
   .date-line{ display:flex; align-items:center; gap:8px; }
   .card-title{ margin:0; font-weight:600; }
@@ -163,7 +136,6 @@
 
   @media (max-width: 700px){
     .cards{ grid-template-columns:1fr; }
-    .select.fixed{ width: 48vw; max-width: 220px; }
   }
 </style>
 
@@ -171,7 +143,9 @@
   <div class="bar-inner">
     <div class="title">The Futures Edit — Signals</div>
 
-    <div class="search"><input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" /></div>
+    <div class="search">
+      <input id="q" class="input" type="search" placeholder="Search title / keyword / category / status… (Esc to clear)" />
+    </div>
 
     <div class="seg fixed">
       <button id="viewTable" class="active" type="button">Table</button>
@@ -219,27 +193,24 @@
 <div class="wrap">
   <div id="chips" class="chips"></div>
 
-  <!-- ESPACIADOR sticky debajo de la barra -->
-  <div class="spacer-stick" aria-hidden="true"></div>
-
-  <!-- TABLE (con scroll horizontal) -->
-  <div class="table-scroll">
+  <!-- Tabla con scroll horizontal en móvil -->
+  <div class="table-scroll" id="tableWrap">
     <table id="tbl">
       <thead>
         <tr>
-          <th class="sortable" data-key="published">Published <span class="arrow">↓</span></th>
-          <th class="sortable" data-key="title">Title <span class="arrow">↓</span></th>
-          <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow">↓</span></th>
-          <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow">↓</span></th>
-          <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow">↓</span></th>
-          <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow">↓</span></th>
+          <th class="sortable" data-key="published"><span>Published</span><span class="dir" id="dir_published">↓</span></th>
+          <th class="sortable" data-key="title"><span>Title</span><span class="dir" id="dir_title">↓</span></th>
+          <th class="sortable" data-key="category" style="width:110px"><span>Category</span><span class="dir" id="dir_category">↓</span></th>
+          <th class="sortable" data-key="primary_keyword" style="width:180px"><span>Keyword</span><span class="dir" id="dir_primary_keyword">↓</span></th>
+          <th class="sortable" data-key="trend_score" style="width:120px"><span>Trend score</span><span class="dir" id="dir_trend_score">↓</span></th>
+          <th class="sortable" data-key="status" style="width:120px"><span>Status</span><span class="dir" id="dir_status">↓</span></th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
 
-  <!-- CARDS -->
+  <!-- Cards -->
   <div id="cards" class="cards" style="display:none"></div>
 
   <!-- Bottom pager -->
@@ -257,9 +228,9 @@
   </div>
 </div>
 
-<!-- Drawer (dates) -->
+<!-- Drawer (dates only) -->
 <div class="drawer-back" id="drawerBack"></div>
-<div class="drawer" id="drawer" aria-modal="true" role="dialog" style="display:none">
+<div class="drawer" id="drawer" aria-modal="true" role="dialog">
   <h3>Date range</h3>
   <div class="grid">
     <label>From <input id="from" type="date" class="input"></label>
@@ -282,7 +253,9 @@
 
 <script>
 /* ---------- refs ---------- */
-const bar = document.getElementById("bar");
+const root = document.documentElement;
+const bar  = document.getElementById("bar");
+
 const tbody   = document.querySelector("#tbl tbody");
 const cardsEl = document.getElementById("cards");
 const chipsEl = document.getElementById("chips");
@@ -335,14 +308,7 @@ const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const catClass = c => c && ["fashion","beauty","wellness"].includes(c) ? `pill tag tag--${c}` : "pill";
 const statusClass = s => s ? `pill status status--${s.toLowerCase()}` : "pill";
 
-/* bar height -> CSS var --bar-h */
-const ro = new ResizeObserver(() => {
-  const h = bar.getBoundingClientRect().height || 64;
-  document.documentElement.style.setProperty('--bar-h', `${Math.round(h)}px`);
-});
-ro.observe(bar);
-
-/* pills as links (new tab) */
+/* make pill links to filtered view (nueva pestaña) */
 function catPill(c){
   if(!c) return "";
   const href = "./?cat=" + encodeURIComponent(c);
@@ -354,19 +320,26 @@ function statusPill(s){
   return `<a class="${statusClass(v)} pill-link" href="${href}" target="_blank" rel="noopener">${v}</a>`;
 }
 
-/* Madrid time (Europe/Madrid) */
-function fmtMadrid(iso){
+/* DateTime (Europe/Madrid) */
+const madridFmt = new Intl.DateTimeFormat('es-ES', {
+  timeZone: 'Europe/Madrid',
+  year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit',
+  hour12:false
+});
+function fmtDateTime(iso){
   if(!iso) return "";
   const d = new Date(iso);
-  if (isNaN(d)) return (iso||"").slice(0,16).replace("T"," ");
-  const s = d.toLocaleString('es-ES',{
-    timeZone:'Europe/Madrid', year:'numeric', month:'2-digit', day:'2-digit',
-    hour:'2-digit', minute:'2-digit', hourCycle:'h23'
-  });
-  const [date, time] = s.split(', ');
-  const [dd,mm,yy] = date.split('/');
-  return `${yy}-${mm}-${dd} ${time}`;
+  if(isNaN(d)) return (iso||"").slice(0,16).replace('T',' ');
+  const p = madridFmt.formatToParts(d).reduce((acc,p)=>{acc[p.type]=p.value;return acc;},{});
+  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
 }
+
+/* Ajusta --bar-h según la altura real de la barra */
+new ResizeObserver(entries=>{
+  for(const e of entries){
+    root.style.setProperty('--bar-h', e.target.getBoundingClientRect().height + 'px');
+  }
+}).observe(bar);
 
 /* theme */
 (()=>{ const saved = localStorage.getItem("fe_theme"); if(saved==="dark") document.documentElement.classList.add("dark"); })();
@@ -388,10 +361,10 @@ document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') toggleMenu(fals
 function updateSortUI(){
   sortKeySel.value = sortKey;
   headers.forEach(h=>{
-    const active = (h.dataset.key === sortKey);
+    const active = h.dataset.key === sortKey;
     h.classList.toggle("active", active);
-    const arrow = h.querySelector(".arrow");
-    if(arrow) arrow.textContent = active ? (sortDir==="asc"?"↑":"↓") : "↓";
+    const dirEl = h.querySelector(".dir");
+    if(dirEl) dirEl.textContent = sortDir==="asc" ? "↑" : "↓";
   });
 }
 function cmp(a,b,key){
@@ -427,7 +400,7 @@ function setView(mode){
   viewMode = mode;
   viewTableBtn.classList.toggle("active", mode==="table");
   viewCardsBtn.classList.toggle("active", mode==="cards");
-  document.getElementById("tbl").parentElement.style.display = mode==="table" ? "" : "none";
+  document.getElementById("tableWrap").style.display = mode==="table" ? "" : "none";
   document.getElementById("cards").style.display = mode==="cards" ? "grid" : "none";
   currentPage = 1; render();
 }
@@ -571,7 +544,7 @@ function render(){
   if(viewMode==="table"){
     tbody.innerHTML = slice.map(r => `
       <tr>
-        <td>${fmtMadrid(r.published)}</td>
+        <td>${fmtDateTime(r.published)}</td>
         <td><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></td>
         <td>${catPill(r.category)}</td>
         <td>${highlight(r.primary_keyword||"", q.value)}</td>
@@ -581,11 +554,10 @@ function render(){
     `).join("");
   } else {
     cardsEl.innerHTML = slice.map(r => {
-      const allK = (r.primary_keyword||"").split(",").map(s=>s.trim()).filter(Boolean);
-      const firstK = allK[0] || "";
+      const firstK = (r.primary_keyword||"").split(",").map(s=>s.trim()).filter(Boolean)[0] || "";
       return `
         <div class="card card--inline">
-          <div class="date-line"><span class="date">${fmtMadrid(r.published)}</span></div>
+          <div class="date-line"><span class="date">${fmtDateTime(r.published)}</span></div>
           <h4 class="card-title"><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></h4>
           <div class="meta-line">
             ${catPill(r.category)}
