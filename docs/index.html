@@ -10,6 +10,9 @@
     --bg:#ffffff; --fg:#141414; --muted:#6b7280;
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
+    /* tag colors */
+    --fashion:#0ea5e9; --beauty:#a855f7; --wellness:#22c55e;
+    --emerging:#22c55e; --bubbling:#f59e0b; --mainstream:#64748b;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);
@@ -24,7 +27,6 @@
     background:var(--card); color:var(--fg); border:1px solid var(--border);
     border-radius:10px; padding:10px 12px; box-shadow:var(--shadow);
   }
-  .btn.primary{background:#111827;color:#fff;border-color:#111827}
   .select{min-width:140px}
   .spacer{flex:1}
   .wrap{max-width:1100px;margin:0 auto;padding:16px 20px}
@@ -32,19 +34,36 @@
   .small{font-size:12px;color:var(--muted)}
   .pill{padding:4px 8px;font-size:11px;line-height:1;border:1px solid var(--border);
         border-radius:999px;background:var(--pill);}
-  .grid{display:grid;gap:14px}
-  @media(min-width:900px){ .grid.cards{grid-template-columns:1fr 1fr} }
-  .card{background:var(--card);border:1px solid var(--border);
-        border-radius:14px;box-shadow:var(--shadow);padding:14px}
   .muted{color:var(--muted)}
 
   /* Table view */
-  .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px;
-              box-shadow:var(--shadow);background:var(--card)}
-  table{border-collapse:collapse;min-width:900px;width:100%}
+  .table-shell{border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);background:var(--card)}
+  .table-wrap{overflow-x:auto;border-radius:14px}
+  table{border-collapse:collapse;min-width:1000px;width:100%}
   th, td{padding:10px;border-bottom:1px dashed var(--border);vertical-align:top;text-align:left}
-  th{font-weight:600;background:#fafafa;position:sticky;top:0;z-index:5}
+  th{font-weight:600;background:#fafafa;position:sticky;top:0;z-index:5;white-space:nowrap}
   tr:last-child td{border-bottom:none}
+
+  /* Sort indicator */
+  .sortable{cursor:pointer;user-select:none}
+  .sortable .dir{opacity:.7;margin-left:6px}
+
+  /* Tags (colorful) */
+  .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+       font-size:11px;line-height:1;border:1px solid var(--border);background:var(--pill);white-space:nowrap}
+  .tag.kw{background:#f1f5f9}
+  .tag.cat-fashion{border-color:color-mix(in oklab, var(--fashion) 35%, #0000); color:var(--fashion); background:color-mix(in oklab, var(--fashion) 14%, #fff)}
+  .tag.cat-beauty{border-color:color-mix(in oklab, var(--beauty) 35%, #0000); color:var(--beauty); background:color-mix(in oklab, var(--beauty) 14%, #fff)}
+  .tag.cat-wellness{border-color:color-mix(in oklab, var(--wellness) 35%, #0000); color:var(--wellness); background:color-mix(in oklab, var(--wellness) 14%, #fff)}
+
+  .tag.st-emerging{border-color:color-mix(in oklab, var(--emerging) 35%, #0000); color:var(--emerging); background:color-mix(in oklab, var(--emerging) 14%, #fff)}
+  .tag.st-bubbling{border-color:color-mix(in oklab, var(--bubbling) 35%, #0000); color:var(--bubbling); background:color-mix(in oklab, var(--bubbling) 14%, #fff)}
+  .tag.st-mainstream{border-color:color-mix(in oklab, var(--mainstream) 35%, #0000); color:var(--mainstream); background:color-mix(in oklab, var(--mainstream) 14%, #fff)}
+
+  /* Pagination */
+  .pager{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:10px 12px}
+  .pager .controls{display:flex;align-items:center;gap:8px}
+  .btn.small{padding:6px 10px}
 </style>
 
 <div class="bar">
@@ -69,12 +88,12 @@
     </select>
 
     <label class="small">Search
-      <input id="q" type="search" class="input" placeholder="title / keyword / source" style="min-width:200px">
+      <input id="q" type="search" class="input" placeholder="title / keyword / source" style="min-width:220px">
     </label>
 
     <select id="view" class="select">
-      <option value="cards">Cards view</option>
       <option value="table">Table view</option>
+      <option value="cards">Cards view</option>
     </select>
 
     <button id="clear" class="btn">Clear</button>
@@ -88,30 +107,52 @@
     <span id="metaCount" class="pill">…</span>
   </div>
 
-  <div id="cards" class="grid cards"></div>
+  <!-- TABLE SHELL -->
+  <div id="tableShell" class="table-shell">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="published">Published <span class="dir"></span></th>
+            <th class="sortable" data-sort="title">Title <span class="dir"></span></th>
+            <th class="sortable" data-sort="primary_keyword">Keyword <span class="dir"></span></th>
+            <th class="sortable" data-sort="status">Status <span class="dir"></span></th>
+            <th class="sortable" data-sort="category">Category <span class="dir"></span></th>
+            <th class="sortable" data-sort="trend_score">Trend score <span class="dir"></span></th>
+            <th class="sortable" data-sort="link_host">Source <span class="dir"></span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
 
-  <div id="tableWrap" class="table-wrap" style="display:none">
-    <table>
-      <thead>
-        <tr>
-          <th>Published</th>
-          <th>Title</th>
-          <th>Keyword</th>
-          <th>Status</th>
-          <th>Category</th>
-          <th>Trend score</th>
-          <th>Source</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
+    <div class="pager">
+      <div class="controls">
+        <button id="prev" class="btn small">← Prev</button>
+        <button id="next" class="btn small">Next →</button>
+      </div>
+      <div class="controls">
+        <label class="small">Rows per page
+          <select id="pageSize" class="select">
+            <option>10</option><option selected>20</option><option>30</option><option>50</option>
+          </select>
+        </label>
+        <span id="pageInfo" class="small muted">Page 1 of 1</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARDS (optional alternate view) -->
+  <div id="cardsWrap" style="display:none">
+    <div id="cards" style="display:grid;gap:14px;grid-template-columns:1fr;max-width:1100px">
+    </div>
   </div>
 </div>
 
 <script>
-/* --- Keyword normalization --- */
+/* ---------- Keyword normalization ---------- */
 const KW_MAP = new Map([
-  ['anti aging','longevity'], ['anti-ageing','longevity'],
+  ['anti aging','longevity'], ['anti-ageing','longevity'], ['anti ageing','longevity'],
   ['lip-oil','lip oil'], ['lip oils','lip oil'],
   ['old money','quiet luxury'], ['stealth wealth','quiet luxury'],
   ['westernwear','western'], ['cowboy core','western'],
@@ -120,82 +161,201 @@ const KW_MAP = new Map([
 function normalizeKw(raw){
   if(!raw) return '';
   let s=String(raw).toLowerCase().trim();
+  s=s.replace(/[–—]/g,'-').replace(/\s+/g,' ').replace(/\s-\s/g,'-');
+  if (s.endsWith('s') && s.length>4) s=s.slice(0,-1);
   if(KW_MAP.has(s)) s=KW_MAP.get(s);
   return s;
 }
 function hostOf(u){try{return new URL(u).host.replace(/^www\./,'');}catch{return '';}}
 
+/* ---------- State ---------- */
 let rowsAll=[];
+let filtered=[];
+
+const state = {
+  sortKey: 'published',
+  sortDir: 'desc', // 'asc' | 'desc'
+  page: 1,
+  pageSize: 20,
+};
+
+/* ---------- Helpers ---------- */
+function byId(id){return document.getElementById(id);}
+function inRange(iso, from, to){
+  const t = Date.parse(iso||""); if(isNaN(t)) return false;
+  if(from && t < new Date(from).setUTCHours(0,0,0,0)) return false;
+  if(to   && t > new Date(to).setUTCHours(23,59,59,999)) return false;
+  return true;
+}
+function escRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+function setSortIndicator(){
+  document.querySelectorAll('th.sortable .dir').forEach(el=>el.textContent='');
+  const th = document.querySelector(`th.sortable[data-sort="${state.sortKey}"] .dir`);
+  if(th) th.textContent = state.sortDir==='asc' ? '▲' : '▼';
+}
+function coloredTag(type, value){
+  const v=(value||'').toLowerCase();
+  if(type==='status') return `<span class="tag st-${v}">${v||'—'}</span>`;
+  if(type==='category') return `<span class="tag cat-${v}">${v||'—'}</span>`;
+  if(type==='keyword') return `<span class="tag kw">${value||'—'}</span>`;
+  return `<span class="tag">${value||'—'}</span>`;
+}
+
+/* ---------- Filtering ---------- */
 function getFiltered(){
   const c=byId('cat').value, s=byId('stat').value, f=byId('from').value, t=byId('to').value;
   const q=byId('q').value.trim();
-  let rows=rowsAll.filter(r=>{
+  let rows = rowsAll.filter(r=>{
     if(c && r.category!==c) return false;
     if(s && (r.status||'').toLowerCase()!==s) return false;
-    if(f && r.published<f) return false;
-    if(t && r.published>t) return false;
+    if(f || t){ if(!inRange(r.published, f, t)) return false; }
     return true;
   });
   if(q){
-    const re=new RegExp(q,'i');
-    rows=rows.filter(r=>{
-      return re.test(r.title||'') || re.test(normalizeKw(r.primary_keyword||'')) || re.test(hostOf(r.link||''));
+    const re = new RegExp(escRe(q),'i');
+    rows = rows.filter(r=>{
+      const kw = normalizeKw(r.primary_keyword||'');
+      return re.test(r.title||'') || re.test(kw) || re.test(r.link_host||'');
     });
   }
   return rows;
 }
 
+/* ---------- Sorting ---------- */
+function sortRows(rows){
+  const k = state.sortKey, dir = state.sortDir==='asc'? 1 : -1;
+  return rows.slice().sort((a,b)=>{
+    let A=a[k], B=b[k];
+    if(k==='trend_score'){ A=parseFloat(A)||0; B=parseFloat(B)||0; }
+    if(k==='published'){ A=A||''; B=B||''; }
+    if(A<B) return -1*dir;
+    if(A>B) return 1*dir;
+    return 0;
+  });
+}
+
+/* ---------- Pagination ---------- */
+function paginate(rows){
+  const start = (state.page-1)*state.pageSize;
+  return rows.slice(start, start+state.pageSize);
+}
+function updatePager(total){
+  const pages = Math.max(1, Math.ceil(total/state.pageSize));
+  if(state.page>pages) state.page = pages;
+  byId('pageInfo').textContent = `Page ${state.page} of ${pages}`;
+  byId('prev').disabled = state.page<=1;
+  byId('next').disabled = state.page>=pages;
+}
+
+/* ---------- Renderers ---------- */
 function render(){
-  const rows=getFiltered();
-  byId('metaCount').textContent=`${rows.length} articles`;
-  const isTable=byId('view').value==='table';
-  byId('cards').style.display=isTable?'none':'grid';
-  byId('tableWrap').style.display=isTable?'':'block';
-  if(isTable) renderTable(rows); else renderCards(rows);
+  filtered = sortRows(getFiltered());
+  byId('metaCount').textContent = `${filtered.length} articles`;
+  setSortIndicator();
+
+  // view toggle
+  const view = byId('view').value;
+  byId('tableShell').style.display = (view==='table') ? '' : 'none';
+  byId('cardsWrap').style.display  = (view==='cards') ? '' : 'none';
+
+  // table
+  updatePager(filtered.length);
+  const pageRows = paginate(filtered);
+  renderTable(pageRows);
+
+  // cards
+  if(view==='cards') renderCards(pageRows);
 }
-function renderCards(rows){
-  byId('cards').innerHTML=rows.map(r=>{
-    const d=(r.published||'').slice(0,10);
-    const host=hostOf(r.link);
-    const kw=normalizeKw(r.primary_keyword||'')||'—';
-    return `<article class="card">
-      <div class="small muted">${d||'—'} · ${host||'—'}</div>
-      <h3 style="margin:6px 0"><a href="${r.link}" target="_blank">${r.title||'(untitled)'}</a></h3>
-      <div class="row">
-        <span class="pill">${kw}</span>
-        <span class="pill">${(r.status||'').toLowerCase()||'status?'}</span>
-        <span class="pill">${r.category||'—'}</span>
-        <span class="pill">score: ${r.trend_score||'—'}</span>
-      </div>
-    </article>`;
-  }).join('')||`<div class="muted">No results.</div>`;
-}
+
 function renderTable(rows){
-  byId('tbody').innerHTML=rows.map(r=>{
-    const d=(r.published||'').slice(0,10);
-    const host=hostOf(r.link);
-    const kw=normalizeKw(r.primary_keyword||'')||'—';
+  byId('tbody').innerHTML = rows.map(r=>{
+    const d = (r.published||'').slice(0,10);
+    const kw = normalizeKw(r.primary_keyword||'') || '—';
     return `<tr>
       <td>${d||'—'}</td>
-      <td><a href="${r.link}" target="_blank">${r.title||'(untitled)'}</a></td>
-      <td>${kw}</td>
-      <td>${(r.status||'').toLowerCase()}</td>
-      <td>${r.category||''}</td>
-      <td>${r.trend_score||''}</td>
-      <td>${host||''}</td>
+      <td><a href="${r.link}" target="_blank" rel="noopener">${r.title||'(untitled)'}</a></td>
+      <td>${coloredTag('keyword', kw)}</td>
+      <td>${coloredTag('status', (r.status||'').toLowerCase())}</td>
+      <td>${coloredTag('category', r.category||'')}</td>
+      <td>${r.trend_score ? Number(r.trend_score).toFixed(1) : '—'}</td>
+      <td>${r.link_host||''}</td>
     </tr>`;
-  }).join('')||`<tr><td colspan="7" class="muted">No results.</td></tr>`;
+  }).join('') || `<tr><td colspan="7" class="muted">No results.</td></tr>`;
 }
 
-function byId(id){return document.getElementById(id);}
-['cat','stat','from','to','view','q'].forEach(id=>byId(id).addEventListener('input',render));
-byId('clear').onclick=()=>{['cat','stat','from','to','q'].forEach(id=>byId(id).value='');render();};
+function renderCards(rows){
+  byId('cards').innerHTML = rows.map(r=>{
+    const d = (r.published||'').slice(0,10);
+    const kw = normalizeKw(r.primary_keyword||'') || '—';
+    return `<article class="card">
+      <div class="small muted">${d||'—'} · ${r.link_host||'—'}</div>
+      <h3 style="margin:6px 0"><a href="${r.link}" target="_blank" rel="noopener">${r.title||'(untitled)'}</a></h3>
+      <div class="row">
+        ${coloredTag('keyword', kw)}
+        ${coloredTag('status', (r.status||'').toLowerCase())}
+        ${coloredTag('category', r.category||'')}
+        <span class="pill">score: ${r.trend_score ? Number(r.trend_score).toFixed(1) : '—'}</span>
+      </div>
+    </article>`;
+  }).join('') || `<div class="muted">No results.</div>`;
+}
 
+/* ---------- Events ---------- */
+['cat','stat','from','to','q','view'].forEach(id=>byId(id).addEventListener('input', ()=>{
+  state.page = 1; render();
+}));
+byId('quick').onchange = ()=>{
+  const d = parseInt(byId('quick').value)||0;
+  if(!d){ byId('from').value=""; byId('to').value=""; state.page=1; render(); return; }
+  const today = new Date();
+  const start = new Date(today.getTime()-d*86400000);
+  byId('from').value = start.toISOString().slice(0,10);
+  byId('to').value = today.toISOString().slice(0,10);
+  state.page=1; render();
+};
+byId('clear').onclick = ()=>{
+  ['cat','stat','from','to','q','quick'].forEach(id=>byId(id).value="");
+  state.page=1; render();
+};
+
+/* sort click */
+document.querySelectorAll('th.sortable').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.getAttribute('data-sort');
+    if(state.sortKey === key){
+      state.sortDir = (state.sortDir==='asc' ? 'desc' : 'asc');
+    }else{
+      state.sortKey = key;
+      state.sortDir = (key==='title' || key==='link_host' || key==='primary_keyword' || key==='category' || key==='status') ? 'asc' : 'desc';
+    }
+    render();
+  });
+});
+
+/* pager */
+byId('prev').onclick = ()=>{ if(state.page>1){ state.page--; render(); } };
+byId('next').onclick = ()=>{ state.page++; render(); };
+byId('pageSize').onchange = ()=>{
+  state.pageSize = parseInt(byId('pageSize').value,10) || 20;
+  state.page = 1; render();
+};
+
+/* ---------- Load CSV ---------- */
 function load(){
-  fetch('signals_simple.csv?ts='+new Date().toISOString().slice(0,10))
+  const bust = new Date().toISOString().slice(0,10);
+  fetch('signals_simple.csv?ts='+bust)
     .then(r=>r.text())
     .then(csv=>Papa.parse(csv,{header:true,skipEmptyLines:true}))
-    .then(res=>{rowsAll=res.data; render();});
+    .then(res=>{
+      // derive link_host, normalize keyword only for display/search (keep original fields)
+      rowsAll = res.data.map(r=>({
+        ...r,
+        link_host: hostOf(r.link||''),
+        primary_keyword: r.primary_keyword || '' // keep raw; we show normalized in UI tags
+      }));
+      render();
+    })
+    .catch(()=> alert('Failed to load signals_simple.csv'));
 }
 load();
 </script>
