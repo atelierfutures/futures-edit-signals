@@ -85,7 +85,7 @@
   <div class="grid two">
     <div class="card">
       <h3>Top keywords</h3>
-      <canvas id="chartKeywords" class="mini" aria-describedby="kwHelp"></canvas>
+      <canvas id="chartKeywords" class="mini" aria-describedby="kwHelp" style="height:320px"></canvas>
       <div id="kwHelp" class="legend">Click a bar to inspect that keyword.</div>
     </div>
 
@@ -245,7 +245,6 @@ els.clear.onclick = ()=>{ els.cat.value=""; els.stat.value=""; els.from.value=""
 ['cat','stat','from','to'].forEach(id => els[id].onchange=render);
 els.topN.oninput = ()=>{ els.topNVal.textContent = els.topN.value; render(); };
 els.kwSearch.oninput = ()=> render();
-window.addEventListener('resize', ()=> adjustKeywordsHeight());
 
 /* --- Chart.js plugin: reserve space for long y-axis labels --- */
 const widenYLabels = {
@@ -342,42 +341,37 @@ function newcomerKeywords(curRows, prevRows, limit=20){
   return out.slice(0, limit);
 }
 
-/* --- dynamic height for Top keywords (compact/normal) --- */
-function adjustKeywordsHeight(labelsCount=0){
-  // ~20px per bar, min 240px, max 420px
-  const n = labelsCount || (charts.chartKeywords?.data?.labels?.length || 0);
-  const h = Math.min(420, Math.max(240, Math.round(20*n + 60)));
-  els.kwCanvas.style.height = h+"px";
-}
+/* --- Top keywords fixed compact height --- */
+function adjustKeywordsHeight(){ els.kwCanvas.style.height = '320px'; } // fixed
 
 /* --- render --- */
 function render(){
   const rows = getFiltered();
   document.getElementById('metaCount').textContent = `${rows.length} articles in current filters`;
 
-  // 1) Top keywords (horizontal, compact spacing)
+  // 1) Top keywords (horizontal, compact)
   const topK = topKeywords(rows, parseInt(els.topN.value,10), els.kwSearch.value.trim());
-  adjustKeywordsHeight(topK.length);
+  adjustKeywordsHeight();
   const kwChart = makeOrUpdate('chartKeywords','bar',{
     labels: topK.map(([k])=>k),
     datasets:[{
       label:'count',
       data: topK.map(([,v])=>v),
       backgroundColor: palette(topK.length),
-      categoryPercentage: 0.9,
-      barPercentage: 0.78
+      categoryPercentage: 0.98,
+      barPercentage: 0.48
     }]
   },{
     maintainAspectRatio:false,
     indexAxis:'y',
-    layout:{ padding:{ left: 6, right: 6, top: 6, bottom: 6 } },
+    layout:{ padding:{ left: 4, right: 4, top: 4, bottom: 4 } },
     plugins:{
       legend:{display:false},
       widenYLabels:{ minWidth: 150 }
     },
     scales:{
       x:{ beginAtZero:true, ticks:{ precision:0 } },
-      y:{ ticks:{ autoSkip:false, padding:4, font:{ size:12 } }, grid:{ drawBorder:false } }
+      y:{ ticks:{ autoSkip:false, padding:2, font:{ size:11 } }, grid:{ drawBorder:false } }
     }
   });
   charts.chartKeywords = kwChart;
@@ -429,8 +423,8 @@ function render(){
     plugins:{tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%`}}, legend:{position:'bottom'}}
   });
 
-  // 6) Top sources — SAME chart type (100% stacked bar, single bar)
-  const srcShare = topSourcesShare(rows); // [{label, pct}]
+  // 6) Top sources — 100% stacked bar, single bar
+  const srcShare = topSourcesShare(rows);
   const srcColors = palette(srcShare.length);
   makeOrUpdate('chartSourcesStack','bar',{
     labels:['share'],
