@@ -11,7 +11,7 @@
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
     --ctl-w:180px; --seg-w:160px;
-    --bar-h:64px; /* valor de respaldo para sticky header */
+    --bar-h:64px; /* respaldo para sticky header */
 
     /* Category colors */
     --fashion-bg:#fff1f2; --fashion-bd:#fecdd3; --fashion-fg:#9f1239;
@@ -82,7 +82,7 @@
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
   .chip{display:inline-flex;align-items:center;gap:6px} .chip button{all:unset;cursor:pointer;color:var(--muted)}
 
-  /* --- Horizontal scroll solo para la tabla --- */
+  /* --- Scroll horizontal solo para la tabla --- */
   .table-scroll{
     overflow-x:auto;
     -webkit-overflow-scrolling:touch;
@@ -93,14 +93,15 @@
 
   /* Tabla */
   table{width:100%;border-collapse:collapse}
-  th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
-  th{
-    position:sticky; top:var(--bar-h); /* offset dinámico */
-    background:var(--bg); z-index:5;
-    white-space:nowrap; user-select:none;
+  thead{
+    position:sticky; top:var(--bar-h); z-index:7;
+    background:var(--bg);
+    box-shadow: 0 1px 0 var(--border), 0 4px 10px rgba(0,0,0,.04);
   }
+  th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left;background:transparent}
+  th{white-space:nowrap; user-select:none;}
   th.sortable{cursor:pointer}
-  /* Oculta flechas por defecto, solo visible en columna activa */
+  /* flecha solo en la columna activa */
   th .arrow{display:none;margin-left:6px}
   th.active .arrow{display:inline-block}
 
@@ -331,7 +332,7 @@ const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const catClass = c => c && ["fashion","beauty","wellness"].includes(c) ? `pill tag tag--${c}` : "pill";
 const statusClass = s => s ? `pill status status--${s.toLowerCase()}` : "pill";
 
-/* Pills linking to filtered view in new tab */
+/* Pills con enlace a vista filtrada */
 function catPill(c){
   if(!c) return "";
   const href = "./?cat=" + encodeURIComponent(c);
@@ -343,7 +344,7 @@ function statusPill(s){
   return `<a class="${statusClass(v)}" href="${href}" target="_blank" rel="noopener">${v}</a>`;
 }
 
-/* Madrid time formatter (DST safe) */
+/* Hora Madrid (DST safe) */
 const madridFmt = new Intl.DateTimeFormat("en-GB",{
   timeZone:"Europe/Madrid", year:"numeric", month:"2-digit", day:"2-digit",
   hour:"2-digit", minute:"2-digit", hour12:false
@@ -356,7 +357,7 @@ function fmtMadrid(iso){
   return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
-/* sticky bar: compact shadow + recalcular offset sticky header */
+/* sticky bar compacto + recalcular offset */
 window.addEventListener("scroll", ()=>{
   bar.classList.toggle("compact", window.scrollY > 10);
   queueBarHeight();
@@ -369,7 +370,7 @@ darkToggleBtn.onclick = () => {
   localStorage.setItem("fe_theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
 };
 
-/* pretty More menu */
+/* More menu */
 function toggleMenu(open){
   moreMenu.classList.toggle('open', open);
   moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -644,7 +645,7 @@ function restoreFromUrl(){
 }
 function load(){
   restoreFromUrl();
-  setBarHeightVar(); // por si carga con otra altura inicial
+  setBarHeightVar(); // por si la barra cambia al pintar
   const bust = new Date().toISOString().slice(0,10);
   fetch("signals_simple.csv?ts="+bust)
     .then(r => r.text())
