@@ -11,6 +11,7 @@
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
     --ctl-w:180px; --seg-w:160px;
+    --bar-h:64px; /* valor de respaldo para sticky header */
 
     /* Category colors */
     --fashion-bg:#fff1f2; --fashion-bd:#fecdd3; --fashion-fg:#9f1239;
@@ -81,21 +82,25 @@
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
   .chip{display:inline-flex;align-items:center;gap:6px} .chip button{all:unset;cursor:pointer;color:var(--muted)}
 
-  /* --- Horizontal scroll only for the table --- */
+  /* --- Horizontal scroll solo para la tabla --- */
   .table-scroll{
     overflow-x:auto;
     -webkit-overflow-scrolling:touch;
     margin-top:10px;
     border-radius:10px;
   }
-  .table-scroll table{ min-width:980px; } /* Ajusta si quieres */
+  .table-scroll table{ min-width:980px; }
 
-  /* Table (desktop) */
+  /* Tabla */
   table{width:100%;border-collapse:collapse}
   th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
-  th{position:sticky;top:64px;background:var(--bg);z-index:1;white-space:nowrap;user-select:none}
+  th{
+    position:sticky; top:var(--bar-h); /* offset dinámico */
+    background:var(--bg); z-index:5;
+    white-space:nowrap; user-select:none;
+  }
   th.sortable{cursor:pointer}
-  /* Oculta flechas por defecto, muéstralas solo en la columna activa */
+  /* Oculta flechas por defecto, solo visible en columna activa */
   th .arrow{display:none;margin-left:6px}
   th.active .arrow{display:inline-block}
 
@@ -215,17 +220,17 @@
 <div class="wrap">
   <div id="chips" class="chips"></div>
 
-  <!-- TABLE with horizontal scroll container -->
+  <!-- TABLE (con scroll horizontal) -->
   <div class="table-scroll">
     <table id="tbl">
       <thead>
         <tr>
-          <th class="sortable" data-key="published">Published <span class="arrow">↓</span></th>
-          <th class="sortable" data-key="title">Title <span class="arrow">↓</span></th>
-          <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow">↓</span></th>
-          <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow">↓</span></th>
-          <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow">↓</span></th>
-          <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow">↓</span></th>
+          <th class="sortable" data-key="published">Published <span class="arrow"></span></th>
+          <th class="sortable" data-key="title">Title <span class="arrow"></span></th>
+          <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow"></span></th>
+          <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow"></span></th>
+          <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow"></span></th>
+          <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow"></span></th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -351,8 +356,11 @@ function fmtMadrid(iso){
   return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
-/* sticky header compact shadow */
-window.addEventListener("scroll", ()=> bar.classList.toggle("compact", window.scrollY > 10));
+/* sticky bar: compact shadow + recalcular offset sticky header */
+window.addEventListener("scroll", ()=>{
+  bar.classList.toggle("compact", window.scrollY > 10);
+  queueBarHeight();
+});
 
 /* theme */
 (()=>{ const saved = localStorage.getItem("fe_theme"); if(saved==="dark") document.documentElement.classList.add("dark"); })();
@@ -408,7 +416,7 @@ function setSort(key){
 headers.forEach(h => h.addEventListener("click", () => setSort(h.dataset.key)));
 sortKeySel.onchange = () => { sortKey = sortKeySel.value; sortDir = (sortKey==="trend_score"||sortKey==="published")?"desc":"asc"; currentPage=1; updateSortUI(); render(); };
 
-/* view */
+/* vista */
 function setView(mode){
   viewMode = mode;
   viewTableBtn.classList.toggle("active", mode==="table");
@@ -596,6 +604,21 @@ nextBtn.onclick = () => {
   if(currentPage < totalPages){ currentPage++; render(); }
 };
 
+/* ----- altura dinámica de la barra para sticky table header ----- */
+function setBarHeightVar(){
+  const barEl = document.getElementById('bar');
+  if(!barEl) return;
+  const h = Math.ceil(barEl.getBoundingClientRect().height);
+  document.documentElement.style.setProperty('--bar-h', h + 'px');
+}
+let __barHTo;
+function queueBarHeight(){
+  clearTimeout(__barHTo);
+  __barHTo = setTimeout(setBarHeightVar, 60);
+}
+window.addEventListener('load', setBarHeightVar);
+window.addEventListener('resize', setBarHeightVar);
+
 /* restore + load */
 function restoreFromUrl(){
   const p = new URLSearchParams(location.search);
@@ -608,7 +631,7 @@ function restoreFromUrl(){
   const v = p.get("view");
   if(v==="cards") setView("cards");
   else if(v==="table") setView("table");
-  else { // default: cards in small screens, table otherwise
+  else {
     if(window.matchMedia("(max-width:700px)").matches) setView("cards");
     else setView("table");
   }
@@ -621,6 +644,7 @@ function restoreFromUrl(){
 }
 function load(){
   restoreFromUrl();
+  setBarHeightVar(); // por si carga con otra altura inicial
   const bust = new Date().toISOString().slice(0,10);
   fetch("signals_simple.csv?ts="+bust)
     .then(r => r.text())
