@@ -82,36 +82,38 @@
     <span id="metaCount" class="pill">…</span>
   </div>
 
-  <!-- 1) Top keywords -->
-  <div class="card">
-    <h3>Top keywords</h3>
-    <canvas id="chartKeywords" class="mini" aria-describedby="kwHelp"></canvas>
-    <div id="kwHelp" class="legend">Click a bar to inspect that keyword.</div>
-  </div>
-
-  <!-- 2) Keyword details -->
-  <div class="card" id="kwPanel" style="margin-top:16px">
-    <h3>Keyword details <span id="kwTitle" class="small" style="margin-left:8px;color:var(--muted)"></span></h3>
-    <div class="kpi" id="kwKpis" style="display:none">
-      <span class="pill" id="kpiTotal">Total: 0</span>
-      <span class="pill" id="kpiAvg">Avg score: 0</span>
-      <span class="pill" id="kpiCat">Top category: –</span>
-      <a class="btn" id="openList" target="_blank" rel="noopener">Open in list</a>
+  <!-- Row 1: Top keywords + Keyword details on the same line -->
+  <div class="grid two">
+    <div class="card">
+      <h3>Top keywords</h3>
+      <canvas id="chartKeywords" class="mini" aria-describedby="kwHelp"></canvas>
+      <div id="kwHelp" class="legend">Click a bar to inspect that keyword.</div>
     </div>
-    <canvas id="chartKwStatus" class="mini" aria-label="Status mix bar"></canvas>
-    <div class="legend">Status mix for the selected keyword.</div>
 
-    <h4 class="small" style="margin-top:10px">Latest articles</h4>
-    <ul id="kwList" class="list"></ul>
+    <div class="card" id="kwPanel">
+      <h3>Keyword details <span id="kwTitle" class="small" style="margin-left:8px;color:var(--muted)"></span></h3>
+      <div class="kpi" id="kwKpis" style="display:none">
+        <span class="pill" id="kpiTotal">Total: 0</span>
+        <span class="pill" id="kpiAvg">Avg score: 0</span>
+        <span class="pill" id="kpiCat">Top category: –</span>
+        <a class="btn" id="openList" target="_blank" rel="noopener">Open in list</a>
+      </div>
+      <canvas id="chartKwStatus" class="mini" aria-label="Status mix bar"></canvas>
+      <div class="legend">Status mix for the selected keyword.</div>
+
+      <h4 class="small" style="margin-top:10px">Latest articles</h4>
+      <ul id="kwList" class="list"></ul>
+    </div>
   </div>
 
-  <!-- 3) Fastest-rising + 4) Newcomers -->
+  <!-- Row 2: Fastest-rising + Newcomers (same line) -->
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <h3>Fastest-rising keywords (current vs previous)</h3>
       <canvas id="chartRisers" class="mini"></canvas>
       <div class="legend">Change in mentions between the current filters and a same-length previous window.</div>
     </div>
+
     <div class="card">
       <h3>Newcomer keywords (first appearances)</h3>
       <ul id="newcomersList" class="list"></ul>
@@ -119,23 +121,24 @@
     </div>
   </div>
 
-  <!-- 5) Status mix by category -->
-  <div class="card" style="margin-top:16px">
-    <h3>Status mix by category</h3>
-    <canvas id="chartMix" class="mini"></canvas>
-    <div class="legend">100% stacked bars: emerging / bubbling / mainstream share by category.</div>
-  </div>
+  <!-- Row 3: Status mix + Top sources (same line; same chart type: 100% stacked bars) -->
+  <div class="grid two" style="margin-top:16px">
+    <div class="card">
+      <h3>Status mix by category</h3>
+      <canvas id="chartMix" class="mini"></canvas>
+      <div class="legend">100% stacked bars: emerging / bubbling / mainstream share by category.</div>
+    </div>
 
-  <!-- 6) Top sources (horizontal line chart) -->
-  <div class="card" style="margin-top:16px">
-    <h3>Top sources (share)</h3>
-    <canvas id="chartSourcesLine" class="mini"></canvas>
-    <div class="legend">Share by domain shown as a horizontal line chart (longer line = larger share).</div>
+    <div class="card">
+      <h3>Top sources (share)</h3>
+      <canvas id="chartSourcesStack" class="mini"></canvas>
+      <div class="legend">100% stacked bar: domain share within current filters (top 10 domains + others).</div>
+    </div>
   </div>
 </div>
 
 <script>
-/* --- css var resolver --- */
+/* --- css var helper --- */
 function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || name; }
 
 /* --- helpers --- */
@@ -280,7 +283,9 @@ function topSourcesShare(rows){
   const top = sorted.slice(0,10);
   const others = sorted.slice(10).reduce((s,[,v])=>s+v,0);
   if(others>0) top.push(["others", others]);
-  return top;
+  const total = [...map.values()].reduce((a,b)=>a+b,0) || 1;
+  // return as [{label, pct}]
+  return top.map(([h,v]) => ({label:h, pct: v/total*100}));
 }
 function rowsForKeyword(rows, kw){
   const target = normalizeKw(kw);
@@ -399,28 +404,21 @@ function render(){
     plugins:{tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%`}}, legend:{position:'bottom'}}
   });
 
-  // 6) Top sources — horizontal line chart
-  const src = topSourcesShare(rows);
-  const labels = src.map(([h])=>h);
-  const values = src.map(([,v])=>v);
-  makeOrUpdate('chartSourcesLine','line',{
-    labels,
-    datasets:[{
-      label:'share',
-      data: values,
-      fill:false,
-      tension:0,           // straight lines
-      pointRadius:3,
-      borderWidth:2,
-      borderColor: cssVar('--accent'),
-      backgroundColor: cssVar('--accent')
-    }]
+  // 6) Top sources — SAME chart type (100% stacked bar, single bar)
+  const srcShare = topSourcesShare(rows); // [{label, pct}]
+  const srcColors = palette(srcShare.length);
+  makeOrUpdate('chartSourcesStack','bar',{
+    labels:['share'],
+    datasets: srcShare.map((s, i)=>({
+      label: s.label, data:[s.pct], backgroundColor: srcColors[i]
+    }))
   },{
     indexAxis:'y',
-    plugins:{legend:{display:false}, tooltip:{enabled:true}},
-    scales:{
-      x:{beginAtZero:true, ticks:{precision:0}},
-      y:{ticks:{autoSkip:false}}
+    responsive:true,
+    scales:{x:{stacked:true,beginAtZero:true,max:100}, y:{stacked:true}},
+    plugins:{
+      legend:{position:'bottom'},
+      tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.x.toFixed(0)}%`}}
     }
   });
 }
