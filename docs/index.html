@@ -2,7 +2,6 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>The Futures Edit — Signals</title>
-
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
@@ -12,7 +11,7 @@
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
     --ctl-w:180px; --seg-w:160px;
-    --bar-h: 72px; /* se ajusta por JS */
+    --bar-h: 86px; /* sticky toolbar height (approx) */
 
     /* Category colors */
     --fashion-bg:#fff1f2; --fashion-bd:#fecdd3; --fashion-fg:#9f1239;
@@ -41,24 +40,22 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
   a{color:#2563eb;text-decoration:none} a:hover{text-decoration:underline}
-  .wrap{max-width:1100px;margin:0 auto;padding:20px}
 
   /* Sticky toolbar */
   .bar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(10px);
     background:color-mix(in oklab, var(--bg) 90%, transparent); border-bottom:1px solid var(--border)}
-  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .title{font-weight:700;font-size:18px}
-  .spacer{flex:1}
+  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:grid;grid-template-columns:1fr auto auto auto auto;gap:10px;align-items:center}
+  .title{grid-column:1/-1;font-weight:700;font-size:18px}
   .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
   .seg.fixed{width:var(--seg-w)} .seg.fixed button{flex:1 0 50%}
   .seg button{padding:8px 12px;border:0;background:var(--card);color:var(--fg);cursor:pointer}
   .seg button.active{background:var(--accent);color:var(--bg)}
-
   .btn{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;box-shadow:var(--shadow)}
   .select,.input{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
   .select.fixed{width:var(--ctl-w)}
-  .search{flex:1 1 320px;display:flex;gap:10px}
+  .search{grid-column:1/-1;display:flex;gap:10px}
   .search input{width:100%}
+  .bar-row{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap}
 
   /* Pretty More menu */
   .menu{ position:relative; }
@@ -75,56 +72,36 @@
   }
   .menu-panel button:hover, .menu-panel a:hover{ background:var(--pill); }
 
-  /* Chips bajo barra */
+  /* Chips under toolbar */
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-  .chip{display:inline-flex;align-items:center;gap:6px} .chip button{all:unset;cursor:pointer;color:var(--muted)}
-
-  /* Table */
-  .table-scroll{width:100%;overflow-x:auto}
-  table{width:100%;border-collapse:collapse;margin-top:10px; min-width:820px;}
-  thead{
-    position:sticky;
-    top: var(--bar-h);
-    z-index:7;
-    background:var(--bg);
-    box-shadow: 0 1px 0 var(--border), 0 4px 10px rgba(0,0,0,.04);
-  }
-  th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
-  th{font-weight:600; user-select:none;}
-  th.sortable{cursor:pointer}
-  th .dir{margin-left:6px; opacity:.9}
-  th:not(.active) .dir{display:none}
-
-  /* Pills + badges */
+  .chip{display:inline-flex;align-items:center;gap:6px}
+  .chip button{all:unset;cursor:pointer;color:var(--muted)}
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
-  .pill-link{ color:inherit; text-decoration:none; display:inline-block; }
+
+  /* table container = removes the big blank space + allows horizontal scroll on mobile */
+  .table-wrap{margin-top:8px; overflow-x:auto; -webkit-overflow-scrolling:touch; background:var(--bg);}
+
+  table{min-width:900px;width:100%;border-collapse:collapse}
+  thead th{background:var(--bg);position:static; /* no sticky header now */ }
+  th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
+  th.sortable{cursor:pointer;user-select:none}
+  th .arrow{opacity:1;margin-left:6px;display:none}
+  th.active .arrow{display:inline}
+
+  /* Cards (still available) */
+  .cards{display:grid;gap:12px;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);}
+  .card--inline{display:flex;flex-direction:column;gap:6px;padding:12px 14px;}
+  .date-line{display:flex;align-items:center;gap:8px;}
+  .card-title{margin:0;font-weight:600;}
+  .card-title a{color:inherit;text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .card-title a:hover{text-decoration:underline;}
+  .meta-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
   .score-txt{ color: var(--muted); font-size: 12px; }
   .date{ color:var(--muted); white-space:nowrap; }
-
-  /* Cards — fecha (línea 1), título (línea 2), meta (línea 3) */
-  .cards{ display:grid; gap:12px; margin-top:12px; grid-template-columns:repeat(auto-fill,minmax(560px,1fr)); }
-  .card{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:14px;
-    box-shadow:var(--shadow);
-    transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
-  }
-  .card:hover{ transform: translateY(-1px); box-shadow: 0 10px 28px rgba(0,0,0,.08); border-color: color-mix(in oklab, var(--border) 60%, var(--fg) 40%); }
-  .card--inline{ display:flex; flex-direction:column; gap:6px; padding:12px 14px; }
-  .date-line{ display:flex; align-items:center; gap:8px; }
-  .card-title{ margin:0; font-weight:600; }
-  .card-title a{
-    color:inherit; text-decoration:none;
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-  }
-  .card-title a:hover{ text-decoration:underline; }
-  .meta-line{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-
-  /* Pager */
-  .pager{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px;flex-wrap:wrap}
-  .pager-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .pill-link{ color:inherit; text-decoration:none; display:inline-block; }
 
   /* Tag color classes */
   .tag--fashion{background:var(--fashion-bg); border-color:var(--fashion-bd); color:var(--fashion-fg)}
@@ -134,8 +111,16 @@
   .status--bubbling{background:var(--bubbl-bg);border-color:var(--bubbl-bd);color:var(--bubbl-fg)}
   .status--mainstream{background:var(--main-bg);border-color:var(--main-bd);color:var(--main-fg)}
 
-  @media (max-width: 700px){
-    .cards{ grid-template-columns:1fr; }
+  /* pager */
+  .pager{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px;flex-wrap:wrap}
+  .pager-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+  @media (max-width: 860px){
+    .bar-inner{grid-template-columns:1fr 1fr;gap:8px}
+    .title{grid-column:1/-1}
+    .search{grid-column:1/-1}
+    .table-wrap{margin-top:6px}
+    .cards{grid-template-columns:1fr}
   }
 </style>
 
@@ -161,30 +146,30 @@
       <option value="status">Sort: Status</option>
     </select>
 
-    <select id="barCat" class="select fixed">
-      <option value="">All categories</option>
-      <option>fashion</option><option>beauty</option><option>wellness</option>
-    </select>
+    <div class="bar-row">
+      <select id="barCat" class="select fixed">
+        <option value="">All categories</option>
+        <option>fashion</option><option>beauty</option><option>wellness</option>
+      </select>
 
-    <select id="barStatus" class="select fixed">
-      <option value="">All status</option>
-      <option>emerging</option><option>bubbling</option><option>mainstream</option>
-    </select>
+      <select id="barStatus" class="select fixed">
+        <option value="">All status</option>
+        <option>emerging</option><option>bubbling</option><option>mainstream</option>
+      </select>
 
-    <button id="filtersBtn" class="btn">Dates</button>
+      <button id="filtersBtn" class="btn">Dates</button>
 
-    <div class="spacer"></div>
-
-    <div class="menu">
-      <button class="btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">More</button>
-      <div class="menu-panel" id="moreMenu" role="menu">
-        <a href="signals_simple.csv" download>Download CSV</a>
-        <button id="copyFiltered">Copy filtered CSV</button>
-        <button id="copyShare">Copy share link</button>
-        <button id="resetAll">Reset all</button>
-        <button id="darkToggle">Toggle dark mode</button>
-        <a href="https://github.com/atelierfutures/futures-edit-signals" target="_blank" rel="noopener">Repository</a>
-        <a href="tags.html" target="_blank" rel="noopener">Tags graph</a>
+      <div class="menu" style="margin-left:auto">
+        <button class="btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">More</button>
+        <div class="menu-panel" id="moreMenu" role="menu">
+          <a href="signals_simple.csv" download>Download CSV</a>
+          <button id="copyFiltered">Copy filtered CSV</button>
+          <button id="copyShare">Copy share link</button>
+          <button id="resetAll">Reset all</button>
+          <button id="darkToggle">Toggle dark mode</button>
+          <a href="https://github.com/atelierfutures/futures-edit-signals" target="_blank" rel="noopener">Repository</a>
+          <a href="tags.html" target="_blank" rel="noopener">Tags graph</a>
+        </div>
       </div>
     </div>
   </div>
@@ -193,24 +178,24 @@
 <div class="wrap">
   <div id="chips" class="chips"></div>
 
-  <!-- Tabla con scroll horizontal en móvil -->
-  <div class="table-scroll" id="tableWrap">
+  <!-- TABLE (wrapped so it sits right under the controls and can scroll on mobile) -->
+  <div class="table-wrap">
     <table id="tbl">
       <thead>
         <tr>
-          <th class="sortable" data-key="published"><span>Published</span><span class="dir" id="dir_published">↓</span></th>
-          <th class="sortable" data-key="title"><span>Title</span><span class="dir" id="dir_title">↓</span></th>
-          <th class="sortable" data-key="category" style="width:110px"><span>Category</span><span class="dir" id="dir_category">↓</span></th>
-          <th class="sortable" data-key="primary_keyword" style="width:180px"><span>Keyword</span><span class="dir" id="dir_primary_keyword">↓</span></th>
-          <th class="sortable" data-key="trend_score" style="width:120px"><span>Trend score</span><span class="dir" id="dir_trend_score">↓</span></th>
-          <th class="sortable" data-key="status" style="width:120px"><span>Status</span><span class="dir" id="dir_status">↓</span></th>
+          <th class="sortable" data-key="published">Published <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="title">Title <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow">↕</span></th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
 
-  <!-- Cards -->
+  <!-- CARDS -->
   <div id="cards" class="cards" style="display:none"></div>
 
   <!-- Bottom pager -->
@@ -229,13 +214,11 @@
 </div>
 
 <!-- Drawer (dates only) -->
-<div class="drawer-back" id="drawerBack"></div>
-<div class="drawer" id="drawer" aria-modal="true" role="dialog">
-  <h3>Date range</h3>
-  <div class="grid">
-    <label>From <input id="from" type="date" class="input"></label>
-    <label>To <input id="to" type="date" class="input"></label>
-    <label style="grid-column:1 / -1">Quick
+<div class="menu-panel" id="drawer" style="position:fixed;left:50%;transform:translateX(-50%);top:90px;max-width:420px;width:92%;display:none">
+  <div style="display:grid;gap:10px">
+    <label>From <input id="from" type="date" class="input" style="width:100%"></label>
+    <label>To <input id="to" type="date" class="input" style="width:100%"></label>
+    <label>Quick
       <select id="quick" class="select" style="width:100%">
         <option value="">All time</option>
         <option value="7">Last 7 days</option>
@@ -243,19 +226,16 @@
         <option value="90">Last 90 days</option>
       </select>
     </label>
-  </div>
-  <div class="actions">
-    <button id="clearDates" class="btn" type="button">Clear dates</button>
-    <button id="applyFilters" class="btn" type="button">Apply</button>
-    <button id="closeDrawer" class="btn" type="button">Close</button>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="clearDates" class="btn" type="button">Clear</button>
+      <button id="applyFilters" class="btn" type="button">Apply</button>
+      <button id="closeDrawer" class="btn" type="button">Close</button>
+    </div>
   </div>
 </div>
 
 <script>
 /* ---------- refs ---------- */
-const root = document.documentElement;
-const bar  = document.getElementById("bar");
-
 const tbody   = document.querySelector("#tbl tbody");
 const cardsEl = document.getElementById("cards");
 const chipsEl = document.getElementById("chips");
@@ -277,7 +257,6 @@ const pageInfo = document.getElementById("pageInfo");
 const rangeInfo= document.getElementById("rangeInfo");
 
 /* Drawer (dates only) */
-const drawerBack = document.getElementById("drawerBack");
 const drawer = document.getElementById("drawer");
 const filtersBtn = document.getElementById("filtersBtn");
 const closeDrawer = document.getElementById("closeDrawer");
@@ -308,7 +287,7 @@ const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const catClass = c => c && ["fashion","beauty","wellness"].includes(c) ? `pill tag tag--${c}` : "pill";
 const statusClass = s => s ? `pill status status--${s.toLowerCase()}` : "pill";
 
-/* make pill links to filtered view (nueva pestaña) */
+/* linkable pills */
 function catPill(c){
   if(!c) return "";
   const href = "./?cat=" + encodeURIComponent(c);
@@ -320,26 +299,17 @@ function statusPill(s){
   return `<a class="${statusClass(v)} pill-link" href="${href}" target="_blank" rel="noopener">${v}</a>`;
 }
 
-/* DateTime (Europe/Madrid) */
-const madridFmt = new Intl.DateTimeFormat('es-ES', {
-  timeZone: 'Europe/Madrid',
-  year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit',
-  hour12:false
-});
+/* Madrid time */
 function fmtDateTime(iso){
   if(!iso) return "";
   const d = new Date(iso);
-  if(isNaN(d)) return (iso||"").slice(0,16).replace('T',' ');
-  const p = madridFmt.formatToParts(d).reduce((acc,p)=>{acc[p.type]=p.value;return acc;},{});
-  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
+  if (isNaN(d)) return (iso||"").slice(0,10);
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone:'Europe/Madrid',
+    year:'numeric', month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', hour12:false
+  }).format(d).replace(',', '');
 }
-
-/* Ajusta --bar-h según la altura real de la barra */
-new ResizeObserver(entries=>{
-  for(const e of entries){
-    root.style.setProperty('--bar-h', e.target.getBoundingClientRect().height + 'px');
-  }
-}).observe(bar);
 
 /* theme */
 (()=>{ const saved = localStorage.getItem("fe_theme"); if(saved==="dark") document.documentElement.classList.add("dark"); })();
@@ -361,10 +331,9 @@ document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') toggleMenu(fals
 function updateSortUI(){
   sortKeySel.value = sortKey;
   headers.forEach(h=>{
-    const active = h.dataset.key === sortKey;
-    h.classList.toggle("active", active);
-    const dirEl = h.querySelector(".dir");
-    if(dirEl) dirEl.textContent = sortDir==="asc" ? "↑" : "↓";
+    h.classList.toggle("active", h.dataset.key === sortKey);
+    const arrow = h.querySelector(".arrow");
+    if(arrow) arrow.textContent = h.dataset.key === sortKey ? (sortDir==="asc"?"↑":"↓") : "";
   });
 }
 function cmp(a,b,key){
@@ -400,7 +369,7 @@ function setView(mode){
   viewMode = mode;
   viewTableBtn.classList.toggle("active", mode==="table");
   viewCardsBtn.classList.toggle("active", mode==="cards");
-  document.getElementById("tableWrap").style.display = mode==="table" ? "" : "none";
+  document.querySelector(".table-wrap").style.display = mode==="table" ? "" : "none";
   document.getElementById("cards").style.display = mode==="cards" ? "grid" : "none";
   currentPage = 1; render();
 }
@@ -426,7 +395,7 @@ function highlight(str, query){
 q.addEventListener("input", () => { currentPage=1; render(); });
 window.addEventListener("keydown", e => {
   if(e.key === "Escape"){
-    if(drawer.style.display==="block"){ closeDrawerFn(); }
+    if(drawer.style.display==="block"){ drawer.style.display="none"; }
     else { q.value=""; currentPage=1; render(); }
   }
 });
@@ -436,12 +405,9 @@ barCatSel.onchange   = () => { currentPage=1; render(); };
 barStatusSel.onchange= () => { currentPage=1; render(); };
 
 /* drawer (dates only) */
-function openDrawer(){ drawerBack.style.display="block"; drawer.style.display="block"; document.body.style.overflow="hidden"; }
-function closeDrawerFn(){ drawerBack.style.display="none"; drawer.style.display="none"; document.body.style.overflow=""; }
-filtersBtn.onclick = openDrawer;
-closeDrawer.onclick = closeDrawerFn;
-drawerBack.onclick  = closeDrawerFn;
-applyFilters.onclick = () => { currentPage=1; closeDrawerFn(); render(); };
+filtersBtn.onclick = ()=>{ drawer.style.display='block'; };
+closeDrawer.onclick = ()=>{ drawer.style.display='none'; };
+applyFilters.onclick = () => { currentPage=1; drawer.style.display='none'; render(); };
 clearDatesBtn.onclick = () => { fromI.value=""; toI.value=""; quick.value=""; };
 quick.onchange = () => {
   const days = parseInt(quick.value) || 0;
@@ -554,7 +520,8 @@ function render(){
     `).join("");
   } else {
     cardsEl.innerHTML = slice.map(r => {
-      const firstK = (r.primary_keyword||"").split(",").map(s=>s.trim()).filter(Boolean)[0] || "";
+      const allK = (r.primary_keyword||"").split(",").map(s=>s.trim()).filter(Boolean);
+      const firstK = allK[0] || "";
       return `
         <div class="card card--inline">
           <div class="date-line"><span class="date">${fmtDateTime(r.published)}</span></div>
