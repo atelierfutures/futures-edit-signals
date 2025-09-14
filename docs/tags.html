@@ -14,12 +14,7 @@
     --ctl-w:180px;
     --ok:#22c55e; --warn:#f59e0b; --soft:#94a3b8; /* status colors */
   }
-  :root.dark{
-    --bg:#0b0b0c; --fg:#f2f3f5; --muted:#a3a7ae;
-    --card:#121317; --border:#2b2f36; --pill:#1b1f25; --accent:#e5e7eb;
-    --shadow:0 10px 30px rgba(0,0,0,.35);
-    --ok:#16a34a; --warn:#d97706; --soft:#64748b;
-  }
+  /* (dark theme kept out; toggle removed so page stays light) */
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
   a{color:#2563eb;text-decoration:none}
@@ -77,15 +72,16 @@
     <button id="clear" class="btn">Clear</button>
 
     <div class="spacer"></div>
-    <button id="dark" class="btn">Toggle dark mode</button>
+    <!-- Dark-mode toggle removed -->
   </div>
 </div>
 
 <div class="wrap">
   <div class="row">
     <label class="small">Top keywords
-      <input id="topN" type="range" min="10" max="120" step="1" value="40" style="margin-left:6px">
-      <span id="topNVal" class="small">40</span>
+      <!-- limit to 25 -->
+      <input id="topN" type="range" min="5" max="25" step="1" value="25" style="margin-left:6px">
+      <span id="topNVal" class="small">25</span>
     </label>
     <label class="small">Filter keywords…
       <input id="kwSearch" type="search" class="input" placeholder="type to filter bar" style="width:220px">
@@ -120,7 +116,7 @@
   <!-- Row 2: Highest-scoring keywords + Sources -->
   <div class="grid two" style="margin-top:16px">
     <div class="card">
-      <h3>Highest-scoring keywords</h3>
+      <h3>Keywords with the strongest average signal</h3>
       <div class="ctrls">
         <label>Top
           <input id="hiTop" type="range" min="5" max="40" step="1" value="15">
@@ -132,7 +128,11 @@
         </label>
       </div>
       <canvas id="chartHiScore" class="mini"></canvas>
-      <div class="legend">Average of <code>trend_score</code> per keyword, only counting keywords that appear at least <em>Min count</em> times in the current filters.</div>
+      <div class="legend">
+        Shows keywords that are <b>consistently strong</b> whenever they appear
+        (based on average trend score). <b>Top</b> controls how many to show.
+        <b>Min count</b> keeps out one-offs so we don’t get random spikes.
+      </div>
     </div>
 
     <div class="card">
@@ -152,8 +152,7 @@
 
 <script>
 /* --- theme --- */
-(()=>{ const s=localStorage.getItem("fe_theme"); if(s==="dark") document.documentElement.classList.add("dark"); })();
-document.getElementById("dark").onclick=()=>{document.documentElement.classList.toggle("dark");localStorage.setItem("fe_theme",document.documentElement.classList.contains("dark")?"dark":"light");};
+/* removed: no auto-apply dark theme and no toggle */
 
 /* --- css var resolver (fixes black bars) --- */
 function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || name; }
