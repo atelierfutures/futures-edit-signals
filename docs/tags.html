@@ -30,9 +30,10 @@
   .grid{display:grid;gap:16px}
   @media(min-width:1024px){ .grid.two{grid-template-columns:1fr 1fr} }
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:12px}
+  .card.sm{padding:10px}
   .legend{color:var(--muted);font-size:12px;margin-top:6px}
   .mini{max-width:100%}
-  .mini.sm{height:170px !important} /* compact small charts */
+  .mini.sm{height:160px !important}
   .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
   .small{font-size:12px;color:var(--muted)}
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
@@ -72,8 +73,8 @@
 <div class="wrap">
   <div class="row">
     <label class="small">Top keywords
-      <input id="topN" type="range" min="5" max="20" step="1" value="20" style="margin-left:6px">
-      <span id="topNVal" class="small">20</span>
+      <input id="topN" type="range" min="5" max="25" step="1" value="25" style="margin-left:6px">
+      <span id="topNVal" class="small">25</span>
     </label>
     <label class="small">Filter keywords…
       <input id="kwSearch" type="search" class="input" placeholder="type to filter bar" style="width:220px">
@@ -81,11 +82,11 @@
     <span id="metaCount" class="pill">…</span>
   </div>
 
-  <!-- Row 1: Top keywords + Keyword details -->
+  <!-- Row 1: Top keywords + Keyword details on the same line -->
   <div class="grid two">
     <div class="card">
       <h3>Top keywords</h3>
-      <canvas id="chartKeywords" class="mini" aria-describedby="kwHelp" style="height:320px"></canvas>
+      <canvas id="chartKeywords" class="mini" aria-describedby="kwHelp"></canvas>
       <div id="kwHelp" class="legend">Click a bar to inspect that keyword.</div>
     </div>
 
@@ -97,7 +98,7 @@
         <span class="pill" id="kpiCat">Top category: –</span>
         <a class="btn" id="openList" target="_blank" rel="noopener">Open in list</a>
       </div>
-      <canvas id="chartKwStatus" class="mini sm" aria-label="Status mix bar"></canvas>
+      <canvas id="chartKwStatus" class="mini" aria-label="Status mix bar"></canvas>
       <div class="legend">Status mix for the selected keyword.</div>
 
       <h4 class="small" style="margin-top:10px">Latest articles</h4>
@@ -105,7 +106,7 @@
     </div>
   </div>
 
-  <!-- Row 2: Fastest-rising + Newcomers -->
+  <!-- Row 2: Fastest-rising + Newcomers (same line) -->
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <h3>Fastest-rising keywords (current vs previous)</h3>
@@ -120,7 +121,7 @@
     </div>
   </div>
 
-  <!-- Row 3: Status mix + Top sources (same 100% stacked chart type) -->
+  <!-- Row 3: Status mix + Top sources (same line; same chart type: 100% stacked bars) -->
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <h3>Status mix by category</h3>
@@ -154,7 +155,7 @@ function palette(n){
   const out = []; for(let i=0;i<n;i++) out.push(base[i%base.length]); return out;
 }
 
-/* --- Keyword normalization --- */
+/* --- Keyword normalization (downstream clean-up) --- */
 const KW_MAP = new Map([
   ['anti aging','longevity'], ['anti-ageing','longevity'], ['anti ageing','longevity'],
   ['retinol routine','retinoid routines'], ['skin cycling','retinoid routines'],
@@ -245,18 +246,7 @@ els.clear.onclick = ()=>{ els.cat.value=""; els.stat.value=""; els.from.value=""
 ['cat','stat','from','to'].forEach(id => els[id].onchange=render);
 els.topN.oninput = ()=>{ els.topNVal.textContent = els.topN.value; render(); };
 els.kwSearch.oninput = ()=> render();
-
-/* --- Chart.js plugin: reserve space for long y-axis labels --- */
-const widenYLabels = {
-  id: 'widenYLabels',
-  beforeInit(chart, _args, opts){
-    const y = chart.options.scales?.y;
-    if(!y) return;
-    const minWidth = opts?.minWidth ?? 140;
-    y.afterFit = (scale)=>{ scale.width = Math.max(scale.width, minWidth); };
-  }
-};
-Chart.register(widenYLabels);
+window.addEventListener('resize', ()=> adjustKeywordsHeight());
 
 /* --- chart helper --- */
 function makeOrUpdate(id, type, data, opt){
@@ -294,6 +284,7 @@ function topSourcesShare(rows){
   const others = sorted.slice(10).reduce((s,[,v])=>s+v,0);
   if(others>0) top.push(["others", others]);
   const total = [...map.values()].reduce((a,b)=>a+b,0) || 1;
+  // return as [{label, pct}]
   return top.map(([h,v]) => ({label:h, pct: v/total*100}));
 }
 function rowsForKeyword(rows, kw){
@@ -341,38 +332,28 @@ function newcomerKeywords(curRows, prevRows, limit=20){
   return out.slice(0, limit);
 }
 
-/* --- Top keywords fixed compact height --- */
-function adjustKeywordsHeight(){ els.kwCanvas.style.height = '320px'; } // fixed
+/* --- dynamic height for Top keywords --- */
+function adjustKeywordsHeight(labelsCount=0){
+  const n = labelsCount || (charts.chartKeywords?.data?.labels?.length || 0);
+  const h = Math.min(1200, Math.max(220, 22*n + 40));
+  els.kwCanvas.style.height = h+"px";
+}
 
 /* --- render --- */
 function render(){
   const rows = getFiltered();
   document.getElementById('metaCount').textContent = `${rows.length} articles in current filters`;
 
-  // 1) Top keywords (horizontal, compact)
+  // 1) Top keywords (horizontal, dynamic height)
   const topK = topKeywords(rows, parseInt(els.topN.value,10), els.kwSearch.value.trim());
-  adjustKeywordsHeight();
+  adjustKeywordsHeight(topK.length);
   const kwChart = makeOrUpdate('chartKeywords','bar',{
     labels: topK.map(([k])=>k),
-    datasets:[{
-      label:'count',
-      data: topK.map(([,v])=>v),
-      backgroundColor: palette(topK.length),
-      categoryPercentage: 0.98,
-      barPercentage: 0.48
-    }]
+    datasets:[{label:'count', data: topK.map(([,v])=>v), backgroundColor: palette(topK.length)}]
   },{
-    maintainAspectRatio:false,
-    indexAxis:'y',
-    layout:{ padding:{ left: 4, right: 4, top: 4, bottom: 4 } },
-    plugins:{
-      legend:{display:false},
-      widenYLabels:{ minWidth: 150 }
-    },
-    scales:{
-      x:{ beginAtZero:true, ticks:{ precision:0 } },
-      y:{ ticks:{ autoSkip:false, padding:2, font:{ size:11 } }, grid:{ drawBorder:false } }
-    }
+    responsive:true, indexAxis:'y',
+    plugins:{legend:{display:false}},
+    scales:{x:{beginAtZero:true}}
   });
   charts.chartKeywords = kwChart;
   kwChart.options.onClick = (e)=>{
@@ -423,8 +404,8 @@ function render(){
     plugins:{tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%`}}, legend:{position:'bottom'}}
   });
 
-  // 6) Top sources — 100% stacked bar, single bar
-  const srcShare = topSourcesShare(rows);
+  // 6) Top sources — SAME chart type (100% stacked bar, single bar)
+  const srcShare = topSourcesShare(rows); // [{label, pct}]
   const srcColors = palette(srcShare.length);
   makeOrUpdate('chartSourcesStack','bar',{
     labels:['share'],
@@ -470,7 +451,7 @@ function renderKwDetails(){
   els.openList.href = './?'+p.toString();
   els.kpis.style.display='flex';
 
-  // status stacked bar for this keyword (compact)
+  // status stacked bar for this keyword
   const ok = cssVar('--ok'), warn = cssVar('--warn'), soft = cssVar('--soft');
   const stats = ['emerging','bubbling','mainstream'];
   const counts = stats.map(s=>rkw.filter(r=>(r.status||'').toLowerCase()===s).length);
