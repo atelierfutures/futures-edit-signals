@@ -11,13 +11,7 @@
     --bg:#ffffff; --fg:#0f172a; --muted:#6b7280;
     --card:#ffffff; --border:#e5e7eb; --pill:#f7f7fb;
     --shadow:0 12px 30px rgba(15,23,42,.06);
-
-    /* Design palette */
-    --ink:#1c1c29;
-    --peri:#7ea5e3;
-    --mauve:#d4a5c3;
-
-    /* header */
+    --ink:#1c1c29; --peri:#7ea5e3; --mauve:#d4a5c3;
     --hdr-bg: linear-gradient(180deg, rgba(250,250,255,.92), rgba(250,250,255,.70));
     --hdr-ring: rgba(2,6,23,.06);
   }
@@ -25,7 +19,6 @@
   body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Inter,Segoe UI,Roboto,Helvetica,Arial}
   a{color:#1f6feb;text-decoration:none}
 
-  /* Sticky header */
   .bar{position:sticky;top:0;z-index:20;background:var(--hdr-bg);
     backdrop-filter:saturate(180%) blur(10px); border-bottom:1px solid var(--border)}
   .bar-inner{max-width:1120px;margin:0 auto;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -39,7 +32,6 @@
   .select{width:180px}
   .spacer{flex:1}
 
-  /* Layout */
   .wrap{max-width:1120px;margin:0 auto;padding:16px 16px}
   .grid{display:grid;gap:16px}
   @media(min-width:1024px){ .grid.two{grid-template-columns:1fr 1fr} }
@@ -49,13 +41,11 @@
   .mini{max-width:100%}
   .mini.thin{height:86px !important}
   .mini.short{height:180px}
-  /* Make Search intent definitely compact */
-  #chartIntent{height:100px !important}
+  #chartIntent{height:110px !important} /* compact intent chart */
 
   .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
   .small{font-size:12px;color:var(--muted)}
 
-  /* KPI bubbles */
   .pill{
     padding:8px 12px; font-size:12px; line-height:1;
     border:1px solid var(--border); border-radius:999px;
@@ -63,13 +53,17 @@
     box-shadow: inset 0 0 0 2px var(--hdr-ring);
   }
 
-  /* Lists (scroll inside the card) */
+  /* Lists with internal scroll */
   ul.list{list-style:none; padding:0; margin:8px 0 0; border-top:1px dashed var(--border)}
   ul.list li{display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed var(--border)}
-  .muted{color:var(--muted)}
-  /* dedicated heights so right card stays tidy */
   #qList{max-height:160px; overflow:auto}
   #kwList{max-height:260px; overflow:auto}
+  .muted{color:var(--muted)}
+
+  /* External legend chips for Search intent */
+  .intent-legend{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:6px}
+  .intent-legend .chip{display:inline-flex;align-items:center;gap:6px;margin-bottom:4px}
+  .intent-legend .sw{width:14px;height:10px;border-radius:3px;border:1px solid var(--border);display:inline-block}
 
   .notes{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fcfcfd;margin-top:10px}
   .flag{display:flex;align-items:flex-start;gap:8px;margin:6px 0}
@@ -132,6 +126,7 @@
 
       <h4 class="small" style="margin-top:6px">Search intent (GSC)</h4>
       <canvas id="chartIntent" class="mini short"></canvas>
+      <div id="intentLegend" class="intent-legend"></div>
       <div id="intentMeta" class="legend"></div>
 
       <h4 class="small" style="margin-top:6px">Top questions & Answer Gap</h4>
@@ -200,62 +195,42 @@ signal,query,impressions,clicks,date
 </script>
 
 <script>
-/* ---------------- Palette ---------------- */
-const FASHION_PALETTE = [
+/* ------- palette ------- */
+const FASHION_PALETTE=[
   '#1c1c29','#58506b','#7a7281','#a78fb3','#d4a5c3',
   '#f2b5a8','#f0c38e','#c2d39b','#86c5a6','#6bb7b6',
-  '#5aa3c2','#7ea5e3','#b4c2f2','#d7d3f2','#e8e4f8',
-  '#efcfe3','#f6d6c3','#e6e2da'
+  '#5aa3c2','#7ea5e3','#b4c2f2','#d7d3f2','#e8e4f8','#efcfe3'
 ];
-function palette(n){ const out=[]; for(let i=0;i<n;i++) out.push(FASHION_PALETTE[i%FASHION_PALETTE.length]); return out; }
-function getCSS(name, fallback){ const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v||fallback; }
-const COLORS_STATUS = { emerging:getCSS('--peri','#7ea5e3'), bubbling:getCSS('--mauve','#d4a5c3'), mainstream:getCSS('--ink','#1c1c29') };
+function palette(n){const out=[];for(let i=0;i<n;i++) out.push(FASHION_PALETTE[i%FASHION_PALETTE.length]);return out;}
+function getCSS(name,fb){const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim();return v||fb;}
+const COLORS_STATUS={emerging:getCSS('--peri','#7ea5e3'),bubbling:getCSS('--mauve','#d4a5c3'),mainstream:getCSS('--ink','#1c1c29')};
 
-/* ---------------- Helpers ---------------- */
-const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-function inRange(iso, from, to){
-  const t = Date.parse(iso||""); if(isNaN(t)) return false;
-  if(from && t < new Date(from).setUTCHours(0,0,0,0)) return false;
-  if(to   && t > new Date(to).setUTCHours(23,59,59,999)) return false;
-  return true;
-}
-function parseCSV(text){ return Papa.parse(text,{header:true,skipEmptyLines:true}).data; }
-async function loadMaybe(url, fallbackId){
-  try{
-    if(!/^https?:/.test(location.protocol)) throw new Error('file');
-    const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error('bad');
-    const t=await r.text(); const rows=parseCSV(t); if(rows.length) return rows;
-  }catch(e){}
-  const emb=document.getElementById(fallbackId)?.textContent?.trim()||''; return parseCSV(emb);
+/* ------- helpers ------- */
+const escRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+function inRange(iso,from,to){const t=Date.parse(iso||"");if(isNaN(t))return false;if(from&&t<new Date(from).setUTCHours(0,0,0,0))return false;if(to&&t>new Date(to).setUTCHours(23,59,59,999))return false;return true;}
+function parseCSV(t){return Papa.parse(t,{header:true,skipEmptyLines:true}).data;}
+async function loadMaybe(url,fallbackId){
+  try{if(!/^https?:/.test(location.protocol))throw new Error('file');const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('bad');const t=await r.text();const rows=parseCSV(t);if(rows.length)return rows;}catch(e){}
+  const emb=document.getElementById(fallbackId)?.textContent?.trim()||'';return parseCSV(emb);
 }
 
-/* ---------------- Normalization ---------------- */
-const KW_MAP = new Map([
-  ['anti aging','longevity'], ['anti-ageing','longevity'], ['anti ageing','longevity'],
-  ['retinol routine','retinoid routines'], ['skin cycling','retinoid routines'],
-  ['lip-oil','lip oil'], ['lip oils','lip oil'],
-  ['biohacking','longevity'], ['sleep tech','sleep optimization'],
-  ['old money','quiet luxury'], ['stealth wealth','quiet luxury'],
-  ['westernwear','western'], ['cowboy core','western'],
-  ['gen ai','ai'], ['generative ai','ai']
+/* ------- normalization ------- */
+const KW_MAP=new Map([
+  ['anti aging','longevity'],['anti-ageing','longevity'],['anti ageing','longevity'],
+  ['retinol routine','retinoid routines'],['skin cycling','retinoid routines'],
+  ['lip-oil','lip oil'],['lip oils','lip oil'],
+  ['biohacking','longevity'],['sleep tech','sleep optimization'],
+  ['old money','quiet luxury'],['stealth wealth','quiet luxury'],
+  ['westernwear','western'],['cowboy core','western'],
+  ['gen ai','ai'],['generative ai','ai']
 ]);
-const KW_STOP = new Set(['trend','trends','report','collection','editorial','new','drop','style','styled','look','looks','runway','season','fall','winter','spring','summer','2024','2025','brand','product','products','line','launch','limited','best','top','dress','dresses','shirt','shirts','pants','jeans','skirt','skirts','bag','bags','shoes']);
-function normalizeKw(raw){
-  if(!raw) return '';
-  let s=String(raw).toLowerCase().trim().replace(/[–—]/g,'-').replace(/\s+/g,' ').replace(/\s-\s/g,'-');
-  if (s.endsWith('s') && s.length>4) s=s.slice(0,-1);
-  if (KW_MAP.has(s)) s=KW_MAP.get(s);
-  s=s.replace(/^[-_.,:;]+|[-_.,:;]+$/g,'');
-  if (s.length<3 || KW_STOP.has(s)) return '';
-  return s;
-}
-function getKw(r){ return normalizeKw(r.primary_keyword||r.keyword||''); }
+const KW_STOP=new Set(['trend','trends','report','collection','editorial','new','drop','style','styled','look','looks','runway','season','fall','winter','spring','summer','2024','2025','brand','product','products','line','launch','limited','best','top','dress','dresses','shirt','shirts','pants','jeans','skirt','skirts','bag','bags','shoes']);
+function normalizeKw(raw){if(!raw)return'';let s=String(raw).toLowerCase().trim().replace(/[–—]/g,'-').replace(/\s+/g,' ').replace(/\s-\s/g,'-');if(s.endsWith('s')&&s.length>4)s=s.slice(0,-1);if(KW_MAP.has(s))s=KW_MAP.get(s);s=s.replace(/^[-_.,:;]+|[-_.,:;]+$/g,'');if(s.length<3||KW_STOP.has(s))return'';return s;}
+function getKw(r){return normalizeKw(r.primary_keyword||r.keyword||'');}
 
-/* ---------------- State ---------------- */
-const TOP_LIMIT = 30;
-let rowsAll=[], gscAll=[];
-let selectedKw = "";
-let charts={};
+/* ------- state ------- */
+const TOP_LIMIT=30;
+let rowsAll=[], gscAll=[], selectedKw="", charts={};
 const els={
   cat:byId('cat'), stat:byId('stat'), from:byId('from'), to:byId('to'), quick:byId('quick'), clear:byId('clear'),
   kwSearch:byId('kwSearch'),
@@ -264,14 +239,15 @@ const els={
   kpiRow:byId('kpiRow'), kpiTotal:byId('kpiTotal'), kpiAvg:byId('kpiAvg'), kpiCat:byId('kpiCat'),
   openList:byId('openList'), kwList:byId('kwList'),
   chartKwStatus:byId('chartKwStatus'),
-  chartIntent:byId('chartIntent'), intentMeta:byId('intentMeta'), gapBadge:byId('gapBadge'), qList:byId('qList'),
+  chartIntent:byId('chartIntent'), intentLegend:byId('intentLegend'), intentMeta:byId('intentMeta'),
+  gapBadge:byId('gapBadge'), qList:byId('qList'),
   chartRisers:byId('chartRisers'), newcomersList:byId('newcomersList'),
   chartMix:byId('chartMix'),
   insightMode:byId('insightMode'), chartInsight:byId('chartInsight'), insightLegend:byId('insightLegend')
 };
-function byId(id){ return document.getElementById(id); }
+function byId(id){return document.getElementById(id);}
 
-/* ---------------- Inputs & windowing ---------------- */
+/* ------- inputs / window ------- */
 function getFiltered(){
   const c=els.cat.value,s=els.stat.value,f=els.from.value,t=els.to.value;
   return rowsAll.filter(r=>{
@@ -290,231 +266,115 @@ function getWindowBounds(){
   const prevFrom=new Date(prevTo.getTime()-lenMs+1);
   return {curFrom,curTo,prevFrom,prevTo};
 }
-function rowsInRange(rows, from, to){
-  const A=from.toISOString().slice(0,10), B=to.toISOString().slice(0,10);
-  return rows.filter(r=>inRange(r.published,A,B));
-}
-els.quick.onchange=()=>{
-  const d=parseInt(els.quick.value)||0;
-  if(!d){ els.from.value=""; els.to.value=""; render(); return; }
-  const today=new Date(), start=new Date(today.getTime()-d*86400000);
-  els.from.value=start.toISOString().slice(0,10);
-  els.to.value=today.toISOString().slice(0,10);
-  render();
-};
-els.clear.onclick=()=>{ els.cat.value=""; els.stat.value=""; els.from.value=""; els.to.value=""; els.quick.value=""; els.kwSearch.value=""; selectedKw=""; render(); };
+function rowsInRange(rows,from,to){const A=from.toISOString().slice(0,10),B=to.toISOString().slice(0,10);return rows.filter(r=>inRange(r.published,A,B));}
+els.quick.onchange=()=>{const d=parseInt(els.quick.value)||0;if(!d){els.from.value="";els.to.value="";render();return;}const today=new Date(),start=new Date(today.getTime()-d*86400000);els.from.value=start.toISOString().slice(0,10);els.to.value=today.toISOString().slice(0,10);render();};
+els.clear.onclick=()=>{els.cat.value="";els.stat.value="";els.from.value="";els.to.value="";els.quick.value="";els.kwSearch.value="";selectedKw="";render();};
 ['cat','stat','from','to'].forEach(id=> els[id].onchange=render);
-els.kwSearch.oninput=()=> render();
-els.insightMode.onchange=()=> render();
-window.addEventListener('resize',()=> adjustHeight());
+els.kwSearch.oninput=()=>render();
+els.insightMode.onchange=()=>render();
+window.addEventListener('resize',()=>adjustHeight());
 
-/* ---------------- Charts ---------------- */
-function makeOrUpdate(id,type,data,opt){ const ctx=byId(id).getContext('2d'); if(charts[id]){ charts[id].data=data; charts[id].options=opt; charts[id].update(); return charts[id]; } charts[id]=new Chart(ctx,{type,data,options:opt}); return charts[id]; }
-function adjustHeight(n=0){
-  const count = n || (charts.chartSignals?.data?.labels?.length||0);
-  const h = Math.min(1400, Math.max(240, 22*count + 40));
-  els.chartSignals.style.height = h+"px";
-}
+/* ------- charts ------- */
+function makeOrUpdate(id,type,data,opt){const ctx=byId(id).getContext('2d');if(charts[id]){charts[id].data=data;charts[id].options=opt;charts[id].update();return charts[id];}charts[id]=new Chart(ctx,{type,data,options:opt});return charts[id];}
+function adjustHeight(n=0){const count=n||(charts.chartSignals?.data?.labels?.length||0);const h=Math.min(1400,Math.max(240,22*count+40));els.chartSignals.style.height=h+"px";}
 
-/* ---------------- Computations ---------------- */
-function topSignals(rows, limit, filterTxt){
-  const m=new Map(); rows.forEach(r=>{ const k=getKw(r); if(!k) return; m.set(k,(m.get(k)||0)+1); });
-  let arr=[...m.entries()];
-  if(filterTxt){ const re=new RegExp(escRe(filterTxt.trim()),'i'); arr=arr.filter(([k])=>re.test(k)); }
-  arr.sort((a,b)=>b[1]-a[1]);
-  return arr.slice(0,limit);
+/* ------- computations ------- */
+function topSignals(rows,limit,filterTxt){
+  const m=new Map();rows.forEach(r=>{const k=getKw(r);if(!k)return;m.set(k,(m.get(k)||0)+1);});
+  let arr=[...m.entries()]; if(filterTxt){const re=new RegExp(escRe(filterTxt.trim()),'i');arr=arr.filter(([k])=>re.test(k));}
+  arr.sort((a,b)=>b[1]-a[1]); return arr.slice(0,limit);
 }
-function rowsForKeyword(rows, kw){ const t=normalizeKw(kw); return rows.filter(r=> getKw(r)===t); }
-function avgScore(rows){ const nums=rows.map(r=>+r.trend_score||0).filter(n=>!isNaN(n)); if(!nums.length) return 0; return Math.round( (nums.reduce((a,b)=>a+b,0)/nums.length)*100)/100; }
-function topCat(rows){ const m=new Map(); rows.forEach(r=>{ if(r.category) m.set(r.category,(m.get(r.category)||0)+1); }); let best="",cnt=-1; m.forEach((v,k)=>{ if(v>cnt){cnt=v;best=k;} }); return best||"–"; }
+function rowsForKeyword(rows,kw){const t=normalizeKw(kw);return rows.filter(r=>getKw(r)===t);}
+function avgScore(rows){const nums=rows.map(r=>+r.trend_score||0).filter(n=>!isNaN(n));if(!nums.length)return 0;return Math.round((nums.reduce((a,b)=>a+b,0)/nums.length)*100)/100;}
+function topCat(rows){const m=new Map();rows.forEach(r=>{if(r.category)m.set(r.category,(m.get(r.category)||0)+1)});let best="",cnt=-1;m.forEach((v,k)=>{if(v>cnt){cnt=v;best=k}});return best||"–";}
 function statusMixByCategory(rows){
-  const cats=['fashion','beauty','wellness'], stats=['emerging','bubbling','mainstream'];
-  const table=cats.map(c=>{
-    const sub=rows.filter(r=>r.category===c);
-    const counts=stats.map(s=> sub.filter(r=>(r.status||'').toLowerCase()===s).length);
-    const tot=counts.reduce((a,b)=>a+b,0)||1;
-    return counts.map(v=>v/tot*100);
-  });
-  return {cats,stats,perc:table};
+  const cats=['fashion','beauty','wellness'],stats=['emerging','bubbling','mainstream'];
+  const table=cats.map(c=>{const sub=rows.filter(r=>r.category===c);const counts=stats.map(s=>sub.filter(r=>(r.status||'').toLowerCase()===s).length);const tot=counts.reduce((a,b)=>a+b,0)||1;return counts.map(v=>v/tot*100)});return {cats,stats,perc:table};
 }
+function countKeywords(rows){const m=new Map();rows.forEach(r=>{const k=getKw(r);if(!k)return;m.set(k,(m.get(k)||0)+1)});return m;}
+function fastestRisers(cur,prev,top=12){const C=countKeywords(cur),P=countKeywords(prev);const set=new Set([...C.keys(),...P.keys()]);const arr=[];set.forEach(k=>{const c=C.get(k)||0,p=P.get(k)||0;const d=c-p;if(c===0)return;arr.push({k,delta:d,c,p})});arr.sort((a,b)=>b.delta-a.delta||b.c-a.c);return arr.slice(0,top);}
+function newcomerKeywords(cur,prev,limit=20){const C=countKeywords(cur),P=countKeywords(prev),out=[];C.forEach((c,k)=>{if(c>0&&!P.has(k))out.push({k,c})});out.sort((a,b)=>b.c-a.c);return out.slice(0,limit);}
+function concentrationByCategory(rows){const cats=['fashion','beauty','wellness'];const tooltip={};const values=cats.map(cat=>{const sub=rows.filter(r=>r.category===cat);const m=new Map();sub.forEach(r=>{const k=getKw(r);if(!k)return;m.set(k,(m.get(k)||0)+1)});const total=[...m.values()].reduce((a,b)=>a+b,0)||1;const top=[...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);tooltip[cat]=top.map(([k,v])=>`${k} (${v})`).join(', ');const head=top.reduce((s,[,v])=>s+v,0);return Math.round(head/total*100)});return {cats,values,tooltip};}
+function newcomerShareByCategory(curRows,prevRows){const cats=['fashion','beauty','wellness'];return{cats,values:cats.map(c=>{const curK=new Set(curRows.filter(r=>r.category===c).map(getKw)),prevK=new Set(prevRows.filter(r=>r.category===c).map(getKw));let newcomers=0,tot=0;curK.forEach(k=>{if(!k)return;tot++;if(!prevK.has(k))newcomers++});return tot?Math.round(newcomers/tot*100):0})};}
+function gainerShareByCategory(curRows,prevRows){const cats=['fashion','beauty','wellness'];function map(rows,cat){const m=new Map();rows.filter(r=>r.category===cat).forEach(r=>{const k=getKw(r);if(!k)return;m.set(k,(m.get(k)||0)+1)});return m;}return{cats,values:cats.map(c=>{const cur=map(curRows,c),prev=map(prevRows,c);const keys=new Set([...cur.keys(),...prev.keys()]);let gain=0,tot=0;keys.forEach(k=>{const a=cur.get(k)||0,b=prev.get(k)||0;if(a===0&&b===0)return;tot++;if(a>b)gain++});return tot?Math.round(gain/tot*100):0})};}
+function crossVerticalShare(rows){const cats=['fashion','beauty','wellness'];const byKw=new Map();rows.forEach(r=>{const k=getKw(r);if(!k)return;const s=byKw.get(k)||new Set();s.add(r.category);byKw.set(k,s)});return{cats,values:cats.map(c=>{const set=new Set(rows.filter(r=>r.category===c).map(getKw).filter(Boolean));let cross=0,tot=0;set.forEach(k=>{tot++;if((byKw.get(k)||new Set()).size>=2)cross++});return tot?Math.round(cross/tot*100):0})};}
 
-/* Momentum & newcomers */
-function countKeywords(rows){ const m=new Map(); rows.forEach(r=>{ const k=getKw(r); if(!k) return; m.set(k,(m.get(k)||0)+1); }); return m; }
-function fastestRisers(curRows,prevRows,top=12){
-  const cur=countKeywords(curRows), prev=countKeywords(prevRows);
-  const set=new Set([...cur.keys(),...prev.keys()]); const arr=[];
-  set.forEach(k=>{ const c=cur.get(k)||0, p=prev.get(k)||0; const d=c-p; if(c===0) return; arr.push({k,delta:d,c,p}); });
-  arr.sort((a,b)=> b.delta - a.delta || b.c - a.c);
-  return arr.slice(0,top);
-}
-function newcomerKeywords(curRows,prevRows,limit=20){
-  const cur=countKeywords(curRows), prev=countKeywords(prevRows), out=[];
-  cur.forEach((c,k)=>{ if(c>0 && !prev.has(k)) out.push({k,c}); });
-  out.sort((a,b)=> b.c - a.c);
-  return out.slice(0,limit);
-}
-
-/* Category insight metrics */
-function concentrationByCategory(rows){
-  const cats=['fashion','beauty','wellness']; const tooltip={};
-  const values=cats.map(cat=>{
-    const sub=rows.filter(r=>r.category===cat);
-    const m=new Map(); sub.forEach(r=>{ const k=getKw(r); if(!k) return; m.set(k,(m.get(k)||0)+1); });
-    const total=[...m.values()].reduce((a,b)=>a+b,0)||1;
-    const top=[...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5); tooltip[cat]=top.map(([k,v])=>`${k} (${v})`).join(', ');
-    const head=top.reduce((s,[,v])=>s+v,0);
-    return Math.round(head/total*100);
-  });
-  return {cats:cats,values,tooltip};
-}
-function newcomerShareByCategory(curRows,prevRows){
-  const cats=['fashion','beauty','wellness'];
-  return { cats, values: cats.map(c=>{
-    const curK=new Set(curRows.filter(r=>r.category===c).map(getKw)), prevK=new Set(prevRows.filter(r=>r.category===c).map(getKw));
-    let newcomers=0, tot=0; curK.forEach(k=>{ if(!k) return; tot++; if(!prevK.has(k)) newcomers++; });
-    return tot? Math.round(newcomers/tot*100):0;
-  })};
-}
-function gainerShareByCategory(curRows,prevRows){
-  const cats=['fashion','beauty','wellness'];
-  function map(rows,cat){ const m=new Map(); rows.filter(r=>r.category===cat).forEach(r=>{ const k=getKw(r); if(!k) return; m.set(k,(m.get(k)||0)+1); }); return m; }
-  return { cats, values: cats.map(c=>{
-    const cur=map(curRows,c), prev=map(prevRows,c); const keys=new Set([...cur.keys(),...prev.keys()]);
-    let gain=0, tot=0; keys.forEach(k=>{ const a=cur.get(k)||0, b=prev.get(k)||0; if(a===0&&b===0) return; tot++; if(a>b) gain++; });
-    return tot? Math.round(gain/tot*100):0;
-  })};
-}
-function crossVerticalShare(rows){
-  const cats=['fashion','beauty','wellness']; const byKw=new Map();
-  rows.forEach(r=>{ const k=getKw(r); if(!k) return; const s=byKw.get(k)||new Set(); s.add(r.category); byKw.set(k,s); });
-  return { cats, values: cats.map(c=>{
-    const set=new Set(rows.filter(r=>r.category===c).map(getKw).filter(Boolean));
-    let cross=0, tot=0; set.forEach(k=>{ tot++; if((byKw.get(k)||new Set()).size>=2) cross++; });
-    return tot? Math.round(cross/tot*100):0;
-  })};
-}
-
-/* ----------- GSC: intent & questions ----------- */
-const INTENTS = [
-  {key:'what_is',  re:/\bwhat(\s+is|’s|'s)\b/i, label:'what is'},
-  {key:'how_to',   re:/\bhow\s+to\b/i, label:'how to'},
-  {key:'best',     re:/\bbest\b/i, label:'best'},
-  {key:'vs',       re:/\bvs\b|\bversus\b/i, label:'vs'},
-  {key:'review',   re:/\breview|reviews|rating|ratings\b/i, label:'review'},
-  {key:'near_me',  re:/\bnear\s+me\b/i, label:'near me'}
+/* ------- GSC intent & questions ------- */
+const INTENTS=[
+  {key:'what_is',re:/\bwhat(\s+is|’s|'s)\b/i,label:'what is'},
+  {key:'how_to', re:/\bhow\s+to\b/i, label:'how to'},
+  {key:'best',   re:/\bbest\b/i, label:'best'},
+  {key:'vs',     re:/\bvs\b|\bversus\b/i, label:'vs'},
+  {key:'review', re:/\breview|reviews|rating|ratings\b/i, label:'review'},
+  {key:'near_me',re:/\bnear\s+me\b/i, label:'near me'}
 ];
-function classifyIntent(q){
-  for(const t of INTENTS){ if(t.re.test(q)) return t.key; }
-  return 'other';
-}
-function gscForSignal(signal){
-  const s=normalizeKw(signal);
-  return gscAll.filter(r => normalizeKw(r.signal||r.keyword||'')===s);
-}
-function intentStack(rows){
-  const buckets={what_is:0,how_to:0,best:0,vs:0,review:0,near_me:0,other:0};
-  let tot=0;
-  rows.forEach(r=>{
-    const imp=+r.impressions||0; const q=String(r.query||'');
-    const key=classifyIntent(q); buckets[key]+=imp; tot+=imp;
-  });
-  const pct={}; Object.keys(buckets).forEach(k=> pct[k]= tot? Math.round(buckets[k]/tot*100):0 );
-  return {buckets,pct,total:tot};
-}
-function topQuestions(rows, limit=10){
-  return rows
-    .filter(r => /\b(what|how|why|can|should|does|is|are)\b/i.test(r.query||''))
-    .sort((a,b)=> (+b.impressions||0) - (+a.impressions||0))
-    .slice(0,limit)
-    .map(r=>({q:r.query, imp:+r.impressions||0}));
-}
-function answerGapPct(signalRows, gscRows){
-  const totImp = gscRows.reduce((s,r)=> s + (+r.impressions||0), 0) || 0;
-  const qImp   = gscRows.filter(r => /\b(what|how|why|can|should|does|is|are)\b/i.test(r.query||'')).reduce((s,r)=> s + (+r.impressions||0), 0);
-  const questionShare = totImp ? (qImp/totImp*100) : 0;
+function classifyIntent(q){for(const t of INTENTS){if(t.re.test(q))return t.key;}return 'other';}
+function gscForSignal(signal){const s=normalizeKw(signal);return gscAll.filter(r=>normalizeKw(r.signal||r.keyword||'')===s);}
+function intentStack(rows){const b={what_is:0,how_to:0,best:0,vs:0,review:0,near_me:0,other:0};let tot=0;rows.forEach(r=>{const imp=+r.impressions||0;const q=String(r.query||'');const k=classifyIntent(q);b[k]+=imp;tot+=imp;});const pct={};Object.keys(b).forEach(k=>pct[k]=tot?Math.round(b[k]/tot*100):0);return {buckets:b,pct,total:tot};}
+function topQuestions(rows,limit=10){return rows.filter(r=>/\b(what|how|why|can|should|does|is|are)\b/i.test(r.query||'')).sort((a,b)=>(+b.impressions||0)-(+a.impressions||0)).slice(0,limit).map(r=>({q:r.query,imp:+r.impressions||0}));}
+function answerGapPct(signalRows,gscRows){const tot=gscRows.reduce((s,r)=>s+(+r.impressions||0),0)||0;const qImp=gscRows.filter(r=>/\b(what|how|why|can|should|does|is|are)\b/i.test(r.query||'')).reduce((s,r)=>s+(+r.impressions||0),0);const questionShare=tot?(qImp/tot*100):0;const ex=/(?:how|why|what|guide|explained|q&a|faq)/i;const titles=signalRows.map(r=>String(r.title||''));const answered=titles.filter(t=>ex.test(t)).length;const answerShare=titles.length?(answered/titles.length*100):0;return Math.max(0,Math.round(questionShare-answerShare));}
 
-  const ex = /(?:how|why|what|guide|explained|q&a|faq)/i;
-  const titles = signalRows.map(r=> String(r.title||''));
-  const answered = titles.filter(t=> ex.test(t)).length;
-  const answerShare = titles.length ? (answered/titles.length*100) : 0;
-
-  return Math.max(0, Math.round(questionShare - answerShare));
-}
-
-/* ---------------- Render ---------------- */
+/* ------- render ------- */
 function render(){
   const rows=getFiltered();
 
-  // Top signals
-  const top = topSignals(rows, TOP_LIMIT, els.kwSearch.value.trim());
+  // top signals
+  const top=topSignals(rows,TOP_LIMIT,els.kwSearch.value.trim());
   adjustHeight(top.length);
   const colors=palette(top.length);
-  const sigChart = makeOrUpdate('chartSignals','bar',{
-    labels: top.map(([k])=>k),
-    datasets:[{label:'count', data: top.map(([,v])=>v), backgroundColor:colors, borderRadius:8, barThickness:16 }]
+  const sigChart=makeOrUpdate('chartSignals','bar',{
+    labels:top.map(([k])=>k),
+    datasets:[{label:'count',data:top.map(([,v])=>v),backgroundColor:colors,borderRadius:8,barThickness:16}]
   },{
-    responsive:true, indexAxis:'y',
+    responsive:true,indexAxis:'y',
     plugins:{legend:{display:false}},
-    scales:{x:{beginAtZero:true}, y:{ticks:{autoSkip:false}}}
+    scales:{x:{beginAtZero:true},y:{ticks:{autoSkip:false}}}
   });
   charts.chartSignals=sigChart;
-  sigChart.options.onClick=(e)=>{
-    const p=sigChart.getElementsAtEventForMode(e,'nearest',{intersect:true},true);
-    if(!p.length) return; const idx=p[0].index; selectedKw=sigChart.data.labels[idx]; renderDetails();
-  };
-  if(!selectedKw && top.length) selectedKw = top[0][0];
-  if(selectedKw) renderDetails(); else resetDetails();
+  sigChart.options.onClick=(e)=>{const p=sigChart.getElementsAtEventForMode(e,'nearest',{intersect:true},true);if(!p.length)return;const idx=p[0].index;selectedKw=sigChart.data.labels[idx];renderDetails();};
+  if(!selectedKw&&top.length)selectedKw=top[0][0];
+  if(selectedKw)renderDetails();else resetDetails();
 
-  // Risers / newcomers
+  // momentum/newcomers
   const {curFrom,curTo,prevFrom,prevTo}=getWindowBounds();
-  const curRows=rowsInRange(rowsAll,curFrom,curTo);
-  const prevRows=rowsInRange(rowsAll,prevFrom,prevTo);
-
+  const curRows=rowsInRange(rowsAll,curFrom,curTo), prevRows=rowsInRange(rowsAll,prevFrom,prevTo);
   const risers=fastestRisers(curRows,prevRows,12);
-  els.chartRisers.style.height =
-    Math.min(440, Math.max(220, 22 * risers.length + 40)) + 'px';
-
+  els.chartRisers.style.height=Math.min(440,Math.max(220,22*risers.length+40))+'px';
   makeOrUpdate('chartRisers','bar',{
-    labels: risers.map(r=>r.k),
-    datasets:[{label:'Δ vs previous', data: risers.map(r=>r.delta), backgroundColor: palette(risers.length), borderRadius:8, barThickness:16}]
+    labels:risers.map(r=>r.k),
+    datasets:[{label:'Δ vs previous',data:risers.map(r=>r.delta),backgroundColor:palette(risers.length),borderRadius:8,barThickness:16}]
   },{
-    indexAxis:'y',
-    plugins:{legend:{display:false}},
-    scales:{x:{beginAtZero:true}, y:{ticks:{autoSkip:false}}}
+    indexAxis:'y',plugins:{legend:{display:false}},
+    scales:{x:{beginAtZero:true},y:{ticks:{autoSkip:false}}}
   });
 
   const newbies=newcomerKeywords(curRows,prevRows,20);
-  els.newcomersList.innerHTML = newbies.map(n=>`<li><span>${n.k}</span><span class="muted">+${n.c}</span></li>`).join('') || `<li class="muted">No newcomers in this window.</li>`;
+  els.newcomersList.innerHTML=newbies.map(n=>`<li><span>${n.k}</span><span class="muted">+${n.c}</span></li>`).join('')||`<li class="muted">No newcomers in this window.</li>`;
 
-  // Status mix by category
+  // status mix by category
   const mix=statusMixByCategory(rows);
   makeOrUpdate('chartMix','bar',{
     labels:mix.cats,
     datasets:[
-      {label:'emerging',  data:mix.perc.map(r=>r[0]), backgroundColor:COLORS_STATUS.emerging,  borderRadius:6},
-      {label:'bubbling',  data:mix.perc.map(r=>r[1]), backgroundColor:COLORS_STATUS.bubbling,  borderRadius:6},
-      {label:'mainstream',data:mix.perc.map(r=>r[2]), backgroundColor:COLORS_STATUS.mainstream,borderRadius:6},
+      {label:'emerging',data:mix.perc.map(r=>r[0]),backgroundColor:COLORS_STATUS.emerging,borderRadius:6},
+      {label:'bubbling',data:mix.perc.map(r=>r[1]),backgroundColor:COLORS_STATUS.bubbling,borderRadius:6},
+      {label:'mainstream',data:mix.perc.map(r=>r[2]),backgroundColor:COLORS_STATUS.mainstream,borderRadius:6},
     ]
   },{
-    responsive:true, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,max:100}},
-    plugins:{legend:{position:'bottom'}, tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.y.toFixed(0)}%`}}}
+    responsive:true,scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,max:100}},
+    plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.y.toFixed(0)}%`}}}
   });
 
-  // Category insight
-  const mode=els.insightMode.value;
-  let insight, legend;
-  if(mode==='concentration'){ insight=concentrationByCategory(rows); legend='Head share = % of mentions captured by top 5 signals (lower = more fragmented / whitespace).'; }
-  else if(mode==='newcomers'){ const wb=getWindowBounds(); insight=newcomerShareByCategory(rowsInRange(rowsAll,wb.curFrom,wb.curTo), rowsInRange(rowsAll,wb.prevFrom,wb.prevTo)); legend='Share of signals that appear now but not in previous window.'; }
-  else if(mode==='gainers'){ const wb=getWindowBounds(); insight=gainerShareByCategory(rowsInRange(rowsAll,wb.curFrom,wb.curTo), rowsInRange(rowsAll,wb.prevFrom,wb.prevTo)); legend='Share of signals with positive Δ vs previous window.'; }
-  else{ insight=crossVerticalShare(rows); legend='Share of signals that also appear in ≥1 other category (cross-vertical).'; }
-
+  // category insight
+  const mode=els.insightMode.value; let insight, legend;
+  if(mode==='concentration'){insight=concentrationByCategory(rows);legend='Head share = % of mentions captured by top 5 signals (lower = more fragmented / whitespace).';}
+  else if(mode==='newcomers'){const wb=getWindowBounds();insight=newcomerShareByCategory(rowsInRange(rowsAll,wb.curFrom,wb.curTo),rowsInRange(rowsAll,wb.prevFrom,wb.prevTo));legend='Share of signals that appear now but not in previous window.';}
+  else if(mode==='gainers'){const wb=getWindowBounds();insight=gainerShareByCategory(rowsInRange(rowsAll,wb.curFrom,wb.curTo),rowsInRange(rowsAll,wb.prevFrom,wb.prevTo));legend='Share of signals with positive Δ vs previous window.';}
+  else{insight=crossVerticalShare(rows);legend='Share of signals that also appear in ≥1 other category (cross-vertical).';}
   makeOrUpdate('chartInsight','bar',{
     labels:insight.cats,
-    datasets:[{label:'%', data:insight.values, backgroundColor:palette(insight.cats.length), borderRadius:8}]
-  },{
-    plugins:{legend:{display:false}},
-    scales:{y:{beginAtZero:true,max:100}}
-  });
+    datasets:[{label:'%',data:insight.values,backgroundColor:palette(insight.cats.length),borderRadius:8}]
+  },{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100}}});
   els.insightLegend.textContent=legend;
 }
 
@@ -522,104 +382,103 @@ function resetDetails(){
   els.kwTitle.textContent='(select a signal)';
   els.kpiRow.style.display='none';
   els.kwList.innerHTML=''; els.qList.innerHTML='';
-  els.intentMeta.textContent=''; els.gapBadge.textContent='Answer Gap: –';
+  els.intentLegend.innerHTML=''; els.intentMeta.textContent='';
+  els.gapBadge.textContent='Answer Gap: –';
   makeOrUpdate('chartKwStatus','bar',{labels:[],datasets:[]},{});
   makeOrUpdate('chartIntent','bar',{labels:[],datasets:[]},{});
 }
 
 function renderDetails(){
-  if(!selectedKw){ resetDetails(); return; }
-  els.kwTitle.textContent = selectedKw;
+  if(!selectedKw){resetDetails();return;}
+  els.kwTitle.textContent=selectedKw;
 
   const rows=getFiltered();
   const rkw=rowsForKeyword(rows,selectedKw);
 
   // KPIs
-  els.kpiTotal.textContent = `Total: ${rkw.length}`;
-  els.kpiAvg.textContent   = `Avg score: ${avgScore(rkw)}`;
-  els.kpiCat.textContent   = `Top category: ${topCat(rkw)}`;
-  const p=new URLSearchParams();
-  p.set('q',selectedKw);
-  if(els.cat.value) p.set('cat',els.cat.value);
-  if(els.stat.value) p.set('stat',els.stat.value);
-  if(els.from.value) p.set('from',els.from.value);
-  if(els.to.value)   p.set('to',els.to.value);
-  p.set('view','table');
-  els.openList.href='./?'+p.toString();
+  els.kpiTotal.textContent=`Total: ${rkw.length}`;
+  els.kpiAvg.textContent=`Avg score: ${avgScore(rkw)}`;
+  els.kpiCat.textContent=`Top category: ${topCat(rkw)}`;
+  const p=new URLSearchParams(); p.set('q',selectedKw);
+  if(els.cat.value)p.set('cat',els.cat.value);
+  if(els.stat.value)p.set('stat',els.stat.value);
+  if(els.from.value)p.set('from',els.from.value);
+  if(els.to.value)p.set('to',els.to.value);
+  p.set('view','table'); els.openList.href='./?'+p.toString();
   els.kpiRow.style.display='flex';
 
-  // status mix
+  // status mix (thin)
   const stats=['emerging','bubbling','mainstream'];
-  const counts=stats.map(s=> rkw.filter(r=>(r.status||'').toLowerCase()===s).length);
+  const counts=stats.map(s=>rkw.filter(r=>(r.status||'').toLowerCase()===s).length);
   makeOrUpdate('chartKwStatus','bar',{
     labels:['mix'],
     datasets:[
-      {label:'emerging',  data:[counts[0]], backgroundColor:COLORS_STATUS.emerging,  borderRadius:6},
-      {label:'bubbling',  data:[counts[1]], backgroundColor:COLORS_STATUS.bubbling,  borderRadius:6},
-      {label:'mainstream',data:[counts[2]], backgroundColor:COLORS_STATUS.mainstream, borderRadius:6},
+      {label:'emerging',data:[counts[0]],backgroundColor:COLORS_STATUS.emerging,borderRadius:6},
+      {label:'bubbling',data:[counts[1]],backgroundColor:COLORS_STATUS.bubbling,borderRadius:6},
+      {label:'mainstream',data:[counts[2]],backgroundColor:COLORS_STATUS.mainstream,borderRadius:6},
     ]
-  },{
-    indexAxis:'y',
-    scales:{x:{stacked:true,beginAtZero:true}, y:{stacked:true,ticks:{display:false},grid:{display:false}}},
-    plugins:{legend:{position:'bottom'}}
-  });
+  },{indexAxis:'y',scales:{x:{stacked:true,beginAtZero:true},y:{stacked:true,ticks:{display:false},grid:{display:false}}},plugins:{legend:{position:'bottom'}}});
 
-  // Intent stack & questions
-  const gscRows = gscForSignal(selectedKw);
-  const stack = intentStack(gscRows);
-  const order = ['what_is','how_to','best','vs','review','near_me','other'];
+  // intent stack
+  const gscRows=gscForSignal(selectedKw);
+  const stack=intentStack(gscRows);
+  const order=['what_is','how_to','best','vs','review','near_me','other'];
+  const intentColors=palette(order.length);
+
   makeOrUpdate('chartIntent','bar',{
     labels:['intent'],
-    datasets: order.map((k,i)=>({
-      label: INTENTS.find(t=>t.key===k)?.label || (k==='other'?'other':k),
+    datasets:order.map((k,i)=>({
+      label: (INTENTS.find(t=>t.key===k)?.label||(k==='other'?'other':k)),
       data:[stack.pct[k]||0],
-      backgroundColor: palette(order.length)[i],
+      backgroundColor:intentColors[i],
       borderRadius:6
     }))
   },{
     indexAxis:'y',
-    maintainAspectRatio:false,           // <- force height to our CSS
+    maintainAspectRatio:false,
     layout:{padding:0},
     plugins:{
-      legend:{position:'bottom', labels:{boxWidth:12, boxHeight:12, font:{size:11}}},
+      legend:{display:false}, /* legend lives outside now */
       tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.x}%`}}
     },
-    scales:{x:{stacked:true,beginAtZero:true,max:100}, y:{stacked:true,ticks:{display:false},grid:{display:false}}}
+    scales:{x:{stacked:true,beginAtZero:true,max:100},y:{stacked:true,ticks:{display:false},grid:{display:false}}}
   });
-  els.intentMeta.textContent = stack.total ? `${stack.total.toLocaleString()} impressions across queries` : 'No GSC rows for this signal (sample shown).';
 
-  const qs = topQuestions(gscRows, 10);
+  // external legend chips (readable)
+  els.intentLegend.innerHTML = order.map((k,i)=>{
+    const label = INTENTS.find(t=>t.key===k)?.label || (k==='other'?'other':k);
+    return `<span class="chip"><span class="sw" style="background:${intentColors[i]}"></span>${label}</span>`;
+  }).join('');
+
+  els.intentMeta.textContent = stack.total
+    ? `${stack.total.toLocaleString()} impressions across queries`
+    : 'No GSC rows for this signal (sample shown).';
+
+  // questions
+  const qs=topQuestions(gscRows,10);
   els.qList.innerHTML = qs.length
-    ? qs.map(r=>{
-        const url = 'https://www.google.com/search?q='+encodeURIComponent(r.q);
-        return `<li><a href="${url}" target="_blank" rel="noopener">${r.q}</a><span class="muted">${r.imp.toLocaleString()}</span></li>`;
-      }).join('')
+    ? qs.map(r=>`<li><a href="https://www.google.com/search?q=${encodeURIComponent(r.q)}" target="_blank" rel="noopener">${r.q}</a><span class="muted">${r.imp.toLocaleString()}</span></li>`).join('')
     : `<li class="muted">No question-type queries found.</li>`;
 
-  const gap = answerGapPct(rkw, gscRows);
-  els.gapBadge.textContent = `Answer Gap: ${gap}%`;
+  // answer gap
+  els.gapBadge.textContent=`Answer Gap: ${answerGapPct(rkw,gscRows)}%`;
 
-  // Latest 12 articles (scrolls inside the list)
-  const latest = rkw.slice()
-    .sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0))
-    .slice(0,12);
+  // latest 12 articles (scrolls)
+  const latest=rkw.slice().sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0)).slice(0,12);
   els.kwList.innerHTML = latest.map(r=>{
-    const d=(r.published||"").slice(0,10);
-    const t=r.title||"(untitled)";
+    const d=(r.published||"").slice(0,10), t=r.title||"(untitled)";
     return `<li><a href="${r.link||'#'}" target="_blank" rel="noopener">${t}</a><span class="muted">${d}</span></li>`;
-  }).join("") || `<li class="muted">No recent articles.</li>`;
+  }).join('') || `<li class="muted">No recent articles.</li>`;
 }
 
-/* ---------------- Boot ---------------- */
+/* ------- boot ------- */
 (async function(){
   const bust=new Date().toISOString().slice(0,10);
-  const [sigRows, gscRows] = await Promise.all([
+  const [sigRows,gscRows] = await Promise.all([
     fetch('signals_simple.csv?ts='+bust).then(r=>r.text()).then(parseCSV).catch(()=>loadMaybe('', 'embedded-signals')),
     loadMaybe('gsc_queries.csv','embedded-gsc')
   ]);
-  rowsAll = sigRows || [];
-  gscAll  = gscRows || [];
-
+  rowsAll=sigRows||[]; gscAll=gscRows||[];
   render();
 })();
 </script>
