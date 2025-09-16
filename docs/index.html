@@ -11,30 +11,11 @@
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
     --ctl-w:180px; --seg-w:160px;
-    --bar-h: 86px; /* sticky toolbar height (approx) */
-
-    /* Category colors */
-    --fashion-bg:#fff1f2; --fashion-bd:#fecdd3; --fashion-fg:#9f1239;
-    --beauty-bg:#eef2ff;  --beauty-bd:#c7d2fe; --beauty-fg:#3730a3;
-    --wellness-bg:#ecfeff;--wellness-bd:#a5f3fc;--wellness-fg:#155e75;
-
-    /* Status colors */
-    --emerg-bg:#ecfccb; --emerg-bd:#bef264; --emerg-fg:#3f6212;
-    --bubbl-bg:#fef3c7; --bubbl-bd:#fcd34d; --bubbl-fg:#92400e;
-    --main-bg:#f1f5f9;  --main-bd:#cbd5e1; --main-fg:#334155;
   }
   :root.dark{
     --bg:#0b0b0c; --fg:#f2f3f5; --muted:#a3a7ae;
     --card:#121317; --border:#2b2f36; --pill:#1b1f25; --accent:#e5e7eb;
     --shadow:0 10px 30px rgba(0,0,0,.35);
-
-    --fashion-bg:#3b0b12; --fashion-bd:#701a29; --fashion-fg:#fecdd3;
-    --beauty-bg:#1e1b4b;  --beauty-bd:#3730a3; --beauty-fg:#c7d2fe;
-    --wellness-bg:#0b3a42;--wellness-bd:#0e7490;--wellness-fg:#a5f3fc;
-
-    --emerg-bg:#1b2e0b; --emerg-bd:#3f6212; --emerg-fg:#bef264;
-    --bubbl-bg:#3a2a0a; --bubbl-bd:#a16207; --bubbl-fg:#fcd34d;
-    --main-bg:#0f172a;  --main-bd:#334155; --main-fg:#cbd5e1;
   }
 
   *{box-sizing:border-box}
@@ -44,8 +25,13 @@
   /* Sticky toolbar */
   .bar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(10px);
     background:color-mix(in oklab, var(--bg) 90%, transparent); border-bottom:1px solid var(--border)}
-  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:grid;grid-template-columns:1fr auto auto auto auto;gap:10px;align-items:center}
-  .title{grid-column:1/-1;font-weight:700;font-size:18px}
+  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:grid;gap:10px;align-items:center}
+  .title{font-weight:700;font-size:18px;grid-column:1/-1}
+  .search{grid-column:1/-1;display:flex;gap:10px}
+  .search input{width:100%}
+
+  /* Row with: Table/Cards | filters | Sort | More */
+  .bar-row-inline{display:grid;grid-template-columns:auto 1fr auto auto; gap:10px; align-items:center; grid-column:1/-1;}
   .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
   .seg.fixed{width:var(--seg-w)} .seg.fixed button{flex:1 0 50%}
   .seg button{padding:8px 12px;border:0;background:var(--card);color:var(--fg);cursor:pointer}
@@ -53,9 +39,7 @@
   .btn{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;box-shadow:var(--shadow)}
   .select,.input{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
   .select.fixed{width:var(--ctl-w)}
-  .search{grid-column:1/-1;display:flex;gap:10px}
-  .search input{width:100%}
-  .bar-row{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap}
+  .filters-inline{display:flex;gap:10px;align-items:center}
 
   /* Pretty More menu */
   .menu{ position:relative; }
@@ -79,17 +63,16 @@
   .chip button{all:unset;cursor:pointer;color:var(--muted)}
   .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
 
-  /* table container = removes the big blank space + allows horizontal scroll on mobile */
+  /* table */
   .table-wrap{margin-top:8px; overflow-x:auto; -webkit-overflow-scrolling:touch; background:var(--bg);}
-
   table{min-width:900px;width:100%;border-collapse:collapse}
-  thead th{background:var(--bg);position:static; /* no sticky header now */ }
+  thead th{background:var(--bg)}
   th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
   th.sortable{cursor:pointer;user-select:none}
   th .arrow{opacity:1;margin-left:6px;display:none}
   th.active .arrow{display:inline}
 
-  /* Cards (still available) */
+  /* Cards */
   .cards{display:grid;gap:12px;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));}
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);}
   .card--inline{display:flex;flex-direction:column;gap:6px;padding:12px 14px;}
@@ -101,25 +84,24 @@
   .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
   .score-txt{ color: var(--muted); font-size: 12px; }
   .date{ color:var(--muted); white-space:nowrap; }
-  .pill-link{ color:inherit; text-decoration:none; display:inline-block; }
 
   /* Tag color classes */
-  .tag--fashion{background:var(--fashion-bg); border-color:var(--fashion-bd); color:var(--fashion-fg)}
-  .tag--beauty{ background:var(--beauty-bg);  border-color:var(--beauty-bd);  color:var(--beauty-fg)}
-  .tag--wellness{background:var(--wellness-bg);border-color:var(--wellness-bd);color:var(--wellness-fg)}
-  .status--emerging{background:var(--emerg-bg);border-color:var(--emerg-bd);color:var(--emerg-fg)}
-  .status--bubbling{background:var(--bubbl-bg);border-color:var(--bubbl-bd);color:var(--bubbl-fg)}
-  .status--mainstream{background:var(--main-bg);border-color:var(--main-bd);color:var(--main-fg)}
+  .pill-link{ color:inherit; text-decoration:none; display:inline-block; }
+  .tag--fashion{background:#fff1f2; border-color:#fecdd3; color:#9f1239}
+  .tag--beauty{ background:#eef2ff;  border-color:#c7d2fe;  color:#3730a3}
+  .tag--wellness{background:#ecfeff;border-color:#a5f3fc;color:#155e75}
+  .status--emerging{background:#ecfccb;border-color:#bef264;color:#3f6212}
+  .status--bubbling{background:#fef3c7;border-color:#fcd34d;color:#92400e}
+  .status--mainstream{background:#f1f5f9;border-color:#cbd5e1;color:#334155}
 
   /* pager */
   .pager{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px;flex-wrap:wrap}
   .pager-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
   @media (max-width: 860px){
-    .bar-inner{grid-template-columns:1fr 1fr;gap:8px}
-    .title{grid-column:1/-1}
-    .search{grid-column:1/-1}
-    .table-wrap{margin-top:6px}
+    .bar-inner{gap:8px}
+    .bar-row-inline{grid-template-columns:1fr 1fr; grid-auto-rows:auto}
+    .filters-inline{flex-wrap:wrap}
     .cards{grid-template-columns:1fr}
   }
 </style>
@@ -132,43 +114,44 @@
       <input id="q" class="input" type="search" placeholder="Search title / keyword / category / status…" />
     </div>
 
-    <div class="seg fixed">
-      <button id="viewTable" class="active" type="button">Table</button>
-      <button id="viewCards" type="button">Cards</button>
-    </div>
+    <!-- Row: Table/Cards | Filters | Sort | More -->
+    <div class="bar-row-inline">
+      <div class="seg fixed">
+        <button id="viewTable" class="active" type="button">Table</button>
+        <button id="viewCards" type="button">Cards</button>
+      </div>
 
-    <select id="sortKey" class="select fixed">
-      <option value="trend_score" selected>Sort: Trend score</option>
-      <option value="published">Sort: Published</option>
-      <option value="title">Sort: Title</option>
-      <option value="category">Sort: Category</option>
-      <option value="primary_keyword">Sort: Keyword</option>
-      <option value="status">Sort: Status</option>
-    </select>
+      <div class="filters-inline">
+        <select id="barCat" class="select fixed">
+          <option value="">All categories</option>
+          <option>fashion</option><option>beauty</option><option>wellness</option>
+        </select>
 
-    <div class="bar-row">
-      <select id="barCat" class="select fixed">
-        <option value="">All categories</option>
-        <option>fashion</option><option>beauty</option><option>wellness</option>
+        <select id="barStatus" class="select fixed">
+          <option value="">All status</option>
+          <option>emerging</option><option>bubbling</option><option>mainstream</option>
+        </select>
+
+        <button id="filtersBtn" class="btn">Dates</button>
+      </div>
+
+      <select id="sortKey" class="select fixed">
+        <option value="published" selected>Sort: Published</option>
+        <option value="trend_score">Sort: Trend score</option>
+        <option value="title">Sort: Title</option>
+        <option value="category">Sort: Category</option>
+        <option value="primary_keyword">Sort: Keyword</option>
+        <option value="status">Sort: Status</option>
       </select>
 
-      <select id="barStatus" class="select fixed">
-        <option value="">All status</option>
-        <option>emerging</option><option>bubbling</option><option>mainstream</option>
-      </select>
-
-      <button id="filtersBtn" class="btn">Dates</button>
-
-      <div class="menu" style="margin-left:auto">
+      <div class="menu">
         <button class="btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">More</button>
         <div class="menu-panel" id="moreMenu" role="menu">
           <a href="signals_simple.csv" download>Download CSV</a>
           <button id="copyFiltered">Copy filtered CSV</button>
           <button id="copyShare">Copy share link</button>
-          <button id="resetAll">Reset all</button>
           <button id="darkToggle">Toggle dark mode</button>
           <a href="https://atelierfutures.github.io/futures-edit-signals/advanced.html" target="_blank" rel="noopener">Advanced Analytics</a>
-          <a href="advanced.html" target="_blank" rel="noopener">Advanced</a>
         </div>
       </div>
     </div>
@@ -178,7 +161,6 @@
 <div class="wrap">
   <div id="chips" class="chips"></div>
 
-  <!-- TABLE (wrapped so it sits right under the controls and can scroll on mobile) -->
   <div class="table-wrap">
     <table id="tbl">
       <thead>
@@ -195,10 +177,8 @@
     </table>
   </div>
 
-  <!-- CARDS -->
   <div id="cards" class="cards" style="display:none"></div>
 
-  <!-- Bottom pager -->
   <div class="pager">
     <div class="pager-left muted" id="rangeInfo">Loading…</div>
     <div class="pager-right">
@@ -271,13 +251,13 @@ const moreBtn  = document.getElementById("moreBtn");
 const moreMenu = document.getElementById("moreMenu");
 const copyFilteredBtn = document.getElementById("copyFiltered");
 const copyShareBtn = document.getElementById("copyShare");
-const resetAllBtn = document.getElementById("resetAll");
 const darkToggleBtn = document.getElementById("darkToggle");
 
 /* ---------- state ---------- */
 let rowsAll = [];
 let viewMode = "table";
-let sortKey = "trend_score";
+/* default sort = PUBLISHED (desc) */
+let sortKey = "published";
 let sortDir = "desc";
 let currentPage = 1;
 let pageSize = parseInt(pageSizeSel.value,10) || 25;
@@ -418,14 +398,7 @@ quick.onchange = () => {
   toI.value   = today.toISOString().slice(0,10);
 };
 
-/* reset / copy / share */
-resetAllBtn.onclick = () => {
-  q.value="";
-  sortKey="trend_score"; sortDir="desc"; updateSortUI();
-  barCatSel.value=""; barStatusSel.value="";
-  fromI.value=""; toI.value=""; quick.value="";
-  pageSizeSel.value="25"; pageSize=25; currentPage=1; setView("table"); toggleMenu(false); render();
-};
+/* copy / share */
 copyFilteredBtn.onclick = async () => {
   const rows = getFilteredSortedRows();
   const header = ["published","title","link","category","primary_keyword","trend_score","status"];
@@ -485,7 +458,7 @@ function buildQuery(){
   if(fromI.value) p.set("from", fromI.value);
   if(toI.value) p.set("to", toI.value);
   if(viewMode!=="table") p.set("view", viewMode);
-  if(sortKey!=="trend_score") p.set("sort", sortKey);
+  if(sortKey!=="published") p.set("sort", sortKey);
   if(sortDir!=="desc") p.set("dir", sortDir);
   if(pageSize!==25) p.set("size", String(pageSize));
   if(currentPage!==1) p.set("page", String(currentPage));
