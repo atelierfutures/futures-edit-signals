@@ -1,6 +1,8 @@
 <!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>The Futures Edit — Signals</title>
 
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -12,146 +14,161 @@
     --bg:#ffffff; --fg:#0f172a; --muted:#6b7280;
     --card:#ffffff; --border:#e5e7eb; --pill:#f7f7fb;
     --shadow:0 12px 30px rgba(15,23,42,.06);
-
-    /* Category chips (example) */
-    --fashion:#ecfeff; --beauty:#f5f3ff; --wellness:#f0fdf4;
+    --ink:#0f172a;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial}
   .wrap{max-width:1200px;margin:0 auto;padding:28px 20px 80px}
-  h1{font-size:28px;margin:0 0 18px;font-weight:700;letter-spacing:.2px}
-  .toolbar{position:sticky;top:0;background:var(--bg);padding:14px 0 16px;z-index:10;box-shadow:0 8px 18px -18px rgba(15,23,42,.25)}
+  h1{font-size:36px;line-height:1.15;margin:0 0 18px;font-weight:800;color:#0b1325}
+  /* toolbar */
+  .toolbar{position:sticky;top:0;background:var(--bg);padding:8px 0 18px;z-index:10}
+  .toolbar .stack{display:grid;grid-template-columns:1fr auto auto auto auto;gap:12px;align-items:center}
   .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-  .search{flex:1 1 420px;min-width:280px}
-  input[type="search"]{width:100%;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:#fff;box-shadow:var(--shadow, none);outline:none}
+  .search{grid-column:1 / -1}
+  input[type="search"]{width:100%;padding:14px 16px;border:1px solid var(--border);border-radius:14px;background:#fff;box-shadow:0 10px 28px rgba(15,23,42,.06);outline:none}
   input[type="search"]::placeholder{color:var(--muted)}
-  .pill, .seg{border:1px solid var(--border);border-radius:12px;background:var(--pill);padding:12px 14px;min-width:160px}
-  .seg{display:flex;gap:2px;padding:2px;min-width:auto;background:#f2f3f7}
-  .seg button{padding:10px 14px;border:0;background:transparent;border-radius:10px;cursor:pointer;font-weight:600}
+  .seg{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(#f6f7fb,#f6f7fb)}
+  .seg button{padding:10px 14px;border:0;background:transparent;border-radius:12px;cursor:pointer;font-weight:700}
   .seg button.active{background:#fff;box-shadow:var(--shadow)}
+  .pill, .pill-like{border:1px solid var(--border);border-radius:14px;background:var(--pill);padding:12px 14px;min-width:180px}
   select.pill{appearance:none;padding-right:36px;background:
-      linear-gradient(45deg, transparent 50%, #555 50%),
-      linear-gradient(135deg, #555 50%, transparent 50%),
+      linear-gradient(45deg, transparent 50%, #52525b 50%),
+      linear-gradient(135deg, #52525b 50%, transparent 50%),
       linear-gradient(to right, transparent, transparent);
       background-position: calc(100% - 18px) 16px, calc(100% - 12px) 16px, 0 0;
       background-size: 6px 6px, 6px 6px, 100% 100%;
       background-repeat:no-repeat;}
+  .bar2{display:flex;gap:12px;margin-top:12px}
   .spacer{flex:1}
+
+  /* table */
   .table{width:100%;border-collapse:separate;border-spacing:0 10px;margin-top:16px}
-  .table thead th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;text-align:left;padding:0 12px}
+  .table thead th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;text-align:left;padding:0 12px}
   .table tbody tr{background:var(--card);box-shadow:var(--shadow)}
   .table td{padding:14px 12px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
   .table td:first-child{border-left:1px solid var(--border);border-top-left-radius:12px;border-bottom-left-radius:12px}
   .table td:last-child{border-right:1px solid var(--border);border-top-right-radius:12px;border-bottom-right-radius:12px}
-  .chip{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:600}
-  .chip.fashion{background:var(--fashion)}
-  .chip.beauty{background:var(--beauty)}
-  .chip.wellness{background:var(--wellness)}
+  .badge{font-size:11px;border:1px solid var(--border);border-radius:999px;padding:4px 8px}
+  .chip{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:600;background:#f3f4f6}
   .muted{color:var(--muted)}
-  .controls-inline{display:flex;gap:10px;align-items:center}
-  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+  /* cards */
   .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:18px}
   .card{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:14px}
-  .card h3{margin:.1rem 0 .25rem;font-size:16px}
-  .badge{font-size:11px;border:1px solid var(--border);border-radius:999px;padding:4px 8px}
+  .card h3{margin:.2rem 0 .25rem;font-size:16px}
+
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   .footer-space{height:40px}
 </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>The Futures Edit — Signals</h1>
 
-<div class="wrap">
-  <h1>The Futures Edit — Signals</h1>
+    <!-- HEADER / CONTROLS -->
+    <div class="toolbar">
+      <div class="stack">
+        <!-- Search -->
+        <div class="search">
+          <label class="sr-only" for="searchInput">Search</label>
+          <input id="searchInput" type="search" placeholder="Search title / keyword / category / status…">
+        </div>
 
-  <!-- Toolbar -->
-  <div class="toolbar">
-    <div class="row">
-      <!-- Search -->
-      <div class="search">
-        <label class="sr-only" for="searchInput">Search</label>
-        <input id="searchInput" type="search" placeholder="Search title / keyword / category / status…">
+        <!-- View toggle -->
+        <div class="seg" role="tablist" aria-label="View">
+          <button id="viewTableBtn" class="active" role="tab" aria-selected="true">Table</button>
+          <button id="viewCardsBtn" role="tab" aria-selected="false">Cards</button>
+        </div>
+
+        <!-- Category -->
+        <label class="sr-only" for="categorySelect">Category</label>
+        <select id="categorySelect" class="pill" aria-label="Category">
+          <option value="all">All categories</option>
+        </select>
+
+        <!-- Status -->
+        <label class="sr-only" for="statusSelect">Status</label>
+        <select id="statusSelect" class="pill" aria-label="Status">
+          <option value="all">All status</option>
+        </select>
+
+        <!-- Date range (replaces Dates button) -->
+        <label class="sr-only" for="rangeFilter">Date range</label>
+        <select id="rangeFilter" class="pill" aria-label="Date range">
+          <option value="all" selected>All time</option>
+          <option value="7">Last 7 days</option>
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="365">Last year</option>
+        </select>
       </div>
 
-      <!-- View toggle -->
-      <div class="seg" role="tablist" aria-label="View">
-        <button id="viewTableBtn" class="active" role="tab" aria-selected="true">Table</button>
-        <button id="viewCardsBtn" role="tab" aria-selected="false">Cards</button>
+      <!-- Second row: sort + more (like your screenshot) -->
+      <div class="bar2">
+        <label class="sr-only" for="sortSelect">Sort</label>
+        <select id="sortSelect" class="pill">
+          <option value="published-desc">Sort: Published ↓</option>
+          <option value="published-asc">Sort: Published ↑</option>
+          <option value="score-desc">Sort: Trend score ↓</option>
+          <option value="score-asc">Sort: Trend score ↑</option>
+        </select>
+        <button id="moreBtn" class="pill-like">More</button>
+        <div class="spacer"></div>
       </div>
-
-      <!-- Category -->
-      <label class="sr-only" for="categorySelect">Category</label>
-      <select id="categorySelect" class="pill">
-        <option value="all">All categories</option>
-        <!-- categories will be populated dynamically from data -->
-      </select>
-
-      <!-- Status -->
-      <label class="sr-only" for="statusSelect">Status</label>
-      <select id="statusSelect" class="pill">
-        <option value="all">All status</option>
-        <!-- statuses will be populated dynamically from data -->
-      </select>
-
-      <!-- NEW: Date range dropdown (replaces “Dates” button) -->
-      <label class="sr-only" for="rangeFilter">Date range</label>
-      <select id="rangeFilter" class="pill" title="Date range">
-        <option value="all" selected>All time</option>
-        <option value="7">Last 7 days</option>
-        <option value="30">Last 30 days</option>
-        <option value="90">Last 90 days</option>
-        <option value="365">Last year</option>
-      </select>
-
-      <!-- Sort -->
-      <label class="sr-only" for="sortSelect">Sort</label>
-      <select id="sortSelect" class="pill">
-        <option value="published-desc">Sort: Published ↓</option>
-        <option value="published-asc">Sort: Published ↑</option>
-        <option value="score-desc">Sort: Trend score ↓</option>
-        <option value="score-asc">Sort: Trend score ↑</option>
-      </select>
-
-      <!-- More (placeholder) -->
-      <button id="moreBtn" class="pill" style="min-width:auto">More</button>
-
-      <div class="spacer"></div>
     </div>
+
+    <!-- Table view -->
+    <table class="table" id="tableView" role="table" aria-label="Signals table">
+      <thead>
+        <tr>
+          <th>Published</th>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Keyword</th>
+          <th>Trend score</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+
+    <!-- Cards view -->
+    <div id="cardsView" class="cards" style="display:none"></div>
+
+    <div class="footer-space"></div>
   </div>
 
-  <!-- Table -->
-  <table class="table" id="tableView" role="table" aria-label="Signals table">
-    <thead>
-      <tr>
-        <th>Published</th>
-        <th>Title</th>
-        <th>Category</th>
-        <th>Keyword</th>
-        <th>Trend score</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
-
-  <!-- Cards -->
-  <div id="cardsView" class="cards" style="display:none"></div>
-
-  <div class="footer-space"></div>
-</div>
-
 <script>
-/* ===========================
-   Data Loading
-   =========================== */
-
+/* =========================================
+   CONFIG
+   ========================================= */
 // Point this to your CSV (headers expected: published,title,category,keyword,score,status)
-const CSV_URL = 'signals.csv'; // change if needed
+const CSV_URL = 'signals.csv';
 
-let rows = [];        // original loaded rows
-let viewMode = 'table'; // 'table' | 'cards'
+let rows = [];
+let viewMode = 'table';
+let el = {}; // will be populated after DOMContentLoaded
 
+/* =========================================
+   BOOTSTRAP
+   ========================================= */
 document.addEventListener('DOMContentLoaded', () => {
-  // Wire up UI
+  // Cache elements only AFTER DOM is ready
+  el = {
+    search: document.getElementById('searchInput'),
+    cat: document.getElementById('categorySelect'),
+    stat: document.getElementById('statusSelect'),
+    range: document.getElementById('rangeFilter'),
+    sort: document.getElementById('sortSelect'),
+    table: document.getElementById('tableView'),
+    tbody: document.getElementById('tableBody'),
+    cards: document.getElementById('cardsView'),
+    viewTableBtn: document.getElementById('viewTableBtn'),
+    viewCardsBtn: document.getElementById('viewCardsBtn')
+  };
+
   hookControls();
 
-  // Load CSV
   Papa.parse(CSV_URL, {
     download: true,
     header: true,
@@ -159,11 +176,10 @@ document.addEventListener('DOMContentLoaded', () => {
     complete: (res) => {
       rows = sanitizeRows(res.data || []);
       hydrateFacets(rows);
-      applyFilters(); // initial paint
+      applyFilters();
     },
     error: (err) => {
       console.error('CSV load error:', err);
-      // Fallback: empty state
       rows = [];
       hydrateFacets(rows);
       applyFilters();
@@ -171,74 +187,60 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+/* =========================================
+   SANITIZE & FACETS
+   ========================================= */
 function sanitizeRows(arr){
-  // Normalize keys + types
   return arr.map(r => ({
     published: r.published || r.date || r.Published || '',
     title: r.title || r.Title || '',
     category: r.category || r.Category || '',
     keyword: r.keyword || r.Keyword || '',
-    score: safeNumber(r.score ?? r['trend score'] ?? r.TrendScore ?? ''),
+    score: toNumber(r.score ?? r['trend score'] ?? r.TrendScore ?? ''),
     status: r.status || r.Status || ''
   }));
 }
-function safeNumber(v){
+function toNumber(v){
   const n = Number(String(v).replace(',', '.'));
   return isNaN(n) ? 0 : n;
 }
-
-/* ===========================
-   Filters & Facets
-   =========================== */
-const el = {
-  search: document.getElementById('searchInput'),
-  cat: document.getElementById('categorySelect'),
-  stat: document.getElementById('statusSelect'),
-  range: document.getElementById('rangeFilter'),
-  sort: document.getElementById('sortSelect'),
-  table: document.getElementById('tableView'),
-  tbody: document.getElementById('tableBody'),
-  cards: document.getElementById('cardsView'),
-  viewTableBtn: document.getElementById('viewTableBtn'),
-  viewCardsBtn: document.getElementById('viewCardsBtn')
-};
-
-function hookControls(){
-  el.search.addEventListener('input', debounce(applyFilters, 150));
-  el.cat.addEventListener('change', applyFilters);
-  el.stat.addEventListener('change', applyFilters);
-  el.range.addEventListener('change', applyFilters);
-  el.sort.addEventListener('change', applyFilters);
-
-  el.viewTableBtn.addEventListener('click', () => setView('table'));
-  el.viewCardsBtn.addEventListener('click', () => setView('cards'));
-}
-
 function hydrateFacets(data){
   const cats = Array.from(new Set(data.map(d => d.category).filter(Boolean))).sort();
   const stats = Array.from(new Set(data.map(d => d.status).filter(Boolean))).sort();
 
-  // Category
-  el.cat.innerHTML = `<option value="all">All categories</option>` + 
+  el.cat.innerHTML = `<option value="all">All categories</option>` +
     cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
 
-  // Status
-  el.stat.innerHTML = `<option value="all">All status</option>` + 
+  el.stat.innerHTML = `<option value="all">All status</option>` +
     stats.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+}
+
+/* =========================================
+   CONTROLS
+   ========================================= */
+function hookControls(){
+  el.search && el.search.addEventListener('input', debounce(applyFilters, 150));
+  el.cat && el.cat.addEventListener('change', applyFilters);
+  el.stat && el.stat.addEventListener('change', applyFilters);
+  el.range && el.range.addEventListener('change', applyFilters);
+  el.sort && el.sort.addEventListener('change', applyFilters);
+
+  el.viewTableBtn && el.viewTableBtn.addEventListener('click', () => setView('table'));
+  el.viewCardsBtn && el.viewCardsBtn.addEventListener('click', () => setView('cards'));
 }
 
 function setView(mode){
   if(mode === viewMode) return;
   viewMode = mode;
-  el.viewTableBtn.classList.toggle('active', mode==='table');
-  el.viewCardsBtn.classList.toggle('active', mode==='cards');
-  el.table.style.display = mode==='table' ? '' : 'none';
-  el.cards.style.display = mode==='cards' ? '' : 'none';
+  el.viewTableBtn && el.viewTableBtn.classList.toggle('active', mode==='table');
+  el.viewCardsBtn && el.viewCardsBtn.classList.toggle('active', mode==='cards');
+  if (el.table) el.table.style.display = mode==='table' ? '' : 'none';
+  if (el.cards) el.cards.style.display = mode==='cards' ? '' : 'none';
 }
 
-/* ===========================
-   Date Range Helpers
-   =========================== */
+/* =========================================
+   DATE RANGE HELPERS
+   ========================================= */
 function cutoffFromValue(val){
   if(val === 'all') return null;
   const days = parseInt(val, 10);
@@ -252,54 +254,45 @@ function parseRowDate(row){
   return isNaN(d.getTime()) ? null : d;
 }
 
-/* ===========================
-   Core filtering + sorting
-   =========================== */
+/* =========================================
+   FILTER + SORT + RENDER
+   ========================================= */
 function applyFilters(){
-  const q = el.search.value.trim().toLowerCase();
-  const cat = el.cat.value;
-  const stat = el.stat.value;
-  const cutoff = cutoffFromValue(el.range.value);
-  const sort = el.sort.value;
+  const q = (el.search?.value || '').trim().toLowerCase();
+  const cat = el.cat?.value || 'all';
+  const stat = el.stat?.value || 'all';
+  const cutoff = cutoffFromValue(el.range?.value || 'all');
+  const sort = el.sort?.value || 'published-desc';
 
   let filtered = rows.slice();
 
-  // search across title/keyword/category/status
   if(q){
-    filtered = filtered.filter(r => (
-      (r.title && r.title.toLowerCase().includes(q)) ||
-      (r.keyword && r.keyword.toLowerCase().includes(q)) ||
-      (r.category && r.category.toLowerCase().includes(q)) ||
-      (r.status && r.status.toLowerCase().includes(q))
-    ));
+    filtered = filtered.filter(r =>
+      (r.title||'').toLowerCase().includes(q) ||
+      (r.keyword||'').toLowerCase().includes(q) ||
+      (r.category||'').toLowerCase().includes(q) ||
+      (r.status||'').toLowerCase().includes(q)
+    );
   }
-  // category
-  if(cat !== 'all'){
-    filtered = filtered.filter(r => r.category === cat);
-  }
-  // status
-  if(stat !== 'all'){
-    filtered = filtered.filter(r => r.status === stat);
-  }
-  // date range
+  if(cat !== 'all') filtered = filtered.filter(r => r.category === cat);
+  if(stat !== 'all') filtered = filtered.filter(r => r.status === stat);
   if(cutoff){
     filtered = filtered.filter(r => {
       const d = parseRowDate(r);
       return d && d >= cutoff;
     });
   }
-  // sort
+
   filtered.sort((a,b) => {
-    switch(sort){
+    switch (sort){
       case 'published-asc': return cmpDate(a,b);
       case 'published-desc': return cmpDate(b,a);
-      case 'score-asc': return a.score - b.score;
-      case 'score-desc': return b.score - a.score;
+      case 'score-asc': return (a.score||0) - (b.score||0);
+      case 'score-desc': return (b.score||0) - (a.score||0);
       default: return cmpDate(b,a);
     }
   });
 
-  // render
   if(viewMode === 'table') renderTable(filtered); else renderCards(filtered);
 }
 
@@ -311,18 +304,14 @@ function cmpDate(a,b){
   return da - db;
 }
 
-/* ===========================
-   Renderers
-   =========================== */
 function renderTable(data){
   el.tbody.innerHTML = data.map(row => {
     const date = safeDateStr(row.published);
-    const catClass = chipClass(row.category);
     return `
       <tr>
         <td><span class="muted">${escapeHtml(date)}</span></td>
         <td>${escapeHtml(row.title || '')}</td>
-        <td><span class="chip ${catClass}">${escapeHtml(row.category || '')}</span></td>
+        <td><span class="chip">${escapeHtml(row.category || '')}</span></td>
         <td>${escapeHtml(row.keyword || '')}</td>
         <td>${Number(row.score || 0).toFixed(1)}</td>
         <td><span class="badge">${escapeHtml(row.status || '')}</span></td>
@@ -334,11 +323,10 @@ function renderTable(data){
 function renderCards(data){
   el.cards.innerHTML = data.map(row => {
     const date = safeDateStr(row.published);
-    const catClass = chipClass(row.category);
     return `
       <article class="card">
-        <div class="controls-inline" style="justify-content:space-between">
-          <span class="chip ${catClass}">${escapeHtml(row.category || '')}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span class="chip">${escapeHtml(row.category || '')}</span>
           <span class="badge">${escapeHtml(row.status || '')}</span>
         </div>
         <h3>${escapeHtml(row.title || '')}</h3>
@@ -349,27 +337,15 @@ function renderCards(data){
   }).join('');
 }
 
-function chipClass(cat){
-  const c = (cat||'').toLowerCase();
-  if(c.includes('fashion')) return 'fashion';
-  if(c.includes('beauty')) return 'beauty';
-  if(c.includes('wellness')) return 'wellness';
-  return '';
-}
-
+/* =========================================
+   UTILS
+   ========================================= */
 function safeDateStr(v){
   const d = new Date(v);
   if(isNaN(d)) return v || '';
-  // YYYY-MM-DD
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
   return `${y}-${m}-${day}`;
 }
-
-/* ===========================
-   Utils
-   =========================== */
 function escapeHtml(s){
   return String(s ?? '').replace(/[&<>"']/g, m => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -379,3 +355,5 @@ function debounce(fn, delay=150){
   let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), delay); };
 }
 </script>
+</body>
+</html>
