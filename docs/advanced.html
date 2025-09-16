@@ -12,10 +12,12 @@
     --card:#ffffff; --border:#e5e7eb; --pill:#f7f7fb;
     --shadow:0 12px 30px rgba(15,23,42,.06);
 
-    --ink:#1c1c29;  /* mainstream */
-    --peri:#7ea5e3; /* emerging */
-    --mauve:#d4a5c3;/* bubbling */
+    /* Design palette */
+    --ink:#1c1c29;     /* dark for mainstream */
+    --peri:#7ea5e3;    /* periwinkle */
+    --mauve:#d4a5c3;   /* mauve */
 
+    /* header */
     --hdr-bg: linear-gradient(180deg, rgba(250,250,255,.92), rgba(250,250,255,.70));
     --hdr-ring: rgba(2,6,23,.06);
   }
@@ -23,7 +25,7 @@
   body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Inter,Segoe UI,Roboto,Helvetica,Arial}
   a{color:#1f6feb;text-decoration:none}
 
-  /* Header */
+  /* Sticky header */
   .bar{position:sticky;top:0;z-index:20;background:var(--hdr-bg);
     backdrop-filter:saturate(180%) blur(10px); border-bottom:1px solid var(--border)}
   .bar-inner{max-width:1120px;margin:0 auto;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -34,7 +36,7 @@
   }
   .btn{font-weight:600}
   .btn:active{transform:translateY(1px)}
-  .select{width:190px}
+  .select{width:180px}
   .spacer{flex:1}
 
   /* Layout */
@@ -46,7 +48,8 @@
   .legend{color:var(--muted);font-size:12px;margin-top:6px}
   .mini{max-width:100%}
   .mini.thin{height:86px !important}
-  .mini.short{height:160px !important}
+  .mini.short{height:180px !important}
+  .mini.intent{height:120px !important} /* compact search-intent bar */
   .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
   .small{font-size:12px;color:var(--muted)}
 
@@ -58,36 +61,26 @@
     box-shadow: inset 0 0 0 2px var(--hdr-ring);
   }
 
-  /* Lists with scroll */
-  ul.list{list-style:none; padding:0; margin:8px 0 0; max-height:260px; overflow:auto}
+  ul.list{list-style:none; padding:0; margin:8px 0 0; max-height:320px; overflow:auto}
   ul.list li{display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed var(--border)}
   .muted{color:var(--muted)}
 
-  /* Executive summary */
-  .summary{border:1px solid var(--border); background:#fcfcfd; border-radius:16px; padding:14px}
+  /* Summary card */
+  .summary{padding:14px;border:1px solid var(--border);border-radius:16px;background:#fbfbff}
   .summary h3{margin:0 0 10px 0}
-  .bul{display:grid; gap:10px}
-  .bul p{margin:0; display:flex; gap:10px; align-items:flex-start}
-  .dot{width:10px; height:10px; border-radius:999px; background:#3b82f6; margin-top:6px}
-
-  /* Make horizontal bars readable */
-  #chartRisers{ height: 360px; }
+  .summary ul{margin:0;padding-left:0;list-style:none}
+  .summary li{margin:10px 0;display:flex;gap:10px}
+  .dot{width:10px;height:10px;border-radius:999px;background:#3b82f6;margin-top:6px}
+  
+  /* Inline legend for intent */
+  .intent-legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px}
+  .swatch{width:14px;height:10px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:middle}
 </style>
 
 <div class="bar">
   <div class="bar-inner">
     <a class="btn" href="./">← Signals list</a>
     <div class="title">Advanced Analytics</div>
-
-    <!-- Time window (dates removed) -->
-    <select id="quick" class="select">
-      <option value="">All time</option>
-      <option value="7">Last 7 days</option>
-      <option value="30">Last 30 days</option>
-      <option value="90">Last 90 days</option>
-      <option value="180">Last 180 days</option>
-      <option value="365">Last year</option>
-    </select>
 
     <select id="cat" class="select">
       <option value="">All categories</option>
@@ -97,7 +90,15 @@
       <option value="">All status</option>
       <option>emerging</option><option>bubbling</option><option>mainstream</option>
     </select>
-
+    <!-- One time-window selector only -->
+    <select id="quick" class="select">
+      <option value="">All time</option>
+      <option value="7">Last 7 days</option>
+      <option value="30">Last 30 days</option>
+      <option value="90">Last 90 days</option>
+      <option value="180">Last 180 days</option>
+      <option value="365">Last year</option>
+    </select>
     <button id="clear" class="btn">Clear</button>
     <span class="spacer"></span>
     <label class="small">Filter signals…
@@ -107,7 +108,7 @@
 </div>
 
 <div class="wrap">
-  <!-- Row 1: Top signals + details -->
+  <!-- Row 1: Top signals + details (status-mix removed; more room for intent) -->
   <div class="grid two">
     <div class="card">
       <h3 style="margin:4px 0 8px 0">Top signals (Top 30)</h3>
@@ -124,9 +125,10 @@
         <a class="btn" id="openList" target="_blank" rel="noopener">Open in list</a>
       </div>
 
-      <!-- Search intent only (compact, readable legend) -->
-      <h4 class="small" style="margin-top:2px">Search intent (GSC)</h4>
-      <canvas id="chartIntent" class="mini short"></canvas>
+      <!-- Search intent: compact + custom legend -->
+      <h4 class="small" style="margin-top:6px">Search intent (GSC)</h4>
+      <canvas id="chartIntent" class="mini intent"></canvas>
+      <div id="intentLegendRow" class="legend intent-legend"></div>
       <div id="intentMeta" class="legend"></div>
 
       <!-- Questions + Answer gap -->
@@ -136,9 +138,9 @@
       </div>
       <ul id="qList" class="list"></ul>
 
-      <!-- Articles (scrollable) -->
+      <!-- Articles (scrollable; generous height) -->
       <h4 class="small" style="margin-top:6px">Latest articles</h4>
-      <ul id="kwList" class="list"></ul>
+      <ul id="kwList" class="list" style="max-height:340px"></ul>
     </div>
   </div>
 
@@ -146,27 +148,27 @@
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <h3 style="margin:4px 0 8px 0">Fastest-rising signals (current vs previous)</h3>
-      <canvas id="chartRisers" class="mini"></canvas>
+      <canvas id="chartRisers" class="mini short"></canvas>
       <div class="legend">Change in mentions between the current filters and a same-length previous window.</div>
     </div>
 
     <div class="card">
       <h3 style="margin:4px 0 8px 0">Newcomer signals (first appearances)</h3>
-      <ul id="newcomersList" class="list"></ul>
+      <ul id="newcomersList" class="list" style="max-height:360px"></ul>
       <div class="legend">Signals that didn’t appear in the previous window but do appear now.</div>
     </div>
   </div>
 
-  <!-- Row 3: Executive summary (replaces category insight) -->
-  <div class="card" style="margin-top:16px">
-    <div class="summary">
-      <h3>Executive summary</h3>
-      <div id="execSummary" class="bul"></div>
-    </div>
+  <!-- Row 3: Executive summary (replaces Category insight) -->
+  <div class="card summary" style="margin-top:16px">
+    <h3>Executive summary</h3>
+    <ul id="summaryList">
+      <li><span class="dot"></span><span>Pick a signal or adjust filters to see summary.</span></li>
+    </ul>
   </div>
 </div>
 
-<!-- Embedded GSC fallback -->
+<!-- ======= Embedded GSC sample (fallback) ======= -->
 <script type="text/plain" id="embedded-gsc">
 signal,query,impressions,clicks,date
 "longevity","what is glp-1 longevity",1200,60,"2025-09-01"
@@ -182,30 +184,38 @@ signal,query,impressions,clicks,date
 </script>
 
 <script>
-/* ---------- palette ---------- */
-const FASHION_PALETTE = ['#1c1c29','#58506b','#7a7281','#a78fb3','#d4a5c3','#f2b5a8','#f0c38e','#c2d39b','#86c5a6','#6bb7b6','#5aa3c2','#7ea5e3','#b4c2f2','#d7d3f2','#e8e4f8','#efcfe3','#f6d6c3','#e6e2da'];
+/* ---------------- Palette ---------------- */
+const FASHION_PALETTE = [
+  '#1c1c29','#58506b','#7a7281','#a78fb3','#d4a5c3',
+  '#f2b5a8','#f0c38e','#c2d39b','#86c5a6','#6bb7b6',
+  '#5aa3c2','#7ea5e3','#b4c2f2','#d7d3f2','#e8e4f8',
+  '#efcfe3','#f6d6c3','#e6e2da'
+];
 function palette(n){ const out=[]; for(let i=0;i<n;i++) out.push(FASHION_PALETTE[i%FASHION_PALETTE.length]); return out; }
+
 function getCSS(name, fallback){ const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v||fallback; }
 const COLORS_STATUS = { emerging:getCSS('--peri','#7ea5e3'), bubbling:getCSS('--mauve','#d4a5c3'), mainstream:getCSS('--ink','#1c1c29') };
 
-/* ---------- helpers ---------- */
+/* ---------------- Helpers ---------------- */
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function hostOf(u){ try{ return new URL(u).host.replace(/^www\./,''); }catch{return ""; } }
 function inRange(iso, from, to){
-  const t=Date.parse(iso||""); if(isNaN(t)) return false;
-  if(from && t < new Date(from).setUTCHours(0,0,0,0)) return false;
-  if(to   && t > new Date(to).setUTCHours(23,59,59,999)) return false;
+  const t = Date.parse(iso||""); if(isNaN(t)) return false;
+  if(from && t < from) return false;
+  if(to   && t > to)   return false;
   return true;
 }
 function parseCSV(text){ return Papa.parse(text,{header:true,skipEmptyLines:true}).data; }
 async function loadMaybe(url, fallbackId){
-  try{ if(!/^https?:/.test(location.protocol)) throw new Error('file');
-    const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error('bad'); const t=await r.text(); const rows=parseCSV(t); if(rows.length) return rows;
+  try{
+    if(!/^https?:/.test(location.protocol)) throw new Error('file');
+    const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error('bad');
+    const t=await r.text(); const rows=parseCSV(t); if(rows.length) return rows;
   }catch(e){}
   const emb=document.getElementById(fallbackId)?.textContent?.trim()||''; return parseCSV(emb);
 }
 
-/* ---------- normalization ---------- */
+/* ---------------- Normalization ---------------- */
 const KW_MAP = new Map([
   ['anti aging','longevity'], ['anti-ageing','longevity'], ['anti ageing','longevity'],
   ['retinol routine','retinoid routines'], ['skin cycling','retinoid routines'],
@@ -227,79 +237,84 @@ function normalizeKw(raw){
 }
 function getKw(r){ return normalizeKw(r.primary_keyword||r.keyword||''); }
 
-/* ---------- state & refs ---------- */
+/* ---------------- State ---------------- */
 const TOP_LIMIT = 30;
 let rowsAll=[], gscAll=[];
 let selectedKw = "";
-let charts = {};
-
-const els = {
-  quick: byId('quick'), cat:byId('cat'), stat:byId('stat'), clear:byId('clear'),
+let charts={};
+const els={
+  cat:byId('cat'), stat:byId('stat'), quick:byId('quick'), clear:byId('clear'),
   kwSearch:byId('kwSearch'),
   chartSignals:byId('chartSignals'),
   kwTitle:byId('kwTitle'),
   kpiRow:byId('kpiRow'), kpiTotal:byId('kpiTotal'), kpiAvg:byId('kpiAvg'), kpiCat:byId('kpiCat'),
   openList:byId('openList'), kwList:byId('kwList'),
-  chartIntent:byId('chartIntent'), intentMeta:byId('intentMeta'), gapBadge:byId('gapBadge'), qList:byId('qList'),
+  chartIntent:byId('chartIntent'), intentLegendRow:byId('intentLegendRow'), intentMeta:byId('intentMeta'), gapBadge:byId('gapBadge'), qList:byId('qList'),
   chartRisers:byId('chartRisers'), newcomersList:byId('newcomersList'),
-  execSummary:byId('execSummary')
+  summaryList:byId('summaryList')
 };
 function byId(id){ return document.getElementById(id); }
 
-/* ---------- inputs + window ---------- */
+/* ---------------- Inputs & windowing ---------------- */
+function timeBoundsFromQuick(){
+  const days=parseInt(els.quick.value)||0;
+  if(!days) return {from:null,to:null};
+  const to = new Date().setUTCHours(23,59,59,999);
+  const from = new Date(Date.now()-days*86400000).setUTCHours(0,0,0,0);
+  return {from, to};
+}
 function getFiltered(){
-  const c=els.cat.value,s=els.stat.value;
+  const c=els.cat.value,s=(els.stat.value||'').toLowerCase(), q=els.kwSearch.value.trim();
+  const {from,to}=timeBoundsFromQuick();
   return rowsAll.filter(r=>{
     if(c && r.category!==c) return false;
     if(s && (r.status||'').toLowerCase()!==s) return false;
+    if(from||to){
+      const t=Date.parse(r.published||""); if(isNaN(t)) return false;
+      if(!inRange(r.published, from, to)) return false;
+    }
+    if(q){
+      const hay=[r.title||"", r.primary_keyword||"", r.category||"", (r.status||"").toLowerCase()].join(" ").toLowerCase();
+      if(!q.split(/\s+/).every(t=>hay.includes(t.toLowerCase()))) return false;
+    }
     return true;
-  }).filter(r=>{
-    const q = els.kwSearch.value.trim();
-    if(!q) return true;
-    const hay = [r.title||"", r.primary_keyword||"", r.category||"", (r.status||"").toLowerCase()].join(" ").toLowerCase();
-    return q.toLowerCase().split(/\s+/).every(t => hay.includes(t));
   });
 }
 function getWindowBounds(){
-  const d = parseInt(els.quick.value)||0;
-  if(!d){ // all time
-    const all = rowsAll.map(r => Date.parse(r.published||"")).filter(x=>!isNaN(x));
-    const min = all.length ? new Date(Math.min(...all)) : new Date('2000-01-01');
-    const max = all.length ? new Date(Math.max(...all)) : new Date();
-    const lenMs = Math.max(30, (max-min)/86400000|0) * 86400000;
-    const prevTo = new Date(min.getTime()-1);
-    const prevFrom = new Date(prevTo.getTime()-lenMs+1);
-    return {curFrom:min, curTo:max, prevFrom, prevTo};
-  }
-  const today=new Date();
-  const curFrom=new Date(today.getTime()-d*86400000);
-  const curTo=today;
-  const lenMs=d*86400000;
-  const prevTo=new Date(curFrom.getTime()-1);
-  const prevFrom=new Date(prevTo.getTime()-lenMs+1);
+  // Same-length previous window based on quick selector (default 90d)
+  const d = parseInt(els.quick.value)||90;
+  const curTo = new Date().setUTCHours(23,59,59,999);
+  const curFrom = new Date(Date.now()-d*86400000).setUTCHours(0,0,0,0);
+  const prevTo  = new Date(curFrom-1).setUTCHours(23,59,59,999);
+  const prevFrom= new Date(prevTo - (curTo-curFrom)).setUTCHours(0,0,0,0);
   return {curFrom,curTo,prevFrom,prevTo};
 }
-function rowsInRange(rows, from, to){
-  const A=from.toISOString().slice(0,10), B=to.toISOString().slice(0,10);
-  return rows.filter(r=>inRange(r.published,A,B));
+function rowsInRange(rows, fromMs, toMs){
+  return rows.filter(r=>{
+    const t=Date.parse(r.published||""); if(isNaN(t)) return false;
+    return (!fromMs || t>=fromMs) && (!toMs || t<=toMs);
+  });
 }
-els.quick.onchange = render;
+els.quick.onchange=render;
+els.clear.onclick=()=>{ els.cat.value=""; els.stat.value=""; els.quick.value=""; els.kwSearch.value=""; selectedKw=""; render(); };
 ['cat','stat'].forEach(id=> els[id].onchange=render);
-els.kwSearch.oninput = ()=>{ selectedKw=""; render(); };
-els.clear.onclick = ()=>{ els.quick.value=""; els.cat.value=""; els.stat.value=""; els.kwSearch.value=""; selectedKw=""; render(); };
+els.kwSearch.oninput=()=> render();
+window.addEventListener('resize',()=> adjustHeight());
 
-/* ---------- chart utils ---------- */
+/* ---------------- Charts ---------------- */
 function makeOrUpdate(id,type,data,opt){
-  const ctx = byId(id).getContext('2d');
+  const ctx=byId(id).getContext('2d');
   if(charts[id]){ charts[id].data=data; charts[id].options=opt; charts[id].update(); return charts[id]; }
-  charts[id]=new Chart(ctx,{type,data,options:opt}); return charts[id];
+  charts[id]=new Chart(ctx,{type,data,options:opt});
+  return charts[id];
 }
-function setChartHeight(el, n, row=28, min=240, max=900){
-  const h = Math.min(max, Math.max(min, row*n + 60));
-  el.style.height = h + 'px';
+function adjustHeight(n=0){
+  const count = n || (charts.chartSignals?.data?.labels?.length||0);
+  const h = Math.min(1400, Math.max(240, 22*count + 40));
+  els.chartSignals.style.height = h+"px";
 }
 
-/* ---------- computations ---------- */
+/* ---------------- Computations ---------------- */
 function topSignals(rows, limit, filterTxt){
   const m=new Map(); rows.forEach(r=>{ const k=getKw(r); if(!k) return; m.set(k,(m.get(k)||0)+1); });
   let arr=[...m.entries()];
@@ -310,23 +325,34 @@ function topSignals(rows, limit, filterTxt){
 function rowsForKeyword(rows, kw){ const t=normalizeKw(kw); return rows.filter(r=> getKw(r)===t); }
 function avgScore(rows){ const nums=rows.map(r=>+r.trend_score||0).filter(n=>!isNaN(n)); if(!nums.length) return 0; return Math.round( (nums.reduce((a,b)=>a+b,0)/nums.length)*100)/100; }
 function topCat(rows){ const m=new Map(); rows.forEach(r=>{ if(r.category) m.set(r.category,(m.get(r.category)||0)+1); }); let best="",cnt=-1; m.forEach((v,k)=>{ if(v>cnt){cnt=v;best=k;} }); return best||"–"; }
+function statusMixByCategory(rows){
+  const cats=['fashion','beauty','wellness'], stats=['emerging','bubbling','mainstream'];
+  const table=cats.map(c=>{
+    const sub=rows.filter(r=>r.category===c);
+    const counts=stats.map(s=> sub.filter(r=>(r.status||'').toLowerCase()===s).length);
+    const tot=counts.reduce((a,b)=>a+b,0)||1;
+    return {c, counts, shareMain:counts[2]/tot, shareEmer:counts[0]/tot};
+  });
+  return table;
+}
 
+/* Momentum & newcomers */
 function countKeywords(rows){ const m=new Map(); rows.forEach(r=>{ const k=getKw(r); if(!k) return; m.set(k,(m.get(k)||0)+1); }); return m; }
 function fastestRisers(curRows,prevRows,top=12){
   const cur=countKeywords(curRows), prev=countKeywords(prevRows);
-  const set=new Set([...cur.keys(),...prev.keys()]), out=[];
-  set.forEach(k=>{ const c=cur.get(k)||0, p=prev.get(k)||0; const d=c-p; if(c===0) return; out.push({k,delta:d,c,p}); });
-  out.sort((a,b)=> b.delta - a.delta || b.c - a.c);
-  return out.slice(0,top);
+  const set=new Set([...cur.keys(),...prev.keys()]); const arr=[];
+  set.forEach(k=>{ const c=cur.get(k)||0, p=prev.get(k)||0; const d=c-p; if(c===0) return; arr.push({k,delta:d,c,p}); });
+  arr.sort((a,b)=> b.delta - a.delta || b.c - a.c);
+  return arr.slice(0,top);
 }
-function newcomerKeywords(curRows,prevRows,limit=20){
+function newcomerKeywords(curRows,prevRows,limit=30){ // show more
   const cur=countKeywords(curRows), prev=countKeywords(prevRows), out=[];
   cur.forEach((c,k)=>{ if(c>0 && !prev.has(k)) out.push({k,c}); });
   out.sort((a,b)=> b.c - a.c);
   return out.slice(0,limit);
 }
 
-/* ---------- GSC / intents ---------- */
+/* ----------- GSC: intent & questions ----------- */
 const INTENTS = [
   {key:'what_is',  re:/\bwhat(\s+is|’s|'s)\b/i, label:'what is'},
   {key:'how_to',   re:/\bhow\s+to\b/i, label:'how to'},
@@ -335,149 +361,143 @@ const INTENTS = [
   {key:'review',   re:/\breview|reviews|rating|ratings\b/i, label:'review'},
   {key:'near_me',  re:/\bnear\s+me\b/i, label:'near me'}
 ];
-function classifyIntent(q){ for(const t of INTENTS){ if(t.re.test(q)) return t.key; } return 'other'; }
-function gscForSignal(signal){ const s=normalizeKw(signal); return gscAll.filter(r => normalizeKw(r.signal||r.keyword||'')===s); }
+function classifyIntent(q){
+  for(const t of INTENTS){ if(t.re.test(q)) return t.key; }
+  return 'other';
+}
+function gscForSignal(signal){
+  const s=normalizeKw(signal);
+  return gscAll.filter(r => normalizeKw(r.signal||r.keyword||'')===s);
+}
 function intentStack(rows){
-  const buckets={what_is:0,how_to:0,best:0,vs:0,review:0,near_me:0,other:0}; let tot=0;
-  rows.forEach(r=>{ const imp=+r.impressions||0; const q=String(r.query||''); const key=classifyIntent(q); buckets[key]+=imp; tot+=imp; });
+  const buckets={what_is:0,how_to:0,best:0,vs:0,review:0,near_me:0,other:0};
+  let tot=0;
+  rows.forEach(r=>{
+    const imp=+r.impressions||0; const q=String(r.query||'');
+    const key=classifyIntent(q); buckets[key]+=imp; tot+=imp;
+  });
   const pct={}; Object.keys(buckets).forEach(k=> pct[k]= tot? Math.round(buckets[k]/tot*100):0 );
   return {buckets,pct,total:tot};
 }
 function topQuestions(rows, limit=10){
-  const qs = rows.filter(r => /\b(what|how|why|can|should|does|is|are)\b/i.test(r.query||''))
-                 .sort((a,b)=> (+b.impressions||0) - (+a.impressions||0))
-                 .slice(0,limit).map(r=>({q:r.query, imp:+r.impressions||0}));
+  const qs = rows
+    .filter(r => /\b(what|how|why|can|should|does|is|are)\b/i.test(r.query||''))
+    .sort((a,b)=> (+b.impressions||0) - (+a.impressions||0))
+    .slice(0,limit)
+    .map(r=>({q:r.query, imp:+r.impressions||0}));
   return qs;
 }
 function answerGapPct(signalRows, gscRows){
   const totImp = gscRows.reduce((s,r)=> s + (+r.impressions||0), 0) || 0;
-  const qImp   = gscRows.filter(r => /\b(what|how|why|can|should|does|is|are)\b/i.test(r.query||''))
-                        .reduce((s,r)=> s + (+r.impressions||0), 0);
+  const qImp   = gscRows.filter(r => /\b(what|how|why|can|should|does|is|are)\b/i.test(r.query||'')).reduce((s,r)=> s + (+r.impressions||0), 0);
   const questionShare = totImp ? (qImp/totImp*100) : 0;
+
+  // crude “answer” share: article titles that look explanatory
   const ex = /(?:how|why|what|guide|explained|q&a|faq)/i;
   const titles = signalRows.map(r=> String(r.title||''));
   const answered = titles.filter(t=> ex.test(t)).length;
   const answerShare = titles.length ? (answered/titles.length*100) : 0;
+
   return Math.max(0, Math.round(questionShare - answerShare));
 }
 
-/* ---------- executive summary ---------- */
-function writeExecSummary(rows, curRows, prevRows){
-  const container = els.execSummary;
-  const top = topSignals(rows, 3);
-  const risers = fastestRisers(curRows, prevRows, 3);
-  const newbies = newcomerKeywords(curRows, prevRows, 3);
+/* ---------------- Summary ---------------- */
+function writeSummary(rows, selectedKw, risers, newbies){
+  const list = els.summaryList;
+  const top3 = topSignals(rows, 3).map(([k,v]) => `${k} (${v})`).join(', ') || '—';
 
-  // If a specific signal is selected, use its GSC context
-  const focusKw = selectedKw || (top[0]?.[0] || '');
-  const rkw = focusKw ? rowsForKeyword(rows, focusKw) : [];
-  const gscRows = focusKw ? gscForSignal(focusKw) : [];
-  const stack = intentStack(gscRows);
-  const domIntentKey = Object.entries(stack.pct).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
-  const domIntentLabel = INTENTS.find(i=>i.key===domIntentKey)?.label || '—';
-  const gap = gscRows.length ? answerGapPct(rkw, gscRows) : 0;
+  // Category rolls for context
+  const byCat = statusMixByCategory(rows);
+  const mostEmer = byCat.slice().sort((a,b)=> b.shareEmer - a.shareEmer)[0];
+  const mostMain = byCat.slice().sort((a,b)=> b.shareMain - a.shareMain)[0];
 
-  // Category “emerging/mainstream” skew (simple share)
-  function shareFor(status){
-    const cats=['fashion','beauty','wellness'];
-    const shares = cats.map(c=>{
-      const inCat = rows.filter(r=>r.category===c);
-      const num = inCat.filter(r => (r.status||'').toLowerCase()===status).length;
-      const den = inCat.length||1; return {c, pct: Math.round(num/den*100)};
-    });
-    shares.sort((a,b)=>b.pct-a.pct);
-    return shares[0] || {c:'—', pct:0};
+  let kwLine = 'Pick a signal to see search intent.';
+  if(selectedKw){
+    const gscRows = gscForSignal(selectedKw);
+    const stack = intentStack(gscRows);
+    const dom = Object.entries(stack.pct).sort((a,b)=>b[1]-a[1])[0];
+    kwLine = `For <b>${selectedKw}</b>, dominant search intent: <b>${(INTENTS.find(t=>t.key===dom[0])?.label)||dom[0]}</b> (${dom[1]}%). Answer Gap ≈ <b>${answerGapPct(rowsForKeyword(rows,selectedKw), gscRows)}%</b>.`;
   }
-  const mostEmer = shareFor('emerging');
-  const mostMain = shareFor('mainstream');
 
-  function b(txt){ return `<b>${txt}</b>` }
-  function item(html){ return `<p><span class="dot"></span><span>${html}</span></p>` }
+  const rise3 = risers.slice(0,3).map(r=>`${r.k} (+${r.delta})`).join(', ') || '—';
+  const new3  = newbies.slice(0,3).map(r=>`${r.k} (+${r.c})`).join(', ') || '—';
 
-  container.innerHTML = [
-    item(`For ${focusKw ? b(focusKw) : 'overall'}, dominant search intent: ${b(domIntentLabel)} (${stack.pct[domIntentKey]||0}%). Answer Gap ≈ ${b(gap + '%')}.`),
-    top.length ? item(`Top volume signals: ${top.map(([k,v])=> `${b(k)} (${v})`).join(', ')}.`) : '',
-    risers.length ? item(`Fastest risers vs previous window: ${risers.map(r=> `${b(r.k)} (${r.delta>0?'+':''}${r.delta})`).join(', ')}.`) : '',
-    newbies.length ? item(`Newcomers: ${newbies.map(n=> `${b(n.k)} (+${n.c})`).join(', ')}.`) : '',
-    item(`Most “emerging” category right now: ${b(mostEmer.c)} (${mostEmer.pct}% emerging).`),
-    item(`Most “mainstream” category: ${b(mostMain.c)} (${mostMain.pct}% mainstream).`)
-  ].filter(Boolean).join('');
+  list.innerHTML = `
+    <li><span class="dot"></span><span>${kwLine}</span></li>
+    <li><span class="dot"></span><span>Top volume signals: <b>${top3}</b>.</span></li>
+    <li><span class="dot"></span><span>Fastest risers vs previous window: <b>${rise3}</b>.</span></li>
+    <li><span class="dot"></span><span>Newcomers: <b>${new3}</b>.</span></li>
+    <li><span class="dot"></span><span>Most “emerging” category now: <b>${mostEmer?.c||'—'}</b> (${Math.round((mostEmer?.shareEmer||0)*100)}% emerging).</span></li>
+    <li><span class="dot"></span><span>Most “mainstream” category: <b>${mostMain?.c||'—'}</b> (${Math.round((mostMain?.shareMain||0)*100)}% mainstream).</span></li>`;
 }
 
-/* ---------- render ---------- */
+/* ---------------- Render ---------------- */
 function render(){
-  const rows = getFiltered();
+  const rows=getFiltered();
 
-  // Top signals (Top 30)
+  // Top signals
   const top = topSignals(rows, TOP_LIMIT, els.kwSearch.value.trim());
-  // autosize
-  (function adjustSignalsHeight(){
-    const n = top.length;
-    const h = Math.min(1400, Math.max(240, 22*n + 40));
-    els.chartSignals.style.height = h+"px";
-  })();
-  const colors = palette(top.length);
+  adjustHeight(top.length);
+  const colors=palette(top.length);
   const sigChart = makeOrUpdate('chartSignals','bar',{
     labels: top.map(([k])=>k),
-    datasets:[{label:'count', data: top.map(([,v])=>v), backgroundColor: colors, borderRadius:8, barThickness:16 }]
+    datasets:[{label:'count', data: top.map(([,v])=>v), backgroundColor:colors, borderRadius:8, barThickness:16 }]
   },{
-    responsive:true, indexAxis:'y',
+    responsive:true, indexAxis:'y', maintainAspectRatio:false,
     plugins:{legend:{display:false}},
     scales:{x:{beginAtZero:true}}
   });
-  charts.chartSignals = sigChart;
-  sigChart.options.onClick = (e)=>{
-    const p = sigChart.getElementsAtEventForMode(e,'nearest',{intersect:true},true);
-    if(!p.length) return;
-    const idx = p[0].index;
-    selectedKw = sigChart.data.labels[idx];
-    renderDetails();         // update details
-    renderExec();            // and summary
+  charts.chartSignals=sigChart;
+  sigChart.options.onClick=(e)=>{
+    const p=sigChart.getElementsAtEventForMode(e,'nearest',{intersect:true},true);
+    if(!p.length) return; const idx=p[0].index; selectedKw=sigChart.data.labels[idx]; renderDetails(rows); // pass filtered rows
   };
-  if(!selectedKw && top.length){ selectedKw = top[0][0]; }
-  if(selectedKw) renderDetails(); else resetDetails();
+  if(!selectedKw && top.length) selectedKw = top[0][0];
+  if(selectedKw) renderDetails(rows); else resetDetails();
 
-  // Windowed comparisons
-  const {curFrom, curTo, prevFrom, prevTo} = getWindowBounds();
-  const curRows  = rowsInRange(rowsAll, curFrom, curTo);
-  const prevRows = rowsInRange(rowsAll, prevFrom, prevTo);
+  // Risers / newcomers
+  const {curFrom,curTo,prevFrom,prevTo}=getWindowBounds();
+  const curRows=rowsInRange(rowsAll,curFrom,curTo);
+  const prevRows=rowsInRange(rowsAll,prevFrom,prevTo);
 
-  // Fastest risers (horizontal, readable)
-  const risers = fastestRisers(curRows, prevRows, 12);
-  setChartHeight(els.chartRisers, risers.length, 28);
+  const risers=fastestRisers(curRows,prevRows,12);
   makeOrUpdate('chartRisers','bar',{
-    labels: risers.map(r=>r.k),
-    datasets:[{label:'Δ vs previous', data: risers.map(r=>r.delta), backgroundColor: palette(risers.length), borderRadius:8 }]
+    labels:risers.map(r=>r.k),
+    datasets:[{label:'Δ vs previous', data:risers.map(r=>r.delta), backgroundColor:palette(risers.length), borderRadius:8}]
   },{
-    indexAxis:'y',
+    maintainAspectRatio:false,
     plugins:{legend:{display:false}},
-    scales:{x:{beginAtZero:true}}
+    scales:{
+      x:{ticks:{maxRotation:0,minRotation:0,autoSkip:true}},
+      y:{beginAtZero:true}
+    }
   });
 
-  // Newcomers list
-  const newbies = newcomerKeywords(curRows, prevRows, 20);
-  els.newcomersList.innerHTML =
-    newbies.map(n => `<li><span>${n.k}</span><span class="muted">+${n.c}</span></li>`).join('') ||
-    `<li class="muted">No newcomers in this window.</li>`;
+  const newbies=newcomerKeywords(curRows,prevRows,30);
+  els.newcomersList.innerHTML = newbies.map(n=>`<li><span>${n.k}</span><span class="muted">+${n.c}</span></li>`).join('') || `<li class="muted">No newcomers in this window.</li>`;
 
-  // Exec summary (always recompute with filters)
-  function renderExec(){ writeExecSummary(rows, curRows, prevRows); }
-  renderExec();
+  // Executive summary (updates with filters & current selection)
+  writeSummary(rows, selectedKw, risers, newbies);
 }
 
-/* ---------- details card ---------- */
 function resetDetails(){
   els.kwTitle.textContent='(select a signal)';
   els.kpiRow.style.display='none';
   els.kwList.innerHTML=''; els.qList.innerHTML='';
   els.intentMeta.textContent=''; els.gapBadge.textContent='Answer Gap: –';
   makeOrUpdate('chartIntent','bar',{labels:[],datasets:[]},{});
+  els.intentLegendRow.innerHTML='';
 }
-function renderDetails(){
+
+function buildIntentLegend(labels, colors){
+  els.intentLegendRow.innerHTML = labels.map((label,i)=>`<span><span class="swatch" style="background:${colors[i]}"></span>${label}</span>`).join('');
+}
+
+function renderDetails(filteredRows){
   if(!selectedKw){ resetDetails(); return; }
   els.kwTitle.textContent = selectedKw;
 
-  const rows=getFiltered();
+  const rows = filteredRows || getFiltered();
   const rkw=rowsForKeyword(rows,selectedKw);
 
   // KPIs
@@ -488,38 +508,44 @@ function renderDetails(){
   p.set('q',selectedKw);
   if(els.cat.value) p.set('cat',els.cat.value);
   if(els.stat.value) p.set('stat',els.stat.value);
-  if(els.quick.value) p.set('days',els.quick.value);
+  if(els.quick.value) p.set('quick',els.quick.value);
   p.set('view','table');
   els.openList.href='./?'+p.toString();
   els.kpiRow.style.display='flex';
 
-  // Intent stack
+  // ---------- Intent stack & questions ----------
   const gscRows = gscForSignal(selectedKw);
   const stack = intentStack(gscRows);
   const order = ['what_is','how_to','best','vs','review','near_me','other'];
-  // shorter chart to keep legend visible
-  els.chartIntent.style.height = '140px';
+  const labels = order.map(k => INTENTS.find(t=>t.key===k)?.label || (k==='other'?'other':k));
+  const colors = palette(order.length);
+
   makeOrUpdate('chartIntent','bar',{
     labels:['intent'],
     datasets: order.map((k,i)=>({
-      label: INTENTS.find(t=>t.key===k)?.label || (k==='other'?'other':k),
+      label: labels[i],
       data:[stack.pct[k]||0],
-      backgroundColor: palette(order.length)[i],
+      backgroundColor: colors[i],
       borderRadius:6
     }))
   },{
-    indexAxis:'y',
     maintainAspectRatio:false,
-    layout:{padding:{bottom:6}},
+    indexAxis:'y',
     scales:{x:{stacked:true,beginAtZero:true,max:100}, y:{stacked:true,ticks:{display:false},grid:{display:false}}},
     plugins:{
-      legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'rectRounded', boxWidth:10, boxHeight:10, padding:12, font:{size:12}}},
-      tooltip:{callbacks:{label:(c)=> `${c.raw}%`}}  // % only
+      legend:{display:false},
+      tooltip:{
+        callbacks:{
+          title: ()=> '',
+          // Only show % on hover (no label text)
+          label:(c)=> `${Math.round(c.parsed.x)}%`
+        }
+      }
     }
   });
+  buildIntentLegend(labels, colors);
   els.intentMeta.textContent = stack.total ? `${stack.total.toLocaleString()} impressions across queries` : 'No GSC rows for this signal (using sample or none).';
 
-  // Questions
   const qs = topQuestions(gscRows, 12);
   els.qList.innerHTML = qs.length
     ? qs.map(r=>{
@@ -528,20 +554,25 @@ function renderDetails(){
       }).join('')
     : `<li class="muted">No question-type queries found.</li>`;
 
-  // Gap
   const gap = answerGapPct(rkw, gscRows);
   els.gapBadge.textContent = `Answer Gap: ${gap}%`;
 
-  // Articles (latest 12; scroll container takes care of overflow)
-  const latest = rkw.slice().sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0)).slice(0,12);
+  // latest 20 articles (scrollable)
+  const latest = rkw.slice().sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0)).slice(0,20);
   els.kwList.innerHTML = latest.map(r=>{
     const d=(r.published||"").slice(0,10);
     const t=r.title||"(untitled)";
     return `<li><a href="${r.link||'#'}" target="_blank" rel="noopener">${t}</a><span class="muted">${d}</span></li>`;
   }).join("") || `<li class="muted">No recent articles.</li>`;
+
+  // Refresh summary to reflect the newly selected kw
+  const {curFrom,curTo,prevFrom,prevTo}=getWindowBounds();
+  const risers=fastestRisers(rowsInRange(rowsAll,curFrom,curTo),rowsInRange(rowsAll,prevFrom,prevTo),12);
+  const newbies=newcomerKeywords(rowsInRange(rowsAll,curFrom,curTo),rowsInRange(rowsAll,prevFrom,prevTo),30);
+  writeSummary(rows, selectedKw, risers, newbies);
 }
 
-/* ---------- boot ---------- */
+/* ---------------- Boot ---------------- */
 (async function(){
   const bust=new Date().toISOString().slice(0,10);
   const [sigRows, gscRows] = await Promise.all([
@@ -550,6 +581,9 @@ function renderDetails(){
   ]);
   rowsAll = sigRows || [];
   gscAll  = gscRows || [];
+
   render();
 })();
 </script>
+
+<!-- Optional: if you want a signals sample fallback, paste it here with id="embedded-signals" -->
