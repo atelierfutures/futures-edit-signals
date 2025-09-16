@@ -39,6 +39,15 @@
   .why{font-size:12px;color:#4b5563}
   .linkline a{font-weight:600;text-decoration:none;color:#111827}
   .linkline small{color:var(--muted)}
+  .notes{border:1px solid var(--border);border-radius:12px;padding:10px;background:#fcfcfd;margin-top:10px}
+  .notes .flag{display:flex;align-items:flex-start;gap:8px;margin:6px 0}
+  .flag .dot{width:10px;height:10px;border-radius:999px;margin-top:5px}
+  .flag.warn .dot{background:#f59e0b}
+  .flag.info .dot{background:#3b82f6}
+  .flag.ok .dot{background:#10b981}
+  .flag .txt{font-size:13px;color:#374151}
+  .method{font-size:13px;color:#374151}
+  .method li{margin:6px 0}
 </style>
 
 <header>
@@ -111,6 +120,11 @@ Trend = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
         <div class="box"><div class="muted">Last seen</div><b id="kpi-lastseen">–</b></div>
       </div>
 
+      <div class="notes" id="guardrails">
+        <h3 style="margin:0 0 6px 0;">Guardrails & context</h3>
+        <div id="guard-list"></div>
+      </div>
+
       <div class="divider"></div>
       <h3>Related Articles</h3>
       <div class="row" style="gap:8px;margin-bottom:6px;">
@@ -176,6 +190,20 @@ CrossIndustryₙ = (# of verticals among {Fashion, Beauty, Wellness} / 3) × 100
     </div>
     <div class="chart-wrap-sm"><canvas id="tagsBarChart"></canvas></div>
     <div id="tags-cloud" class="tags-cloud" style="margin-top:10px;"></div>
+  </section>
+
+  <!-- 5) Methodology & Caveats (Style Analytics inspired) -->
+  <section class="card">
+    <h2 style="margin:0 0 8px 0;">Methodology & Caveats</h2>
+    <ul class="method">
+      <li><b>Data is subjective.</b> We score/curate beyond raw volume; otherwise the top items are always “white tee”, “Levi’s”.</li>
+      <li><b>Seasonality exists.</b> We flag seasonal surges and prefer year-on-year context over short windows.</li>
+      <li><b>Low base ≠ big trend.</b> “10 → 100 = 900%” is meaningless without absolute volume; we flag low-base jumps.</li>
+      <li><b>Cherry-picking risk.</b> We cluster term variants to avoid proving anything with selective phrasing.</li>
+      <li><b>Source matters.</b> Pinterest = styling intent; TikTok = entertainment — we flag source skew.</li>
+      <li><b>Data shows what’s happening.</b> High volume = mainstream now; not necessarily predictive.</li>
+      <li><b>Use multiple signals.</b> Pair search/news with cultural shifts, runway, and real-world wearing.</li>
+    </ul>
   </section>
 </main>
 
@@ -304,7 +332,7 @@ let RANKED_SIGNALS=[], SIGNALS_CHART=null, OPP_CHART=null;
   const keywords=SIGNAL_ROWS.map(r=>String(get(r,'keyword')??'').trim()||'(untitled)');
   const volumes =SIGNAL_ROWS.map(r=>isFinite(+get(r,'volume'))?+get(r,'volume'):0);
   const growths0=SIGNAL_ROWS.map(r=>isFinite(+get(r,'growth_rate'))?+get(r,'growth_rate'):0);
-  const growths =growths0.map(v=>Math.max(0,v));
+  const growths =growths0.map(v=>Math.max(0,v)); // guard against negatives in normalized growth
   const recency =SIGNAL_ROWS.map(r=>recencyScoreFromDateStr(get(r,'last_seen')));
   const tagsRaw =SIGNAL_ROWS.map(r=>String(get(r,'tags')||'').split(',').map(s=>s.trim()).filter(Boolean));
 
@@ -365,6 +393,10 @@ let RANKED_SIGNALS=[], SIGNALS_CHART=null, OPP_CHART=null;
     document.getElementById('kpi-growth').textContent=isFinite(d.growth)?d.growth:'–';
     document.getElementById('kpi-lastseen').textContent=d.lastSeen||'–';
 
+    // Guardrails
+    const notes = buildGuardrails(d);
+    renderGuardrails(notes);
+
     // Related articles — real links, show more/less, actions
     const key = String(d.keyword).toLowerCase();
     const arts=(ARTICLES_MAP.get(key)||[]);
@@ -377,15 +409,15 @@ let RANKED_SIGNALS=[], SIGNALS_CHART=null, OPP_CHART=null;
       arts.slice(0,5).forEach(a=>{ if(a.url) window.open(a.url, '_blank', 'noopener'); });
     };
     document.getElementById('copy-citations').onclick = async ()=>{
-      const blob = arts.slice(0,20).map(a=>{
+      const blob = arts.slice(0,50).map(a=>{
         const src = a.source || (a.url? new URL(a.url).hostname.replace(/^www\./,''):'');
         return `- ${a.title} (${src}${a.date?`, ${a.date}`:''}): ${a.url}`;
       }).join('\n');
       try{ await navigator.clipboard.writeText(blob); }catch{}
     };
 
-    // Content kit hooks
-    document.getElementById('gen-kit').onclick = ()=> generateKit(d, arts);
+    // Content kit
+    document.getElementById('gen-kit').onclick = ()=> generateKit(d, arts, notes);
     document.getElementById('copy-kit').onclick = copyKitAll;
   }
 
@@ -511,14 +543,104 @@ let RANKED_SIGNALS=[], SIGNALS_CHART=null, OPP_CHART=null;
   /* ===== 4) Top Tags ===== */
   const tagCounts=new Map();
   tagsRaw.forEach(list=>list.forEach(t=>tagCounts.set(t,(tagCounts.get(t)||0)+1)));
-  const tagsSorted=Array.from(tagCounts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,25);
+  const tagsSorted=Array.from(tagCounts.entries()).sort((a,b) => b[1]-a[1]).slice(0,25);
   document.getElementById('tags-meta').textContent=tagsSorted.length?`(Top ${tagsSorted.length})`:'(no tags found)';
   if(tagsSorted.length){
     makeBar('tagsBarChart', tagsSorted.map(([t])=>t), tagsSorted.map(([,c])=>c), 'Count');
     const cloud=document.getElementById('tags-cloud'); tagsSorted.forEach(([t,c])=>{ const s=document.createElement('span'); s.className='tag-pill'; s.textContent=`${t} • ${c}`; cloud.appendChild(s); });
   }
 
-  /* ===== Simple Content Kit ===== */
+  /* ===== Guardrails & Context (Style Analytics) ===== */
+  const SEASONAL_HINTS = [
+    /coat|puffer|parka|boot|knit|sweater|cashmere|tights|beanie|scarf|thermal/i,   // cold season
+    /linen|bikini|swim|sandal|shorts|sundress|beach|resort|straw|raffia/i,         // warm season
+    /prom|graduation|wedding|bridal|festival|halloween|christmas|holiday/i         // event seasons
+  ];
+  function isSeasonalKeyword(k){
+    return SEASONAL_HINTS.some(re => re.test(k));
+  }
+  function seasonalityNote(d){
+    if (isSeasonalKeyword(d.keyword)) return { level:'warn', text:'Seasonality: likely seasonal queries — prefer YoY context over short windows.' };
+    // Heuristic: if last seen is within the typical seasonal window for warm/cold items, also warn.
+    const m=(new Date(d.lastSeen)).getMonth()+1; // 1..12
+    if (!isFinite(m)) return null;
+    const warm = /linen|bikini|swim|sandal|shorts|sundress|beach|resort/.test(d.keyword.toLowerCase());
+    const cold = /coat|puffer|parka|boot|knit|sweater|cashmere|tights|beanie|scarf/.test(d.keyword.toLowerCase());
+    if ((warm && (m>=5 && m<=8)) || (cold && (m>=10 || m<=2))) {
+      return { level:'warn', text:'In-season spike: treat growth cautiously; check YoY.' };
+    }
+    return null;
+  }
+  function lowBaseNote(d){
+    if ((d.volN||0) < 20 && (d.growth||0) >= 20) {
+      return { level:'warn', text:'Low base effect: large % growth off small volume (e.g., “10→100 = 900%”).' };
+    }
+    return null;
+  }
+  function variantRiskNote(d){
+    // look for close variants in our dataset (simple token overlap ignoring generic words)
+    const stop=new Set(['the','a','an','and','or','of','to','for','with','trend','trends','style','outfit','looks','aesthetic']);
+    const root=(s)=>s.toLowerCase().split(/\W+/).filter(w=>w && !stop.has(w));
+    const t0=new Set(root(d.keyword));
+    let conflicts=0, cousins=0;
+    RANKED_SIGNALS.forEach(x=>{
+      if (x.keyword===d.keyword) return;
+      const t1=new Set(root(x.keyword));
+      const overlap=[...t1].filter(w=>t0.has(w)).length;
+      if (overlap>=1){ // cousin
+        cousins++;
+        const dir0 = (d.growth||0)>=0 ? 1 : -1;
+        const dir1 = (x.growth||0)>=0 ? 1 : -1;
+        if (dir0 !== dir1) conflicts++;
+      }
+    });
+    if (cousins>=2 && conflicts>=1){
+      return { level:'warn', text:'Variant mismatch: related terms point in different directions — watch cherry-picking.' };
+    }
+    return null;
+  }
+  function sourceSkewNote(articles){
+    if (!articles || !articles.length) return null;
+    const host=(u)=>{ try{ return new URL(u).hostname.replace(/^www\./,''); }catch{ return ''; } };
+    let pin=0, tt=0, yt=0;
+    articles.forEach(a=>{
+      const h=a.source?.toLowerCase() || host(a.url);
+      if (/pinterest/.test(h)) pin++;
+      if (/tiktok/.test(h)) tt++;
+      if (/youtube/.test(h)) yt++;
+    });
+    const total=articles.length;
+    if (tt/total >= 0.6) return { level:'info', text:'Source skew: TikTok-heavy (entertainment). Look for styling/intent sources to confirm wearability.' };
+    if (pin/total >= 0.6) return { level:'info', text:'Source skew: Pinterest-heavy (styling intent). Good for “how to wear”, less for virality.' };
+    if (yt/total >= 0.6) return { level:'info', text:'Source skew: YouTube-heavy (deep dives). Consider time-to-adoption in shorter formats.' };
+    return null;
+  }
+  function mainstreamNote(d){
+    if ((d.score||0) >= 75 && (d.momentum||0) < 55){
+      return { level:'info', text:'Established: volume already high — data shows what’s happening now, not early prediction.' };
+    }
+    return null;
+  }
+  function buildGuardrails(d){
+    const arts=(ARTICLES_MAP.get(String(d.keyword).toLowerCase())||[]);
+    return [ seasonalityNote(d), lowBaseNote(d), variantRiskNote(d), sourceSkewNote(arts), mainstreamNote(d) ]
+      .filter(Boolean);
+  }
+  function renderGuardrails(notes){
+    const wrap=document.getElementById('guard-list');
+    wrap.innerHTML='';
+    if(!notes.length){
+      wrap.innerHTML = `<div class="flag ok"><span class="dot"></span><div class="txt">No major flags from seasonality, base effects, variant mismatch or source skew.</div></div>`;
+      return;
+    }
+    notes.forEach(n=>{
+      const div=document.createElement('div'); div.className=`flag ${n.level}`;
+      div.innerHTML = `<span class="dot"></span><div class="txt">${n.text}</div>`;
+      wrap.appendChild(div);
+    });
+  }
+
+  /* ===== Simple Content Kit (reuses guardrails text) ===== */
   function bulletImplications(tags){
     const t=(tags||[]).map(x=>x.toLowerCase()); const out=[];
     if (t.includes('tech')) out.push('Test AR try-on or AI sizing in 1 category');
@@ -545,27 +667,29 @@ let RANKED_SIGNALS=[], SIGNALS_CHART=null, OPP_CHART=null;
       return `${src}${dt?` (${dt})`:''}`;
     });
   }
-  function generateKit(d, articles){
+  function generateKit(d, articles, notes){
     const title = d.keyword;
     const tags = d.tags || [];
     const facts = `Momentum ${d.momentum||0}, Trend ${d.score||0}, volume ${d.volume||0}, growth ${d.growth||0}%, recency ${d.recN||0}`;
     const implications = bulletImplications(tags);
     const kpis = kpisForTags(tags);
     const sources = evidenceBullets(articles);
-    const evidence = sources.length ? `Evidence: ${sources.join(', ')}.` : '';
+    const caveat = notes?.[0]?.text ? `Note: ${notes[0].text}` : '';
+    const evidence = sources.length ? `Sources: ${sources.join(', ')}.` : '';
 
-    // Executive takeaway (1-liner)
-    const takeaway = `${title} — ${implications[0]}. ${facts}.`;
+    // Executive takeaway
+    const takeaway = `${title} — ${implications[0]}. ${facts}. ${caveat}`;
 
     // Newsletter (~150 words)
     const nl = [
       `**${title}** — ${implications[0]}.`,
       `Why it matters: ${implications.join('; ')}.`,
       `${facts}.`,
+      caveat,
       evidence,
-      `What we’re watching: creator adoption, retail UX, and conversion lift.`,
+      `What we’re watching: creator adoption, styling intent, conversion lift.`,
       `Reply for the one-pager or to scope a brand-specific pilot.`
-    ].join(' ');
+    ].filter(Boolean).join(' ');
 
     // LinkedIn post
     const li = [
@@ -576,6 +700,7 @@ let RANKED_SIGNALS=[], SIGNALS_CHART=null, OPP_CHART=null;
       `• ${implications[2]||'Define 2–3 KPIs and measure'}`,
       ``,
       `Stats: ${facts}`,
+      caveat ? `Caveat: ${caveat}` : '',
       sources.length ? `Sources: ${sources.join(' · ')}` : '',
       ``,
       `👉 DM for the checklist or a working session.`
