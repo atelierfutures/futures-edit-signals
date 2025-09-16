@@ -3,27 +3,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>The Futures Edit — Tags, Trends & Signals</title>
 
-<!-- Chart.js -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
 <style>
-  :root{
-    --bg:#ffffff; --fg:#141414; --muted:#6b7280;
-    --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
-    --shadow:0 8px 24px rgba(0,0,0,.06); --bar-h:84px;
-  }
+  :root{ --bg:#fff; --fg:#141414; --muted:#6b7280; --card:#fff; --border:#e5e7eb; --pill:#f3f4f6; --shadow:0 8px 24px rgba(0,0,0,.06); --bar-h:84px; }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);
-       font:14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif}
-  header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--border);
-         height:var(--bar-h);display:flex;align-items:center;gap:12px;padding:0 18px;z-index:10}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
+  header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--border);height:var(--bar-h);display:flex;align-items:center;gap:12px;padding:0 18px;z-index:10}
   h1{margin:0;font-weight:700;font-size:18px}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:.3rem .55rem;border-radius:999px;
-        background:var(--pill);border:1px solid var(--border);font-size:12px;color:#111827}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:.3rem .55rem;border-radius:999px;background:var(--pill);border:1px solid var(--border);font-size:12px;color:#111827}
   main{max-width:1200px;margin:22px auto;padding:0 16px}
   .grid{display:grid;grid-template-columns:1fr;gap:16px}
-  @media (min-width: 1100px){ .grid-2{grid-template-columns:1.4fr .9fr} .grid-2-even{grid-template-columns:1fr 1fr} }
+  @media (min-width:1100px){ .grid-2{grid-template-columns:1.4fr .9fr} .grid-2-even{grid-template-columns:1fr 1fr} }
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:16px}
   h2{margin:0 0 8px 0;font:600 18px/1.2 inherit}
   h3{margin:0 0 6px 0;font:600 15px/1.2 inherit}
@@ -52,32 +44,32 @@
 </header>
 
 <main class="grid">
-  <!-- 1) Trend Score -->
-  <section class="card" id="sec-trend">
+  <!-- 1) Momentum Score — Breakouts -->
+  <section class="card" id="sec-momentum">
     <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
-      <h2>Trend Score — Top 15</h2>
-      <small id="trend-meta" class="muted"></small>
+      <h2>Momentum Score — Breakouts (Top 15)</h2>
+      <small id="momentum-meta" class="muted"></small>
     </div>
-    <div class="chart-wrap"><canvas id="trendScoreChart"></canvas></div>
+    <div class="chart-wrap"><canvas id="momentumChart"></canvas></div>
     <details style="margin-top:12px;">
-      <summary><strong>How we calculate Trend Score</strong></summary>
+      <summary><strong>How we calculate Momentum Score</strong></summary>
       <div class="muted" style="margin-top:8px;">
         <p style="margin:0 0 6px 0;"><strong>Formula:</strong></p>
         <pre style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:10px;overflow:auto;margin:0 0 10px 0;font-size:13px;">
-TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
+Momentum = 0.55 × Growthₙ + 0.35 × Recencyₙ + 0.10 × Noveltyₙ
+Noveltyₙ = 100 − Volumeₙ
         </pre>
         <ul style="margin:0 0 10px 18px;padding:0;">
-          <li><strong>Volumeₙ</strong>: min–max normalized 0–100 from <em>volume</em>.</li>
-          <li><strong>Growthₙ</strong>: min–max normalized 0–100 from <em>growth_rate</em> (negatives clipped at 0).</li>
-          <li><strong>Recencyₙ</strong>: 0–100 from <em>last_seen</em> (100 = today; 0 = ≥90 days; linear).</li>
+          <li><strong>Growthₙ</strong>: 0–100 from <em>growth_rate</em> (negatives clipped at 0).</li>
+          <li><strong>Recencyₙ</strong>: 0–100 from <em>last_seen</em> (100 = today; 0 = ≥90 days).</li>
+          <li><strong>Noveltyₙ</strong>: favors lower-base signals (lower volume → higher novelty).</li>
         </ul>
+        <p style="margin:0;">Use Momentum to spot **emerging** signals; use Trend Score for overall **heat**.</p>
       </div>
     </details>
-    <div id="trend-table" style="margin-top:14px;overflow:auto;"></div>
-    <div id="trend-errors" style="margin-top:10px;color:#b91c1c;"></div>
   </section>
 
-  <!-- 2) SIGNALS — Top 25 + insights side panel -->
+  <!-- 2) SIGNALS — Top 25 + insights -->
   <section class="grid grid-2 card" style="display:grid;gap:16px;">
     <div>
       <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -86,13 +78,25 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
           <label for="rank-by" class="muted" style="align-self:center;">Rank by</label>
           <select id="rank-by" class="select">
             <option value="trend" selected>Trend Score</option>
+            <option value="momentum">Momentum Score</option>
             <option value="volume">Volume</option>
+            <option value="growth">Growth %</option>
           </select>
         </div>
       </div>
       <div id="signals-meta" class="muted" style="margin-bottom:6px;"></div>
       <div class="chart-wrap"><canvas id="signalsChart"></canvas></div>
       <small class="muted" style="display:block;margin-top:6px;">Click a bar to analyze the signal on the right.</small>
+
+      <details style="margin-top:12px;">
+        <summary><strong>Trend Score (for reference)</strong></summary>
+        <div class="muted" style="margin-top:8px;">
+          <pre style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:10px;overflow:auto;margin:0 0 10px 0;font-size:13px;">
+Trend = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
+          </pre>
+          <p style="margin:0;">Trend balances **magnitude** (volume) with **acceleration** (growth) and **freshness** (recency).</p>
+        </div>
+      </details>
     </div>
 
     <aside>
@@ -105,6 +109,7 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
 
       <div class="kpi">
         <div class="box"><div class="muted">Trend Score</div><b id="kpi-score">–</b></div>
+        <div class="box"><div class="muted">Momentum</div><b id="kpi-momentum">–</b></div>
         <div class="box"><div class="muted">Volume</div><b id="kpi-volume">–</b></div>
         <div class="box"><div class="muted">Growth %</div><b id="kpi-growth">–</b></div>
         <div class="box"><div class="muted">Last seen</div><b id="kpi-lastseen">–</b></div>
@@ -118,7 +123,6 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
 
   <!-- 3) Top Tags & Legacy Growth -->
   <section class="grid grid-2-even">
-    <!-- Top Tags -->
     <section class="card">
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
         <h2>Top Tags</h2>
@@ -128,19 +132,18 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
       <div id="tags-cloud" class="tags-cloud" style="margin-top:10px;"></div>
     </section>
 
-    <!-- Legacy: Fastest Rising -->
     <section class="card">
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
         <h2>Fastest Rising (Growth Rate)</h2>
         <small class="muted" id="growth-meta"></small>
       </div>
       <div class="chart-wrap-sm"><canvas id="growthBarChart"></canvas></div>
-      <small class="muted" style="display:block;margin-top:6px;">(Legacy view — hide later if not useful.)</small>
+      <small class="muted" style="display:block;margin-top:6px;">(Legacy view — covered by “Rank by → Growth %”.)</small>
     </section>
   </section>
 </main>
 
-<!-- Embedded fallback data (used if CSVs can’t be fetched) -->
+<!-- Embedded fallback data -->
 <script type="text/plain" id="embedded-signals">
 keyword,volume,growth_rate,last_seen,tags
 "glazed blush",78,22,"2025-09-12","beauty, makeup"
@@ -173,7 +176,7 @@ keyword,title,url,source,date
 
 <script>
 /* ===== CONFIG =====
-If you have real CSVs, place them at:
+Place real CSVs (optional) at:
 - data/signals.csv  (keyword, volume, growth_rate, last_seen, tags)
 - data/articles.csv (keyword, title, url, source, date)
 */
@@ -182,242 +185,149 @@ const ARTICLES_CSV_URL = 'data/articles.csv';
 
 /* ===== Helpers ===== */
 const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
-function minmaxNormalize(values) {
-  const arr = values.map(v => (isFinite(+v) ? +v : 0));
-  const min = Math.min(...arr), max = Math.max(...arr);
-  if (!isFinite(min) || !isFinite(max) || max === min) return arr.map(_ => 0);
-  return arr.map(v => ((v - min) / (max - min)) * 100);
-}
-function recencyScoreFromDateStr(dateStr) {
-  const now = new Date();
-  const d = new Date(dateStr);
-  if (isNaN(d)) return 0;
-  const days = (now - d) / (1000*60*60*24);
-  const score = 100 - (days / 90) * 100; // 0d → 100, ≥90d → 0
-  return clamp(score, 0, 100);
-}
-// Minimal CSV → array of objects
+function minmaxNormalize(values){ const a=values.map(v => (isFinite(+v)?+v:0)); const mn=Math.min(...a), mx=Math.max(...a); if(!isFinite(mn)||!isFinite(mx)||mx===mn) return a.map(_=>0); return a.map(v => ((v-mn)/(mx-mn))*100); }
+function recencyScoreFromDateStr(s){ const now=new Date(); const d=new Date(s); if(isNaN(d))return 0; const days=(now-d)/(1000*60*60*24); return clamp(100 - (days/90)*100, 0, 100); }
 function parseCSVObjects(text){
-  const rows = [];
-  let i=0, field='', inQuotes=false, row=[];
-  function pushField(){ row.push(field); field=''; }
-  function pushRow(){ rows.push(row); row=[]; }
-  while(i < text.length){
-    const c = text[i];
-    if (inQuotes){
-      if (c === '"'){
-        if (text[i+1] === '"'){ field += '"'; i++; }
-        else { inQuotes = false; }
-      } else field += c;
-    } else {
-      if (c === '"'){ inQuotes = true; }
-      else if (c === ','){ pushField(); }
-      else if (c === '\r'){ /* ignore */ }
-      else if (c === '\n'){ pushField(); pushRow(); }
-      else field += c;
-    }
+  const rows=[], pushF=(r,f)=>{r.push(f)}, pushR=r=>rows.push(r);
+  let i=0, f='', q=false, r=[];
+  while(i<text.length){ const c=text[i];
+    if(q){ if(c=='"'){ if(text[i+1]=='"'){f+='"'; i++} else q=false } else f+=c }
+    else { if(c=='"') q=true; else if(c==','){ pushF(r,f); f=''; } else if(c=='\r'){} else if(c=='\n'){ pushF(r,f); f=''; pushR(r); r=[]; } else f+=c }
     i++;
   }
-  if (field.length || row.length) { pushField(); pushRow(); }
-  if (!rows.length) return [];
-  const header = rows[0].map(h => h.trim());
-  return rows.slice(1).filter(r => r.some(v => String(v).trim() !== ''))
-    .map(r => Object.fromEntries(header.map((h,idx) => [h, r[idx] ?? ''])));
+  if(f.length||r.length){ pushF(r,f); pushR(r); }
+  if(!rows.length) return [];
+  const header=rows[0].map(h=>h.trim());
+  return rows.slice(1).filter(rr=>rr.some(v=>String(v).trim()!=='')).map(rr=>Object.fromEntries(header.map((h,idx)=>[h, rr[idx]??''])));
 }
 async function loadCSVMaybe(url, fallbackId){
-  try {
-    if (!/^https?:/.test(location.protocol)) throw new Error('Not http(s); skip fetch.');
-    const resp = await fetch(url, { cache: 'no-store' });
-    if (!resp.ok) throw new Error('missing');
-    const text = await resp.text();
-    const rows = parseCSVObjects(text);
-    if (rows.length) return { rows, source:'csv' };
-  } catch (e) { /* fall through */ }
-  const emb = document.getElementById(fallbackId)?.textContent?.trim();
-  return { rows: parseCSVObjects(emb || ''), source:'sample' };
+  try{
+    if(!/^https?:/.test(location.protocol)) throw new Error('not-http');
+    const resp=await fetch(url,{cache:'no-store'}); if(!resp.ok) throw new Error('missing');
+    const text=await resp.text(); const rows=parseCSVObjects(text); if(rows.length) return {rows,source:'csv'};
+  }catch(e){}
+  const emb=document.getElementById(fallbackId)?.textContent?.trim()||''; return {rows:parseCSVObjects(emb), source:'sample'};
 }
 function makeBar(el, labels, data, label, onClickIndex){
-  const ctx = document.getElementById(el).getContext('2d');
-  if (window[el]) window[el].destroy?.();
-  const chart = new Chart(ctx, {
-    type:'bar',
-    data:{ labels, datasets:[{ label, data, borderWidth:1 }] },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      scales:{ y:{ beginAtZero:true } },
-      plugins:{ legend:{ display:false } },
-      onClick(_, elements){
-        if (!elements?.length) return;
-        const idx = elements[0].index;
-        onClickIndex?.(idx);
-      }
-    }
-  });
-  window[el] = chart;
-  return chart;
+  const ctx=document.getElementById(el).getContext('2d'); if(window[el]) window[el].destroy?.();
+  const chart=new Chart(ctx,{ type:'bar', data:{labels, datasets:[{label, data, borderWidth:1}]}, options:{
+    responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true}}, plugins:{legend:{display:false}},
+    onClick(_,els){ if(els?.length){ onClickIndex?.(els[0].index); } }
+  }});
+  window[el]=chart; return chart;
 }
 
-/* ===== Global state ===== */
-let SIGNAL_ROWS = [];
-let ARTICLE_ROWS = [];
-let RANKED_SIGNALS = []; // array of {idx, keyword, score, volume, growth, lastSeen, tags, volN, groN, recN}
-let SIGNALS_CHART = null;
+/* ===== Global ===== */
+let SIGNAL_ROWS=[], ARTICLE_ROWS=[];
+let trendScores=[], momentumScores=[], volN=[], groN=[], recN=[];
+let RANKED_SIGNALS=[], SIGNALS_CHART=null;
 
 /* ===== Boot ===== */
 (async function(){
-  const { rows: sRows, source: sSrc } = await loadCSVMaybe(SIGNALS_CSV_URL, 'embedded-signals');
-  const { rows: aRows }           = await loadCSVMaybe(ARTICLES_CSV_URL, 'embedded-articles');
-  SIGNAL_ROWS  = sRows;
-  ARTICLE_ROWS = aRows;
+  const {rows:sRows, source:sSrc}=await loadCSVMaybe(SIGNALS_CSV_URL,'embedded-signals');
+  const {rows:aRows}=await loadCSVMaybe(ARTICLES_CSV_URL,'embedded-articles');
+  SIGNAL_ROWS=sRows; ARTICLE_ROWS=aRows;
+  document.getElementById('dataset-meta').textContent=`${SIGNAL_ROWS.length} signals • ${new Date().toISOString().slice(0,10)} • ${sSrc}`;
+  if(!SIGNAL_ROWS.length) return;
 
-  const datasetMeta = document.getElementById('dataset-meta');
-  datasetMeta.textContent = `${SIGNAL_ROWS.length} signals • ${new Date().toISOString().slice(0,10)} • ${sSrc}`;
+  const get=(r,k)=>r[k] ?? r[k?.toLowerCase?.()] ?? r[k?.toUpperCase?.()];
+  const keywords=SIGNAL_ROWS.map(r=>String(get(r,'keyword')??'').trim()||'(untitled)');
+  const volumes =SIGNAL_ROWS.map(r=>isFinite(+get(r,'volume'))?+get(r,'volume'):0);
+  const growths0=SIGNAL_ROWS.map(r=>isFinite(+get(r,'growth_rate'))?+get(r,'growth_rate'):0);
+  const growths =growths0.map(v=>Math.max(0,v));
+  const recency =SIGNAL_ROWS.map(r=>recencyScoreFromDateStr(get(r,'last_seen')));
+  const tagsRaw =SIGNAL_ROWS.map(r=>String(get(r,'tags')||'').split(',').map(s=>s.trim()).filter(Boolean));
 
-  if (!SIGNAL_ROWS.length){ document.getElementById('trend-errors').textContent = 'No signals data found.'; return; }
+  volN=minmaxNormalize(volumes); groN=minmaxNormalize(growths); recN=recency;
+  trendScores = volN.map((_,i)=>Math.round(0.40*volN[i] + 0.40*groN[i] + 0.20*recN[i]));
+  const noveltyN = volN.map(v=>100 - v);
+  momentumScores = volN.map((_,i)=>Math.round(0.55*groN[i] + 0.35*recN[i] + 0.10*noveltyN[i]));
 
-  // Accessor helper
-  const get = (r, k) => r[k] ?? r[k?.toLowerCase?.()] ?? r[k?.toUpperCase?.()];
+  /* ===== Momentum — Breakouts Top 15 ===== */
+  const rankedMomentum = keywords.map((k,i)=>({k, m:momentumScores[i]})).sort((a,b)=>b.m-a.m).slice(0,15);
+  makeBar('momentumChart', rankedMomentum.map(d=>d.k), rankedMomentum.map(d=>d.m), 'Momentum (0–100)');
+  document.getElementById('momentum-meta').textContent=`(Top ${rankedMomentum.length} of ${SIGNAL_ROWS.length} signals)`;
 
-  // Extract fields
-  const keywords = SIGNAL_ROWS.map(r => String(get(r,'keyword') ?? '').trim() || '(untitled)');
-  const volumes  = SIGNAL_ROWS.map(r => isFinite(+get(r,'volume')) ? +get(r,'volume') : 0);
-  const growths0 = SIGNAL_ROWS.map(r => isFinite(+get(r,'growth_rate')) ? +get(r,'growth_rate') : 0);
-  const growths  = growths0.map(v => Math.max(0, v)); // clip negatives for scoring
-  const recency  = SIGNAL_ROWS.map(r => recencyScoreFromDateStr(get(r,'last_seen')));
-  const tagsRaw  = SIGNAL_ROWS.map(r => String(get(r,'tags') || '').split(',').map(s => s.trim()).filter(Boolean));
-
-  // Trend Score base
-  const volN = minmaxNormalize(volumes);
-  const groN = minmaxNormalize(growths);
-  const recN = recency;
-  const trendScores = volN.map((_, i) => Math.round(0.40*volN[i] + 0.40*groN[i] + 0.20*recN[i]));
-
-  /* ===== 1) Trend Score — Top 15 ===== */
-  const rankedTrend = keywords.map((k,i)=>({ keyword:k, score:trendScores[i], volN:Math.round(volN[i]), groN:Math.round(groN[i]), recN:Math.round(recN[i]) }))
-                              .sort((a,b)=>b.score - a.score)
-                              .slice(0,15);
-  makeBar('trendScoreChart', rankedTrend.map(d=>d.keyword), rankedTrend.map(d=>d.score), 'Trend Score (0–100)');
-  document.getElementById('trend-meta').textContent = `(Top ${rankedTrend.length} of ${SIGNAL_ROWS.length} signals)`;
-
-  // Trend table
-  const tbl = document.createElement('table');
-  tbl.innerHTML = `<thead><tr><th>#</th><th>Signal</th><th>Score</th><th>Volumeₙ</th><th>Growthₙ</th><th>Recencyₙ</th></tr></thead><tbody></tbody>`;
-  rankedTrend.forEach((d,i) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${i+1}</td><td>${d.keyword}</td><td style="font-weight:600">${d.score}</td>
-                    <td class="muted">${d.volN}</td><td class="muted">${d.groN}</td><td class="muted">${d.recN}</td>`;
-    tbl.querySelector('tbody').appendChild(tr);
-  });
-  document.getElementById('trend-table').appendChild(tbl);
-
-  /* ===== 2) SIGNALS — Top 25 + Insights ===== */
+  /* ===== Signals — chart + panel ===== */
   function buildRank(mode='trend'){
     RANKED_SIGNALS = keywords.map((k,i)=>({
-      idx:i,
-      keyword:k,
-      score:trendScores[i],
-      volume:volumes[i],
-      growth:growths0[i],
+      idx:i, keyword:k,
+      score:trendScores[i], momentum:momentumScores[i],
+      volume:volumes[i], growth:growths0[i],
       lastSeen:get(SIGNAL_ROWS[i],'last_seen'),
       tags:tagsRaw[i],
-      volN:Math.round(volN[i]),
-      groN:Math.round(groN[i]),
-      recN:Math.round(recN[i]),
+      volN:Math.round(volN[i]), groN:Math.round(groN[i]), recN:Math.round(recN[i])
     }));
-    if (mode === 'volume') RANKED_SIGNALS.sort((a,b)=> (b.volume||0)-(a.volume||0));
-    else RANKED_SIGNALS.sort((a,b)=> (b.score||0)-(a.score||0)); // trend default
+    if(mode==='volume') RANKED_SIGNALS.sort((a,b)=> (b.volume||0)-(a.volume||0));
+    else if(mode==='growth') RANKED_SIGNALS.sort((a,b)=> (b.growth||0)-(a.growth||0));
+    else if(mode==='momentum') RANKED_SIGNALS.sort((a,b)=> (b.momentum||0)-(a.momentum||0));
+    else RANKED_SIGNALS.sort((a,b)=> (b.score||0)-(a.score||0)); // trend
     return RANKED_SIGNALS.slice(0,25);
   }
   function renderSignals(mode='trend'){
-    const top = buildRank(mode);
-    document.getElementById('signals-meta').textContent = `(Top ${top.length} by ${mode === 'volume' ? 'Volume' : 'Trend Score'})`;
-    SIGNALS_CHART = makeBar('signalsChart', top.map(d=>d.keyword), top.map(d => (mode==='volume' ? d.volume : d.score)),
-      (mode==='volume' ? 'Volume' : 'Trend Score (0–100)'),
-      (i) => selectSignal(top[i]));
+    const top=buildRank(mode);
+    document.getElementById('signals-meta').textContent=`(Top ${top.length} by ${mode==='volume'?'Volume':mode==='growth'?'Growth %':mode==='momentum'?'Momentum':'Trend Score'})`;
+    SIGNALS_CHART = makeBar('signalsChart', top.map(d=>d.keyword),
+      top.map(d=> mode==='volume'?d.volume : mode==='growth'?d.growth : mode==='momentum'?d.momentum : d.score),
+      mode==='volume'?'Volume':mode==='growth'?'Growth %':mode==='momentum'?'Momentum (0–100)':'Trend Score (0–100)',
+      (i)=>selectSignal(top[i]));
   }
   renderSignals('trend');
-  document.getElementById('rank-by').addEventListener('change', (e)=> renderSignals(e.target.value));
+  document.getElementById('rank-by').addEventListener('change', e=>renderSignals(e.target.value));
 
-  // Insights panel: select + render
   function selectSignal(d){
-    if (!d) return;
-    document.getElementById('signal-title').textContent = d.keyword;
-    const tagsEl = document.getElementById('signal-tags');
-    tagsEl.innerHTML = '';
-    (d.tags||[]).forEach(t => {
-      const span = document.createElement('span');
-      span.className = 'tag-pill';
-      span.textContent = t;
-      tagsEl.appendChild(span);
-    });
+    if(!d) return;
+    document.getElementById('signal-title').textContent=d.keyword;
+    const tagsEl=document.getElementById('signal-tags'); tagsEl.innerHTML='';
+    (d.tags||[]).forEach(t=>{ const s=document.createElement('span'); s.className='tag-pill'; s.textContent=t; tagsEl.appendChild(s); });
+    document.getElementById('kpi-score').textContent=isFinite(d.score)?d.score:'–';
+    document.getElementById('kpi-momentum').textContent=isFinite(d.momentum)?d.momentum:'–';
+    document.getElementById('kpi-volume').textContent=isFinite(d.volume)?d.volume:'–';
+    document.getElementById('kpi-growth').textContent=isFinite(d.growth)?d.growth:'–';
+    document.getElementById('kpi-lastseen').textContent=d.lastSeen||'–';
 
-    document.getElementById('kpi-score').textContent   = isFinite(d.score)  ? d.score  : '–';
-    document.getElementById('kpi-volume').textContent  = isFinite(d.volume) ? d.volume : '–';
-    document.getElementById('kpi-growth').textContent  = isFinite(d.growth) ? d.growth : '–';
-    document.getElementById('kpi-lastseen').textContent = d.lastSeen || '–';
-
-    // Articles
-    const list = document.getElementById('articles-list');
-    const arts = ARTICLE_ROWS.filter(a => String((a.keyword||'').toLowerCase()) === String(d.keyword).toLowerCase());
-    if (!arts.length){
-      list.innerHTML = `<span class="muted">No related articles yet for “${d.keyword}”.</span>`;
-    } else {
-      const frag = document.createElement('div');
-      arts.slice(0,6).forEach(a => {
-        const item = document.createElement('div');
-        item.style.marginBottom = '10px';
-        const date = a.date ? new Date(a.date).toISOString().slice(0,10) : '';
-        item.innerHTML = `
-          <div><a href="${a.url}" target="_blank" rel="noopener" style="font-weight:600;text-decoration:none;color:#111827;">${a.title || a.url}</a></div>
-          <div class="muted" style="font-size:12px;">${a.source || ''} ${date ? '• ' + date : ''}</div>`;
-        frag.appendChild(item);
+    const list=document.getElementById('articles-list');
+    const arts=ARTICLE_ROWS.filter(a=>String((a.keyword||'').toLowerCase())===String(d.keyword).toLowerCase());
+    if(!arts.length){ list.innerHTML=`<span class="muted">No related articles yet for “${d.keyword}”.</span>`; }
+    else{
+      const frag=document.createElement('div');
+      arts.slice(0,6).forEach(a=>{
+        const it=document.createElement('div'); it.style.marginBottom='10px';
+        const date=a.date ? new Date(a.date).toISOString().slice(0,10) : '';
+        it.innerHTML=`<div><a href="${a.url}" target="_blank" rel="noopener" style="font-weight:600;text-decoration:none;color:#111827;">${a.title||a.url}</a></div>
+                      <div class="muted" style="font-size:12px;">${a.source||''} ${date ? '• '+date : ''}</div>`;
+        frag.appendChild(it);
       });
-      list.innerHTML = ''; list.appendChild(frag);
+      list.innerHTML=''; list.appendChild(frag);
     }
-
-    // Copy summary button
     const summary = makeSummary(d);
-    const btn = document.getElementById('copy-summary');
-    btn.onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(summary);
-        btn.textContent = 'Copied ✓';
-        setTimeout(()=> btn.textContent = 'Copy summary', 1200);
-      } catch {
-        btn.textContent = 'Copy failed';
-        setTimeout(()=> btn.textContent = 'Copy summary', 1200);
-      }
-    };
+    const btn=document.getElementById('copy-summary');
+    btn.onclick=async ()=>{ try{ await navigator.clipboard.writeText(summary); btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent='Copy summary',1200); } catch{ btn.textContent='Copy failed'; setTimeout(()=>btn.textContent='Copy summary',1200); } };
   }
   function makeSummary(d){
-    // Simple editorial summary (rule-based)
-    const heat = v => v >= 75 ? 'very high' : v >= 50 ? 'high' : v >= 25 ? 'moderate' : 'low';
-    const volNote = `Volume ${isFinite(d.volume)?d.volume:'–'} (${heat(d.volN)})`;
-    const groNote = `growth ${isFinite(d.growth)?d.growth+'%':'–'} (${heat(d.groN)})`;
-    const recNote = `recency ${heat(d.recN)}${d.lastSeen?`; last seen ${d.lastSeen}`:''}`;
-    const tags = (d.tags && d.tags.length) ? `Tags: ${d.tags.join(', ')}` : '';
-    return `${d.keyword} — Trend Score ${d.score}. ${volNote}, ${groNote}, ${recNote}. ${tags}`.trim();
+    const heat=v=>v>=75?'very high':v>=50?'high':v>=25?'moderate':'low';
+    const volNote=`Volume ${isFinite(d.volume)?d.volume:'–'} (${heat(d.volN)})`;
+    const groNote=`growth ${isFinite(d.growth)?d.growth+'%':'–'} (${heat(d.groN)})`;
+    const recNote=`recency ${heat(d.recN)}${d.lastSeen?`; last seen ${d.lastSeen}`:''}`;
+    const tags=(d.tags&&d.tags.length)?`Tags: ${d.tags.join(', ')}`:'';
+    return `${d.keyword} — Trend ${d.score}, Momentum ${d.momentum}. ${volNote}, ${groNote}, ${recNote}. ${tags}`.trim();
   }
-
-  // Auto-select first bar so panel isn’t empty
   selectSignal(buildRank('trend')[0]);
 
-  /* ===== 3) Top Tags ===== */
-  const tagCounts = new Map();
-  tagsRaw.forEach(list => list.forEach(t => tagCounts.set(t, (tagCounts.get(t) || 0) + 1)));
-  const tagsSorted = Array.from(tagCounts.entries()).sort((a,b) => b[1]-a[1]).slice(0,25);
-  document.getElementById('tags-meta').textContent = tagsSorted.length ? `(Top ${tagsSorted.length})` : '(no tags found)';
-  if (tagsSorted.length){
+  /* ===== Top Tags ===== */
+  const tagCounts=new Map();
+  tagsRaw.forEach(list=>list.forEach(t=>tagCounts.set(t,(tagCounts.get(t)||0)+1)));
+  const tagsSorted=Array.from(tagCounts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,25);
+  document.getElementById('tags-meta').textContent=tagsSorted.length?`(Top ${tagsSorted.length})`:'(no tags found)';
+  if(tagsSorted.length){
     makeBar('tagsBarChart', tagsSorted.map(([t])=>t), tagsSorted.map(([,c])=>c), 'Count');
-    const cloud = document.getElementById('tags-cloud'); tagsSorted.forEach(([t,c]) => {
-      const span = document.createElement('span'); span.className = 'tag-pill'; span.textContent = `${t} • ${c}`; cloud.appendChild(span);
-    });
+    const cloud=document.getElementById('tags-cloud'); tagsSorted.forEach(([t,c])=>{ const s=document.createElement('span'); s.className='tag-pill'; s.textContent=`${t} • ${c}`; cloud.appendChild(s); });
   }
 
-  /* ===== 4) Legacy: Fastest Rising (Growth Rate) ===== */
-  const grRankAll = keywords.map((k,i)=>({k,g:growths0[i]})).filter(d=>isFinite(d.g)).sort((a,b)=>b.g-a.g);
-  const grRank = grRankAll.filter(d => d.g > 0).slice(0,15);
+  /* ===== Legacy: Fastest Rising ===== */
+  const grRankAll=keywords.map((k,i)=>({k,g:growths0[i]})).filter(d=>isFinite(d.g)).sort((a,b)=>b.g-a.g);
+  const grRank=grRankAll.filter(d=>d.g>0).slice(0,15);
   makeBar('growthBarChart', grRank.map(d=>d.k), grRank.map(d=>d.g), 'Growth rate');
-  document.getElementById('growth-meta').textContent = grRank.length ? `(Top ${grRank.length})` : '(no positive growth values)';
+  document.getElementById('growth-meta').textContent=grRank.length?`(Top ${grRank.length})`:'(no positive growth values)';
 })();
 </script>
