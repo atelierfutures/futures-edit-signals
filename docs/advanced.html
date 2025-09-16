@@ -48,7 +48,8 @@
   .legend{color:var(--muted);font-size:12px;margin-top:6px}
   .mini{max-width:100%}
   .mini.thin{height:86px !important}
-  .mini.short{height:180px !important}
+  /* allow JS to resize the risers canvas */
+  .mini.short{height:180px}
   .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
   .small{font-size:12px;color:var(--muted)}
 
@@ -207,8 +208,8 @@ const FASHION_PALETTE = [
 ];
 function palette(n){ const out=[]; for(let i=0;i<n;i++) out.push(FASHION_PALETTE[i%FASHION_PALETTE.length]); return out; }
 
-const COLORS_STATUS = { emerging:getCSS('--peri','#7ea5e3'), bubbling:getCSS('--mauve','#d4a5c3'), mainstream:getCSS('--ink','#1c1c29') };
 function getCSS(name, fallback){ const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v||fallback; }
+const COLORS_STATUS = { emerging:getCSS('--peri','#7ea5e3'), bubbling:getCSS('--mauve','#d4a5c3'), mainstream:getCSS('--ink','#1c1c29') };
 
 /* ---------------- Helpers ---------------- */
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -472,10 +473,25 @@ function render(){
   const prevRows=rowsInRange(rowsAll,prevFrom,prevTo);
 
   const risers=fastestRisers(curRows,prevRows,12);
+
+  // Auto height so labels are readable (no diagonal)
+  els.chartRisers.style.height =
+    Math.min(440, Math.max(220, 22 * risers.length + 40)) + 'px';
+
   makeOrUpdate('chartRisers','bar',{
-    labels:risers.map(r=>r.k),
-    datasets:[{label:'Δ vs previous', data:risers.map(r=>r.delta), backgroundColor:palette(risers.length), borderRadius:8}]
-  },{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}});
+    labels: risers.map(r=>r.k),
+    datasets:[{
+      label:'Δ vs previous',
+      data: risers.map(r=>r.delta),
+      backgroundColor: palette(risers.length),
+      borderRadius:8,
+      barThickness:16
+    }]
+  },{
+    indexAxis:'y',
+    plugins:{legend:{display:false}},
+    scales:{x:{beginAtZero:true}, y:{ticks:{autoSkip:false}}}
+  });
 
   const newbies=newcomerKeywords(curRows,prevRows,20);
   els.newcomersList.innerHTML = newbies.map(n=>`<li><span>${n.k}</span><span class="muted">+${n.c}</span></li>`).join('') || `<li class="muted">No newcomers in this window.</li>`;
@@ -587,8 +603,10 @@ function renderDetails(){
   const gap = answerGapPct(rkw, gscRows);
   els.gapBadge.textContent = `Answer Gap: ${gap}%`;
 
-  // latest 12 articles
-  const latest = rkw.slice().sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0)).slice(0,12);
+  // latest 3 articles
+  const latest = rkw.slice()
+    .sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0))
+    .slice(0,3);
   els.kwList.innerHTML = latest.map(r=>{
     const d=(r.published||"").slice(0,10);
     const t=r.title||"(untitled)";
