@@ -1,550 +1,381 @@
 <!doctype html>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>The Futures Edit — Signals</title>
+
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
 <style>
   :root{
-    --bg:#ffffff; --fg:#141414; --muted:#6b7280;
-    --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
-    --shadow:0 8px 24px rgba(0,0,0,.06);
-    --ctl-w:180px; --seg-w:160px;
-  }
-  :root.dark{
-    --bg:#0b0b0c; --fg:#f2f3f5; --muted:#a3a7ae;
-    --card:#121317; --border:#2b2f36; --pill:#1b1f25; --accent:#e5e7eb;
-    --shadow:0 10px 30px rgba(0,0,0,.35);
-  }
+    --bg:#ffffff; --fg:#0f172a; --muted:#6b7280;
+    --card:#ffffff; --border:#e5e7eb; --pill:#f7f7fb;
+    --shadow:0 12px 30px rgba(15,23,42,.06);
 
+    /* Category chips (example) */
+    --fashion:#ecfeff; --beauty:#f5f3ff; --wellness:#f0fdf4;
+  }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-  a{color:#2563eb;text-decoration:none} a:hover{text-decoration:underline}
-
-  /* Sticky toolbar */
-  .bar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(10px);
-    background:color-mix(in oklab, var(--bg) 90%, transparent); border-bottom:1px solid var(--border)}
-  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:grid;gap:10px;align-items:center}
-  .title{font-weight:700;font-size:18px;grid-column:1/-1}
-  .search{grid-column:1/-1;display:flex;gap:10px}
-  .search input{width:100%}
-
-  /* Row with: Table/Cards | filters | Sort | More */
-  .bar-row-inline{display:grid;grid-template-columns:auto 1fr auto auto; gap:10px; align-items:center; grid-column:1/-1;}
-  .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
-  .seg.fixed{width:var(--seg-w)} .seg.fixed button{flex:1 0 50%}
-  .seg button{padding:8px 12px;border:0;background:var(--card);color:var(--fg);cursor:pointer}
-  .seg button.active{background:var(--accent);color:var(--bg)}
-  .btn{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;box-shadow:var(--shadow)}
-  .select,.input{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
-  .select.fixed{width:var(--ctl-w)}
-  .filters-inline{display:flex;gap:10px;align-items:center}
-
-  /* Pretty More menu */
-  .menu{ position:relative; }
-  .menu-panel{
-    display:none; position:absolute; right:0; top:calc(100% + 8px);
-    min-width:260px; background:var(--card); border:1px solid var(--border);
-    border-radius:10px; padding:8px; box-shadow:var(--shadow); z-index:60;
-  }
-  .menu-panel.open{ display:block; }
-  .menu-panel button, .menu-panel a{
-    display:flex; align-items:center; gap:8px; width:100%;
-    padding:10px; border:0; border-radius:8px; background:transparent; color:var(--fg);
-    text-decoration:none; cursor:pointer;
-  }
-  .menu-panel button:hover, .menu-panel a:hover{ background:var(--pill); }
-
-  /* Chips under toolbar */
-  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
-  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-  .chip{display:inline-flex;align-items:center;gap:6px}
-  .chip button{all:unset;cursor:pointer;color:var(--muted)}
-  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
-
-  /* table */
-  .table-wrap{margin-top:8px; overflow-x:auto; -webkit-overflow-scrolling:touch; background:var(--bg);}
-  table{min-width:900px;width:100%;border-collapse:collapse}
-  thead th{background:var(--bg)}
-  th,td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}
-  th.sortable{cursor:pointer;user-select:none}
-  th .arrow{opacity:1;margin-left:6px;display:none}
-  th.active .arrow{display:inline}
-
-  /* Cards */
-  .cards{display:grid;gap:12px;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);}
-  .card--inline{display:flex;flex-direction:column;gap:6px;padding:12px 14px;}
-  .date-line{display:flex;align-items:center;gap:8px;}
-  .card-title{margin:0;font-weight:600;}
-  .card-title a{color:inherit;text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-  .card-title a:hover{text-decoration:underline;}
-  .meta-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .kchip{ padding:3px 6px; font-size:11px; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
-  .score-txt{ color: var(--muted); font-size: 12px; }
-  .date{ color:var(--muted); white-space:nowrap; }
-
-  /* Tag color classes */
-  .pill-link{ color:inherit; text-decoration:none; display:inline-block; }
-  .tag--fashion{background:#fff1f2; border-color:#fecdd3; color:#9f1239}
-  .tag--beauty{ background:#eef2ff;  border-color:#c7d2fe;  color:#3730a3}
-  .tag--wellness{background:#ecfeff;border-color:#a5f3fc;color:#155e75}
-  .status--emerging{background:#ecfccb;border-color:#bef264;color:#3f6212}
-  .status--bubbling{background:#fef3c7;border-color:#fcd34d;color:#92400e}
-  .status--mainstream{background:#f1f5f9;border-color:#cbd5e1;color:#334155}
-
-  /* pager */
-  .pager{display:flex;align-items:center;justify-content:space-between;margin:16px 0;gap:12px;flex-wrap:wrap}
-  .pager-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-
-  @media (max-width: 860px){
-    .bar-inner{gap:8px}
-    .bar-row-inline{grid-template-columns:1fr 1fr; grid-auto-rows:auto}
-    .filters-inline{flex-wrap:wrap}
-    .cards{grid-template-columns:1fr}
-  }
+  html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
+  .wrap{max-width:1200px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:28px;margin:0 0 18px;font-weight:700;letter-spacing:.2px}
+  .toolbar{position:sticky;top:0;background:var(--bg);padding:14px 0 16px;z-index:10;box-shadow:0 8px 18px -18px rgba(15,23,42,.25)}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .search{flex:1 1 420px;min-width:280px}
+  input[type="search"]{width:100%;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:#fff;box-shadow:var(--shadow, none);outline:none}
+  input[type="search"]::placeholder{color:var(--muted)}
+  .pill, .seg{border:1px solid var(--border);border-radius:12px;background:var(--pill);padding:12px 14px;min-width:160px}
+  .seg{display:flex;gap:2px;padding:2px;min-width:auto;background:#f2f3f7}
+  .seg button{padding:10px 14px;border:0;background:transparent;border-radius:10px;cursor:pointer;font-weight:600}
+  .seg button.active{background:#fff;box-shadow:var(--shadow)}
+  select.pill{appearance:none;padding-right:36px;background:
+      linear-gradient(45deg, transparent 50%, #555 50%),
+      linear-gradient(135deg, #555 50%, transparent 50%),
+      linear-gradient(to right, transparent, transparent);
+      background-position: calc(100% - 18px) 16px, calc(100% - 12px) 16px, 0 0;
+      background-size: 6px 6px, 6px 6px, 100% 100%;
+      background-repeat:no-repeat;}
+  .spacer{flex:1}
+  .table{width:100%;border-collapse:separate;border-spacing:0 10px;margin-top:16px}
+  .table thead th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;text-align:left;padding:0 12px}
+  .table tbody tr{background:var(--card);box-shadow:var(--shadow)}
+  .table td{padding:14px 12px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .table td:first-child{border-left:1px solid var(--border);border-top-left-radius:12px;border-bottom-left-radius:12px}
+  .table td:last-child{border-right:1px solid var(--border);border-top-right-radius:12px;border-bottom-right-radius:12px}
+  .chip{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:600}
+  .chip.fashion{background:var(--fashion)}
+  .chip.beauty{background:var(--beauty)}
+  .chip.wellness{background:var(--wellness)}
+  .muted{color:var(--muted)}
+  .controls-inline{display:flex;gap:10px;align-items:center}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:18px}
+  .card{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:14px}
+  .card h3{margin:.1rem 0 .25rem;font-size:16px}
+  .badge{font-size:11px;border:1px solid var(--border);border-radius:999px;padding:4px 8px}
+  .footer-space{height:40px}
 </style>
 
-<div class="bar" id="bar">
-  <div class="bar-inner">
-    <div class="title">The Futures Edit — Signals</div>
-
-    <div class="search">
-      <input id="q" class="input" type="search" placeholder="Search title / keyword / category / status…" />
-    </div>
-
-    <!-- Row: Table/Cards | Filters | Sort | More -->
-    <div class="bar-row-inline">
-      <div class="seg fixed">
-        <button id="viewTable" class="active" type="button">Table</button>
-        <button id="viewCards" type="button">Cards</button>
-      </div>
-
-      <div class="filters-inline">
-        <select id="barCat" class="select fixed">
-          <option value="">All categories</option>
-          <option>fashion</option><option>beauty</option><option>wellness</option>
-        </select>
-
-        <select id="barStatus" class="select fixed">
-          <option value="">All status</option>
-          <option>emerging</option><option>bubbling</option><option>mainstream</option>
-        </select>
-
-        <button id="filtersBtn" class="btn">Dates</button>
-      </div>
-
-      <select id="sortKey" class="select fixed">
-        <option value="published" selected>Sort: Published</option>
-        <option value="trend_score">Sort: Trend score</option>
-        <option value="title">Sort: Title</option>
-        <option value="category">Sort: Category</option>
-        <option value="primary_keyword">Sort: Keyword</option>
-        <option value="status">Sort: Status</option>
-      </select>
-
-      <div class="menu">
-        <button class="btn" id="moreBtn" aria-haspopup="true" aria-expanded="false">More</button>
-        <div class="menu-panel" id="moreMenu" role="menu">
-          <a href="signals_simple.csv" download>Download CSV</a>
-          <button id="copyFiltered">Copy filtered CSV</button>
-          <button id="copyShare">Copy share link</button>
-          <button id="darkToggle">Toggle dark mode</button>
-          <a href="https://atelierfutures.github.io/futures-edit-signals/advanced.html" target="_blank" rel="noopener">Advanced Analytics</a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="wrap">
-  <div id="chips" class="chips"></div>
+  <h1>The Futures Edit — Signals</h1>
 
-  <div class="table-wrap">
-    <table id="tbl">
-      <thead>
-        <tr>
-          <th class="sortable" data-key="published">Published <span class="arrow">↕</span></th>
-          <th class="sortable" data-key="title">Title <span class="arrow">↕</span></th>
-          <th class="sortable" data-key="category" style="width:110px">Category <span class="arrow">↕</span></th>
-          <th class="sortable" data-key="primary_keyword" style="width:180px">Keyword <span class="arrow">↕</span></th>
-          <th class="sortable" data-key="trend_score" style="width:120px">Trend score <span class="arrow">↕</span></th>
-          <th class="sortable" data-key="status" style="width:120px">Status <span class="arrow">↕</span></th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="row">
+      <!-- Search -->
+      <div class="search">
+        <label class="sr-only" for="searchInput">Search</label>
+        <input id="searchInput" type="search" placeholder="Search title / keyword / category / status…">
+      </div>
 
-  <div id="cards" class="cards" style="display:none"></div>
+      <!-- View toggle -->
+      <div class="seg" role="tablist" aria-label="View">
+        <button id="viewTableBtn" class="active" role="tab" aria-selected="true">Table</button>
+        <button id="viewCardsBtn" role="tab" aria-selected="false">Cards</button>
+      </div>
 
-  <div class="pager">
-    <div class="pager-left muted" id="rangeInfo">Loading…</div>
-    <div class="pager-right">
-      <span>Rows per page:</span>
-      <select id="pageSize" class="select fixed">
-        <option selected>25</option><option>50</option><option>100</option><option>200</option>
+      <!-- Category -->
+      <label class="sr-only" for="categorySelect">Category</label>
+      <select id="categorySelect" class="pill">
+        <option value="all">All categories</option>
+        <!-- categories will be populated dynamically from data -->
       </select>
-      <span id="pageInfo" class="muted">Page 1 of 1</span>
-      <button class="btn" id="prevBtn">Prev</button>
-      <button class="btn" id="nextBtn">Next</button>
-    </div>
-  </div>
-</div>
 
-<!-- Drawer (dates only) -->
-<div class="menu-panel" id="drawer" style="position:fixed;left:50%;transform:translateX(-50%);top:90px;max-width:420px;width:92%;display:none">
-  <div style="display:grid;gap:10px">
-    <label>From <input id="from" type="date" class="input" style="width:100%"></label>
-    <label>To <input id="to" type="date" class="input" style="width:100%"></label>
-    <label>Quick
-      <select id="quick" class="select" style="width:100%">
-        <option value="">All time</option>
+      <!-- Status -->
+      <label class="sr-only" for="statusSelect">Status</label>
+      <select id="statusSelect" class="pill">
+        <option value="all">All status</option>
+        <!-- statuses will be populated dynamically from data -->
+      </select>
+
+      <!-- NEW: Date range dropdown (replaces “Dates” button) -->
+      <label class="sr-only" for="rangeFilter">Date range</label>
+      <select id="rangeFilter" class="pill" title="Date range">
+        <option value="all" selected>All time</option>
         <option value="7">Last 7 days</option>
         <option value="30">Last 30 days</option>
         <option value="90">Last 90 days</option>
+        <option value="365">Last year</option>
       </select>
-    </label>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button id="clearDates" class="btn" type="button">Clear</button>
-      <button id="applyFilters" class="btn" type="button">Apply</button>
-      <button id="closeDrawer" class="btn" type="button">Close</button>
+
+      <!-- Sort -->
+      <label class="sr-only" for="sortSelect">Sort</label>
+      <select id="sortSelect" class="pill">
+        <option value="published-desc">Sort: Published ↓</option>
+        <option value="published-asc">Sort: Published ↑</option>
+        <option value="score-desc">Sort: Trend score ↓</option>
+        <option value="score-asc">Sort: Trend score ↑</option>
+      </select>
+
+      <!-- More (placeholder) -->
+      <button id="moreBtn" class="pill" style="min-width:auto">More</button>
+
+      <div class="spacer"></div>
     </div>
   </div>
+
+  <!-- Table -->
+  <table class="table" id="tableView" role="table" aria-label="Signals table">
+    <thead>
+      <tr>
+        <th>Published</th>
+        <th>Title</th>
+        <th>Category</th>
+        <th>Keyword</th>
+        <th>Trend score</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <!-- Cards -->
+  <div id="cardsView" class="cards" style="display:none"></div>
+
+  <div class="footer-space"></div>
 </div>
 
 <script>
-/* ---------- refs ---------- */
-const tbody   = document.querySelector("#tbl tbody");
-const cardsEl = document.getElementById("cards");
-const chipsEl = document.getElementById("chips");
-const headers = [...document.querySelectorAll("th.sortable")];
+/* ===========================
+   Data Loading
+   =========================== */
 
-const q = document.getElementById("q");
-const sortKeySel = document.getElementById("sortKey");
+// Point this to your CSV (headers expected: published,title,category,keyword,score,status)
+const CSV_URL = 'signals.csv'; // change if needed
 
-const viewTableBtn = document.getElementById("viewTable");
-const viewCardsBtn = document.getElementById("viewCards");
+let rows = [];        // original loaded rows
+let viewMode = 'table'; // 'table' | 'cards'
 
-const barCatSel = document.getElementById("barCat");
-const barStatusSel = document.getElementById("barStatus");
+document.addEventListener('DOMContentLoaded', () => {
+  // Wire up UI
+  hookControls();
 
-const pageSizeSel = document.getElementById("pageSize");
-const prevBtn  = document.getElementById("prevBtn");
-const nextBtn  = document.getElementById("nextBtn");
-const pageInfo = document.getElementById("pageInfo");
-const rangeInfo= document.getElementById("rangeInfo");
-
-/* Drawer (dates only) */
-const drawer = document.getElementById("drawer");
-const filtersBtn = document.getElementById("filtersBtn");
-const closeDrawer = document.getElementById("closeDrawer");
-const applyFilters = document.getElementById("applyFilters");
-const fromI = document.getElementById("from");
-const toI   = document.getElementById("to");
-const quick = document.getElementById("quick");
-const clearDatesBtn = document.getElementById("clearDates");
-
-/* More menu */
-const moreBtn  = document.getElementById("moreBtn");
-const moreMenu = document.getElementById("moreMenu");
-const copyFilteredBtn = document.getElementById("copyFiltered");
-const copyShareBtn = document.getElementById("copyShare");
-const darkToggleBtn = document.getElementById("darkToggle");
-
-/* ---------- state ---------- */
-let rowsAll = [];
-let viewMode = "table";
-/* default sort = PUBLISHED (desc) */
-let sortKey = "published";
-let sortDir = "desc";
-let currentPage = 1;
-let pageSize = parseInt(pageSizeSel.value,10) || 25;
-
-const statusOrder = {emerging:0, bubbling:1, mainstream:2};
-const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const catClass = c => c && ["fashion","beauty","wellness"].includes(c) ? `pill tag tag--${c}` : "pill";
-const statusClass = s => s ? `pill status status--${s.toLowerCase()}` : "pill";
-
-/* linkable pills */
-function catPill(c){
-  if(!c) return "";
-  const href = "./?cat=" + encodeURIComponent(c);
-  return `<a class="${catClass(c)} pill-link" href="${href}" target="_blank" rel="noopener">${c}</a>`;
-}
-function statusPill(s){
-  const v = (s||"").toLowerCase(); if(!v) return "";
-  const href = "./?stat=" + encodeURIComponent(v);
-  return `<a class="${statusClass(v)} pill-link" href="${href}" target="_blank" rel="noopener">${v}</a>`;
-}
-
-/* Madrid time */
-function fmtDateTime(iso){
-  if(!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d)) return (iso||"").slice(0,10);
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone:'Europe/Madrid',
-    year:'numeric', month:'2-digit', day:'2-digit',
-    hour:'2-digit', minute:'2-digit', hour12:false
-  }).format(d).replace(',', '');
-}
-
-/* theme */
-(()=>{ const saved = localStorage.getItem("fe_theme"); if(saved==="dark") document.documentElement.classList.add("dark"); })();
-darkToggleBtn.onclick = () => {
-  document.documentElement.classList.toggle("dark");
-  localStorage.setItem("fe_theme", document.documentElement.classList.contains("dark") ? "dark" : "light");
-};
-
-/* pretty More menu */
-function toggleMenu(open){
-  moreMenu.classList.toggle('open', open);
-  moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-}
-moreBtn.onclick = (e)=>{ e.stopPropagation(); toggleMenu(!moreMenu.classList.contains('open')); };
-document.addEventListener('click', (e)=>{ if(!moreMenu.contains(e.target) && e.target!==moreBtn) toggleMenu(false); });
-document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') toggleMenu(false); });
-
-/* sorting */
-function updateSortUI(){
-  sortKeySel.value = sortKey;
-  headers.forEach(h=>{
-    h.classList.toggle("active", h.dataset.key === sortKey);
-    const arrow = h.querySelector(".arrow");
-    if(arrow) arrow.textContent = h.dataset.key === sortKey ? (sortDir==="asc"?"↑":"↓") : "";
+  // Load CSV
+  Papa.parse(CSV_URL, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: (res) => {
+      rows = sanitizeRows(res.data || []);
+      hydrateFacets(rows);
+      applyFilters(); // initial paint
+    },
+    error: (err) => {
+      console.error('CSV load error:', err);
+      // Fallback: empty state
+      rows = [];
+      hydrateFacets(rows);
+      applyFilters();
+    }
   });
-}
-function cmp(a,b,key){
-  const dir = sortDir === "asc" ? 1 : -1;
-  if(key === "trend_score"){
-    const x = parseFloat(a.trend_score||0), y = parseFloat(b.trend_score||0);
-    return (x<y?-1:x>y?1:0)*dir;
-  }
-  if(key === "published"){
-    const x = Date.parse(a.published||"") || 0;
-    const y = Date.parse(b.published||"") || 0;
-    return (x<y?-1:x>y?1:0)*dir;
-  }
-  if(key === "status"){
-    const x = statusOrder[(a.status||"").toLowerCase()] ?? 99;
-    const y = statusOrder[(b.status||"").toLowerCase()] ?? 99;
-    return (x<y?-1:x>y?1:0)*dir;
-  }
-  const x = (a[key]||"").toString().toLowerCase();
-  const y = (b[key]||"").toString().toLowerCase();
-  return (x<y?-1:x>y?1:0)*dir;
-}
-function setSort(key){
-  if(sortKey === key){ sortDir = (sortDir === "asc") ? "desc" : "asc"; }
-  else { sortKey = key; sortDir = (key === "trend_score" || key === "published") ? "desc" : "asc"; }
-  currentPage = 1; updateSortUI(); render();
-}
-headers.forEach(h => h.addEventListener("click", () => setSort(h.dataset.key)));
-sortKeySel.onchange = () => { sortKey = sortKeySel.value; sortDir = (sortKey==="trend_score"||sortKey==="published")?"desc":"asc"; currentPage=1; updateSortUI(); render(); };
-
-/* view */
-function setView(mode){
-  viewMode = mode;
-  viewTableBtn.classList.toggle("active", mode==="table");
-  viewCardsBtn.classList.toggle("active", mode==="cards");
-  document.querySelector(".table-wrap").style.display = mode==="table" ? "" : "none";
-  document.getElementById("cards").style.display = mode==="cards" ? "grid" : "none";
-  currentPage = 1; render();
-}
-viewTableBtn.onclick  = () => setView("table");
-viewCardsBtn.onclick  = () => setView("cards");
-
-/* search */
-const tokenize = s => (s||"").toLowerCase().trim().split(/\s+/).filter(Boolean);
-function matches(row, query){
-  const toks = tokenize(query);
-  if(!toks.length) return true;
-  const hay = [row.title||"", row.primary_keyword||"", row.category||"", (row.status||"").toLowerCase()].join(" ").toLowerCase();
-  return toks.every(t => hay.includes(t));
-}
-function highlight(str, query){
-  let out = str||"";
-  tokenize(query).forEach(t=>{
-    const re = new RegExp("(" + escRe(t) + ")", "ig");
-    out = out.replace(re, "<mark>$1</mark>");
-  });
-  return out;
-}
-q.addEventListener("input", () => { currentPage=1; render(); });
-window.addEventListener("keydown", e => {
-  if(e.key === "Escape"){
-    if(drawer.style.display==="block"){ drawer.style.display="none"; }
-    else { q.value=""; currentPage=1; render(); }
-  }
 });
 
-/* toolbar filters */
-barCatSel.onchange   = () => { currentPage=1; render(); };
-barStatusSel.onchange= () => { currentPage=1; render(); };
+function sanitizeRows(arr){
+  // Normalize keys + types
+  return arr.map(r => ({
+    published: r.published || r.date || r.Published || '',
+    title: r.title || r.Title || '',
+    category: r.category || r.Category || '',
+    keyword: r.keyword || r.Keyword || '',
+    score: safeNumber(r.score ?? r['trend score'] ?? r.TrendScore ?? ''),
+    status: r.status || r.Status || ''
+  }));
+}
+function safeNumber(v){
+  const n = Number(String(v).replace(',', '.'));
+  return isNaN(n) ? 0 : n;
+}
 
-/* drawer (dates only) */
-filtersBtn.onclick = ()=>{ drawer.style.display='block'; };
-closeDrawer.onclick = ()=>{ drawer.style.display='none'; };
-applyFilters.onclick = () => { currentPage=1; drawer.style.display='none'; render(); };
-clearDatesBtn.onclick = () => { fromI.value=""; toI.value=""; quick.value=""; };
-quick.onchange = () => {
-  const days = parseInt(quick.value) || 0;
-  if(!days){ fromI.value=""; toI.value=""; return; }
-  const today = new Date();
-  const start = new Date(today.getTime() - days*86400000);
-  fromI.value = start.toISOString().slice(0,10);
-  toI.value   = today.toISOString().slice(0,10);
+/* ===========================
+   Filters & Facets
+   =========================== */
+const el = {
+  search: document.getElementById('searchInput'),
+  cat: document.getElementById('categorySelect'),
+  stat: document.getElementById('statusSelect'),
+  range: document.getElementById('rangeFilter'),
+  sort: document.getElementById('sortSelect'),
+  table: document.getElementById('tableView'),
+  tbody: document.getElementById('tableBody'),
+  cards: document.getElementById('cardsView'),
+  viewTableBtn: document.getElementById('viewTableBtn'),
+  viewCardsBtn: document.getElementById('viewCardsBtn')
 };
 
-/* copy / share */
-copyFilteredBtn.onclick = async () => {
-  const rows = getFilteredSortedRows();
-  const header = ["published","title","link","category","primary_keyword","trend_score","status"];
-  const csv = [header.join(",")].concat(rows.map(r => header.map(h => `"${(r[h]??"").toString().replace(/"/g,'""')}"`).join(","))).join("\n");
-  try { await navigator.clipboard.writeText(csv);
-    copyFilteredBtn.textContent = "Copied!"; setTimeout(()=> copyFilteredBtn.textContent="Copy filtered CSV", 1500);
-  } catch {
-    const blob = new Blob([csv], {type:"text/csv"}); const a = Object.assign(document.createElement("a"), {href:URL.createObjectURL(blob), download:"signals_filtered.csv"}); document.body.appendChild(a); a.click(); a.remove();
+function hookControls(){
+  el.search.addEventListener('input', debounce(applyFilters, 150));
+  el.cat.addEventListener('change', applyFilters);
+  el.stat.addEventListener('change', applyFilters);
+  el.range.addEventListener('change', applyFilters);
+  el.sort.addEventListener('change', applyFilters);
+
+  el.viewTableBtn.addEventListener('click', () => setView('table'));
+  el.viewCardsBtn.addEventListener('click', () => setView('cards'));
+}
+
+function hydrateFacets(data){
+  const cats = Array.from(new Set(data.map(d => d.category).filter(Boolean))).sort();
+  const stats = Array.from(new Set(data.map(d => d.status).filter(Boolean))).sort();
+
+  // Category
+  el.cat.innerHTML = `<option value="all">All categories</option>` + 
+    cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+
+  // Status
+  el.stat.innerHTML = `<option value="all">All status</option>` + 
+    stats.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+}
+
+function setView(mode){
+  if(mode === viewMode) return;
+  viewMode = mode;
+  el.viewTableBtn.classList.toggle('active', mode==='table');
+  el.viewCardsBtn.classList.toggle('active', mode==='cards');
+  el.table.style.display = mode==='table' ? '' : 'none';
+  el.cards.style.display = mode==='cards' ? '' : 'none';
+}
+
+/* ===========================
+   Date Range Helpers
+   =========================== */
+function cutoffFromValue(val){
+  if(val === 'all') return null;
+  const days = parseInt(val, 10);
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - days);
+  return d;
+}
+function parseRowDate(row){
+  const d = new Date(row.published);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/* ===========================
+   Core filtering + sorting
+   =========================== */
+function applyFilters(){
+  const q = el.search.value.trim().toLowerCase();
+  const cat = el.cat.value;
+  const stat = el.stat.value;
+  const cutoff = cutoffFromValue(el.range.value);
+  const sort = el.sort.value;
+
+  let filtered = rows.slice();
+
+  // search across title/keyword/category/status
+  if(q){
+    filtered = filtered.filter(r => (
+      (r.title && r.title.toLowerCase().includes(q)) ||
+      (r.keyword && r.keyword.toLowerCase().includes(q)) ||
+      (r.category && r.category.toLowerCase().includes(q)) ||
+      (r.status && r.status.toLowerCase().includes(q))
+    ));
   }
-};
-copyShareBtn.onclick = async () => {
-  const url = new URL(location.href); url.search = buildQuery().toString();
-  try { await navigator.clipboard.writeText(url.toString());
-    copyShareBtn.textContent = "Link copied!"; setTimeout(()=> copyShareBtn.textContent="Copy share link", 1500);
-  } catch {}
-};
-
-/* pipeline */
-function getFilteredSortedRows(){
-  const query=q.value, c=barCatSel.value, s=barStatusSel.value;
-  const fromMs = fromI.value ? new Date(new Date(fromI.value).setUTCHours(0,0,0,0)).getTime() : -Infinity;
-  const toMs   = toI.value   ? new Date(new Date(toI.value).setUTCHours(23,59,59,999)).getTime() :  Infinity;
-
-  let rows = rowsAll.filter(r => {
-    if (c && r.category !== c) return false;
-    if (s && (r.status||"").toLowerCase() !== s) return false;
-    if (!matches(r, query)) return false;
-    const pubMs = Date.parse(r.published || "");
-    if (fromMs !== -Infinity || toMs !== Infinity){
-      if (isNaN(pubMs)) return false;
-      if (pubMs < fromMs || pubMs > toMs) return false;
+  // category
+  if(cat !== 'all'){
+    filtered = filtered.filter(r => r.category === cat);
+  }
+  // status
+  if(stat !== 'all'){
+    filtered = filtered.filter(r => r.status === stat);
+  }
+  // date range
+  if(cutoff){
+    filtered = filtered.filter(r => {
+      const d = parseRowDate(r);
+      return d && d >= cutoff;
+    });
+  }
+  // sort
+  filtered.sort((a,b) => {
+    switch(sort){
+      case 'published-asc': return cmpDate(a,b);
+      case 'published-desc': return cmpDate(b,a);
+      case 'score-asc': return a.score - b.score;
+      case 'score-desc': return b.score - a.score;
+      default: return cmpDate(b,a);
     }
-    return true;
   });
 
-  rows = rows.sort((a,b)=>cmp(a,b,sortKey));
-  return rows;
+  // render
+  if(viewMode === 'table') renderTable(filtered); else renderCards(filtered);
 }
 
-/* chips + url */
-function renderChips(){
-  const chips = [];
-  if(q.value) chips.push({k:"search", label:`Search: ${q.value}`, clear:()=>{q.value="";}});
-  if(barCatSel.value) chips.push({k:"category", label:`Category: ${barCatSel.value}`, clear:()=>{barCatSel.value="";}});
-  if(barStatusSel.value) chips.push({k:"status", label:`Status: ${barStatusSel.value}`, clear:()=>{barStatusSel.value="";}});
-  if(fromI.value || toI.value) chips.push({k:"dates", label:`Date: ${fromI.value||"…"} → ${toI.value||"…"}`, clear:()=>{fromI.value=""; toI.value=""; quick.value="";}});
-  chipsEl.innerHTML = chips.map(c => `<span class="pill chip">${c.label} <button title="clear" data-k="${c.k}">×</button></span>`).join("");
-  chipsEl.querySelectorAll("button").forEach(b=>{
-    b.onclick = () => { const k=b.dataset.k; const c = chips.find(x=>x.k===k); if(c){c.clear(); currentPage=1; render();} };
-  });
+function cmpDate(a,b){
+  const da = parseRowDate(a), db = parseRowDate(b);
+  if(!da && !db) return 0;
+  if(!da) return -1;
+  if(!db) return 1;
+  return da - db;
 }
-function buildQuery(){
-  const p = new URLSearchParams();
-  if(q.value) p.set("q", q.value);
-  if(barCatSel.value) p.set("cat", barCatSel.value);
-  if(barStatusSel.value) p.set("stat", barStatusSel.value);
-  if(fromI.value) p.set("from", fromI.value);
-  if(toI.value) p.set("to", toI.value);
-  if(viewMode!=="table") p.set("view", viewMode);
-  if(sortKey!=="published") p.set("sort", sortKey);
-  if(sortDir!=="desc") p.set("dir", sortDir);
-  if(pageSize!==25) p.set("size", String(pageSize));
-  if(currentPage!==1) p.set("page", String(currentPage));
-  return p;
-}
-function syncUrl(){ history.replaceState(null, "", "?"+buildQuery().toString()); }
 
-/* render */
-function render(){
-  const rows = getFilteredSortedRows();
-  const total = rows.length;
-
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  if (currentPage > totalPages) currentPage = totalPages;
-  const start = (currentPage-1) * pageSize;
-  const end   = Math.min(start + pageSize, total);
-  const slice = rows.slice(start, end);
-
-  pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-  rangeInfo.textContent = `Showing ${start+1}-${end} of ${total}`;
-
-  if(viewMode==="table"){
-    tbody.innerHTML = slice.map(r => `
+/* ===========================
+   Renderers
+   =========================== */
+function renderTable(data){
+  el.tbody.innerHTML = data.map(row => {
+    const date = safeDateStr(row.published);
+    const catClass = chipClass(row.category);
+    return `
       <tr>
-        <td>${fmtDateTime(r.published)}</td>
-        <td><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></td>
-        <td>${catPill(r.category)}</td>
-        <td>${highlight(r.primary_keyword||"", q.value)}</td>
-        <td>${r.trend_score ?? ""}</td>
-        <td>${statusPill(r.status)}</td>
+        <td><span class="muted">${escapeHtml(date)}</span></td>
+        <td>${escapeHtml(row.title || '')}</td>
+        <td><span class="chip ${catClass}">${escapeHtml(row.category || '')}</span></td>
+        <td>${escapeHtml(row.keyword || '')}</td>
+        <td>${Number(row.score || 0).toFixed(1)}</td>
+        <td><span class="badge">${escapeHtml(row.status || '')}</span></td>
       </tr>
-    `).join("");
-  } else {
-    cardsEl.innerHTML = slice.map(r => {
-      const allK = (r.primary_keyword||"").split(",").map(s=>s.trim()).filter(Boolean);
-      const firstK = allK[0] || "";
-      return `
-        <div class="card card--inline">
-          <div class="date-line"><span class="date">${fmtDateTime(r.published)}</span></div>
-          <h4 class="card-title"><a href="${r.link}" target="_blank" rel="noopener">${highlight(r.title, q.value)}</a></h4>
-          <div class="meta-line">
-            ${catPill(r.category)}
-            ${statusPill(r.status)}
-            ${firstK ? `<span class="kchip">${highlight(firstK, q.value)}</span>` : ""}
-            <span class="score-txt">score ${r.trend_score ?? ""}</span>
-          </div>
+    `;
+  }).join('');
+}
+
+function renderCards(data){
+  el.cards.innerHTML = data.map(row => {
+    const date = safeDateStr(row.published);
+    const catClass = chipClass(row.category);
+    return `
+      <article class="card">
+        <div class="controls-inline" style="justify-content:space-between">
+          <span class="chip ${catClass}">${escapeHtml(row.category || '')}</span>
+          <span class="badge">${escapeHtml(row.status || '')}</span>
         </div>
-      `;
-    }).join("");
-  }
-
-  renderChips();
-  syncUrl();
+        <h3>${escapeHtml(row.title || '')}</h3>
+        <p class="muted">${escapeHtml(row.keyword || '')}</p>
+        <p class="muted" style="font-size:12px;margin-top:6px">${escapeHtml(date)} • Score ${Number(row.score||0).toFixed(1)}</p>
+      </article>
+    `;
+  }).join('');
 }
 
-/* paging */
-pageSizeSel.onchange = () => { pageSize = parseInt(pageSizeSel.value,10) || 25; currentPage=1; render(); };
-prevBtn.onclick = () => { if(currentPage>1){ currentPage--; render(); } };
-nextBtn.onclick = () => {
-  const totalPages = Math.max(1, Math.ceil(getFilteredSortedRows().length / pageSize));
-  if(currentPage < totalPages){ currentPage++; render(); }
-};
+function chipClass(cat){
+  const c = (cat||'').toLowerCase();
+  if(c.includes('fashion')) return 'fashion';
+  if(c.includes('beauty')) return 'beauty';
+  if(c.includes('wellness')) return 'wellness';
+  return '';
+}
 
-/* restore + load */
-function restoreFromUrl(){
-  const p = new URLSearchParams(location.search);
-  if(p.get("q")) q.value = p.get("q");
-  if(p.get("cat")) { barCatSel.value = p.get("cat"); }
-  if(p.get("stat")){ barStatusSel.value = p.get("stat"); }
-  if(p.get("from")) fromI.value = p.get("from");
-  if(p.get("to")) toI.value = p.get("to");
-  const v = p.get("view"); if(v==="cards") setView("cards"); else setView("table");
-  const sk = p.get("sort"); if(sk){ sortKey = sk; }
-  const sd = p.get("dir"); if(sd){ sortDir = sd; }
-  const ps = parseInt(p.get("size")||"25",10); pageSize = ps; pageSizeSel.value = String(ps);
-  const pg = parseInt(p.get("page")||"1",10); currentPage = Math.max(1, pg);
-  updateSortUI();
+function safeDateStr(v){
+  const d = new Date(v);
+  if(isNaN(d)) return v || '';
+  // YYYY-MM-DD
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
 }
-function load(){
-  restoreFromUrl();
-  const bust = new Date().toISOString().slice(0,10);
-  fetch("signals_simple.csv?ts="+bust)
-    .then(r => r.text())
-    .then(csv => Papa.parse(csv, {header:true, skipEmptyLines:true}))
-    .then(res => { rowsAll = res.data; render(); })
-    .catch(() => { rangeInfo.textContent = "Failed to load CSV"; });
+
+/* ===========================
+   Utils
+   =========================== */
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[m]));
 }
-load();
+function debounce(fn, delay=150){
+  let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), delay); };
+}
 </script>
