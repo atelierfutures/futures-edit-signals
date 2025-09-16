@@ -1,9 +1,9 @@
 <!doctype html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>The Futures Edit — Tags, Trends & Graphs</title>
+<title>The Futures Edit — Tags, Trends & Signals</title>
 
-<!-- Chart.js (primary CDN) -->
+<!-- Chart.js -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
@@ -14,15 +14,16 @@
     --shadow:0 8px 24px rgba(0,0,0,.06); --bar-h:84px;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif}
-  header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--border);height:var(--bar-h);
-    display:flex;align-items:center;gap:12px;padding:0 18px;z-index:10}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif}
+  header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--border);
+         height:var(--bar-h);display:flex;align-items:center;gap:12px;padding:0 18px;z-index:10}
   h1{margin:0;font-weight:700;font-size:18px}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:.3rem .55rem;border-radius:999px;background:var(--pill);
-    border:1px solid var(--border);font-size:12px;color:#111827}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:.3rem .55rem;border-radius:999px;
+        background:var(--pill);border:1px solid var(--border);font-size:12px;color:#111827}
   main{max-width:1200px;margin:22px auto;padding:0 16px}
   .grid{display:grid;grid-template-columns:1fr;gap:16px}
-  @media (min-width: 980px){ .grid-2{grid-template-columns:1fr 1fr} .grid-3{grid-template-columns:1fr 1fr 1fr} }
+  @media (min-width: 1100px){ .grid-2{grid-template-columns:1.4fr .9fr} .grid-2-even{grid-template-columns:1fr 1fr} }
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:16px}
   h2{margin:0 0 8px 0;font:600 18px/1.2 inherit}
   h3{margin:0 0 6px 0;font:600 15px/1.2 inherit}
@@ -33,16 +34,20 @@
   th,td{padding:8px;border-bottom:1px solid #f3f4f6;text-align:left;vertical-align:top}
   thead th{background:#f9fafb;border-bottom:1px solid var(--border)}
   details summary{cursor:pointer}
-  .matrix{border:1px solid var(--border);border-radius:12px;overflow:auto}
-  .matrix table th, .matrix table td{font-size:12px;text-align:center;border-bottom:1px solid #f3f4f6;border-right:1px solid #f3f4f6}
-  .legend{display:flex;align-items:center;gap:6px}
-  .legend > span{width:14px;height:10px;display:inline-block;border:1px solid var(--border)}
   .tags-cloud{display:flex;flex-wrap:wrap;gap:8px}
   .tag-pill{display:inline-block;padding:.25rem .5rem;border-radius:999px;background:var(--pill);border:1px solid var(--border);font-size:12px;color:#111827}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:.45rem .7rem;border-radius:10px;border:1px solid var(--border);background:#fff;cursor:pointer}
+  .btn:active{transform:translateY(1px)}
+  .kpi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+  .kpi .box{border:1px solid var(--border);border-radius:12px;padding:10px}
+  .kpi .box b{font-size:18px}
+  .row{display:flex;flex-wrap:wrap;gap:8px}
+  .select{border:1px solid var(--border);border-radius:8px;padding:6px 8px;background:#fff}
+  .divider{height:1px;background:var(--border);margin:12px 0}
 </style>
 
 <header>
-  <h1>The Futures Edit — Tags, Trends & Graphs</h1>
+  <h1>The Futures Edit — Tags, Trends & Signals</h1>
   <span class="pill" id="dataset-meta">loading…</span>
 </header>
 
@@ -72,8 +77,48 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
     <div id="trend-errors" style="margin-top:10px;color:#b91c1c;"></div>
   </section>
 
-  <!-- 2) “Old” graphics -->
-  <section class="grid grid-2">
+  <!-- 2) SIGNALS — Top 25 + insights side panel -->
+  <section class="grid grid-2 card" style="display:grid;gap:16px;">
+    <div>
+      <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <h2 style="margin:0">Signals — Top 25</h2>
+        <div class="row">
+          <label for="rank-by" class="muted" style="align-self:center;">Rank by</label>
+          <select id="rank-by" class="select">
+            <option value="trend" selected>Trend Score</option>
+            <option value="volume">Volume</option>
+          </select>
+        </div>
+      </div>
+      <div id="signals-meta" class="muted" style="margin-bottom:6px;"></div>
+      <div class="chart-wrap"><canvas id="signalsChart"></canvas></div>
+      <small class="muted" style="display:block;margin-top:6px;">Click a bar to analyze the signal on the right.</small>
+    </div>
+
+    <aside>
+      <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <h2 style="margin:0">Signal Insights</h2>
+        <button id="copy-summary" class="btn" title="Copy a short summary to clipboard">Copy summary</button>
+      </div>
+      <div id="signal-title" style="font:700 18px/1.2 ui-sans-serif,system-ui;">Select a signal →</div>
+      <div class="muted" id="signal-tags" style="margin-top:6px;"></div>
+
+      <div class="kpi">
+        <div class="box"><div class="muted">Trend Score</div><b id="kpi-score">–</b></div>
+        <div class="box"><div class="muted">Volume</div><b id="kpi-volume">–</b></div>
+        <div class="box"><div class="muted">Growth %</div><b id="kpi-growth">–</b></div>
+        <div class="box"><div class="muted">Last seen</div><b id="kpi-lastseen">–</b></div>
+      </div>
+
+      <div class="divider"></div>
+      <h3>Related Articles</h3>
+      <div id="articles-list" class="muted">No signal selected.</div>
+    </aside>
+  </section>
+
+  <!-- 3) Top Tags & Legacy Growth -->
+  <section class="grid grid-2-even">
+    <!-- Top Tags -->
     <section class="card">
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
         <h2>Top Tags</h2>
@@ -83,14 +128,7 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
       <div id="tags-cloud" class="tags-cloud" style="margin-top:10px;"></div>
     </section>
 
-    <section class="card">
-      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
-        <h2>Top Signals by Volume</h2>
-        <small class="muted" id="vol-meta"></small>
-      </div>
-      <div class="chart-wrap-sm"><canvas id="volumeBarChart"></canvas></div>
-    </section>
-
+    <!-- Legacy: Fastest Rising -->
     <section class="card">
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
         <h2>Fastest Rising (Growth Rate)</h2>
@@ -99,42 +137,10 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
       <div class="chart-wrap-sm"><canvas id="growthBarChart"></canvas></div>
       <small class="muted" style="display:block;margin-top:6px;">(Legacy view — hide later if not useful.)</small>
     </section>
-
-    <section class="card">
-      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
-        <h2>Volume vs Growth</h2>
-        <small class="muted" id="scatter-meta"></small>
-      </div>
-      <div class="chart-wrap-sm"><canvas id="scatterChart"></canvas></div>
-    </section>
-  </section>
-
-  <!-- 3) Recency timeline + Tag co-occurrence -->
-  <section class="grid grid-2">
-    <section class="card">
-      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
-        <h2>Recency — Last 12 Weeks</h2>
-        <small class="muted" id="recency-meta"></small>
-      </div>
-      <div class="chart-wrap-sm"><canvas id="recencyLineChart"></canvas></div>
-    </section>
-
-    <section class="card">
-      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
-        <h2>Tag Co-occurrence</h2>
-        <small class="muted" id="matrix-meta"></small>
-      </div>
-      <div class="legend" style="margin-bottom:8px;">
-        <span id="legend-min"></span><small class="muted">low</small>
-        <span id="legend-mid"></span><small class="muted">mid</small>
-        <span id="legend-max"></span><small class="muted">high</small>
-      </div>
-      <div class="matrix" id="matrix-wrap"></div>
-    </section>
   </section>
 </main>
 
-<!-- Embedded fallback data (used if data/signals.csv can’t be fetched) -->
+<!-- Embedded fallback data (used if CSVs can’t be fetched) -->
 <script type="text/plain" id="embedded-signals">
 keyword,volume,growth_rate,last_seen,tags
 "glazed blush",78,22,"2025-09-12","beauty, makeup"
@@ -154,14 +160,27 @@ keyword,volume,growth_rate,last_seen,tags
 "athleisure tailoring",32,6,"2025-08-29","fashion"
 </script>
 
-<script>
-/* ========= CONFIG =========
-If you have a real CSV, put it at: data/signals.csv
-Headers expected: keyword, volume, growth_rate, last_seen, tags
-*/
-const CSV_URL = 'data/signals.csv';
+<script type="text/plain" id="embedded-articles">
+keyword,title,url,source,date
+"glazed blush","Why Glazed Blush Is Everywhere","https://example.com/glazed-blush-trend","BeautyDaily","2025-09-11"
+"glazed blush","A Pro Guide to Glazed Cheeks","https://example.com/glazed-cheeks-guide","MakeupLab","2025-09-10"
+"skin cycling","Derms on Skin Cycling","https://example.com/skin-cycling-derms","SkincareNow","2025-09-09"
+"blue beauty","Blue Beauty: Beyond Green","https://example.com/blue-beauty-future","EcoCosmetics","2025-08-30"
+"olfactory branding","How Scent Sells","https://example.com/olfactory-branding-retail","RetailSense","2025-09-08"
+"refillable packaging","Refillables Go Mainstream","https://example.com/refillable-packaging","PackWatch","2025-09-03"
+"augmented try-on","AR Try-On Boosts Conversion","https://example.com/ar-try-on-stats","TechRetail","2025-09-12"
+</script>
 
-/* ========= Helpers ========= */
+<script>
+/* ===== CONFIG =====
+If you have real CSVs, place them at:
+- data/signals.csv  (keyword, volume, growth_rate, last_seen, tags)
+- data/articles.csv (keyword, title, url, source, date)
+*/
+const SIGNALS_CSV_URL  = 'data/signals.csv';
+const ARTICLES_CSV_URL = 'data/articles.csv';
+
+/* ===== Helpers ===== */
 const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
 function minmaxNormalize(values) {
   const arr = values.map(v => (isFinite(+v) ? +v : 0));
@@ -205,105 +224,85 @@ function parseCSVObjects(text){
   return rows.slice(1).filter(r => r.some(v => String(v).trim() !== ''))
     .map(r => Object.fromEntries(header.map((h,idx) => [h, r[idx] ?? ''])));
 }
-function showError(msg){
-  const e = document.getElementById('trend-errors');
-  if (e) e.textContent = msg;
-  console.error('[tags.html]', msg);
-}
-function ensureChartJs(cb){
-  if (window.Chart) return cb();
-  // Try backup CDN
-  const s = document.createElement('script');
-  s.src = 'https://unpkg.com/chart.js@4.4.3/dist/chart.umd.js';
-  s.onload = cb;
-  s.onerror = () => { showError('Chart.js failed to load. Check your internet connection.'); };
-  document.head.appendChild(s);
-}
-function makeBar(el, labels, data, label) {
-  if (!window.Chart) return;
-  const ctx = document.getElementById(el).getContext('2d');
-  if (window[el]) window[el].destroy?.();
-  window[el] = new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets: [{ label, data, borderWidth: 1 }] },
-    options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true } }, plugins:{ legend:{ display:false } } }
-  });
-}
-function makeLine(el, labels, data, label){
-  if (!window.Chart) return;
-  const ctx = document.getElementById(el).getContext('2d');
-  if (window[el]) window[el].destroy?.();
-  window[el] = new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets: [{ label, data, tension:0.25, pointRadius:2, borderWidth:2 }] },
-    options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true } }, plugins:{ legend:{ display:false } } }
-  });
-}
-function makeScatter(el, points, label){
-  if (!window.Chart) return;
-  const ctx = document.getElementById(el).getContext('2d');
-  if (window[el]) window[el].destroy?.();
-  window[el] = new Chart(ctx, {
-    type: 'scatter',
-    data: { datasets: [{ label, data: points, borderWidth:1, pointRadius:3 }] },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ tooltip:{ callbacks:{ label: (c) => `${c.raw._k}: vol ${c.raw.y}, gr ${c.raw.x}` } }, legend:{ display:false } },
-      scales: { x: { title:{ display:true, text:'Growth rate' } }, y: { title:{ display:true, text:'Volume' }, beginAtZero:true } }
-    }
-  });
-}
-
-/* ========= Data loading with graceful fallback ========= */
-async function loadCSVMaybe(){
+async function loadCSVMaybe(url, fallbackId){
   try {
-    if (!/^https?:/.test(location.protocol)) throw new Error('Not using http(s); skipping fetch.');
-    const resp = await fetch(CSV_URL, { cache: 'no-store' });
-    if (!resp.ok) throw new Error('CSV not found');
+    if (!/^https?:/.test(location.protocol)) throw new Error('Not http(s); skip fetch.');
+    const resp = await fetch(url, { cache: 'no-store' });
+    if (!resp.ok) throw new Error('missing');
     const text = await resp.text();
     const rows = parseCSVObjects(text);
-    if (rows.length) return { rows, source: 'csv' };
-  } catch (e) {
-    // ignore and fallback
-  }
-  const embedded = document.getElementById('embedded-signals')?.textContent?.trim();
-  if (!embedded){ showError('No data available (CSV missing and no embedded sample).'); return { rows: [], source: 'none' }; }
-  return { rows: parseCSVObjects(embedded), source: 'sample' };
+    if (rows.length) return { rows, source:'csv' };
+  } catch (e) { /* fall through */ }
+  const emb = document.getElementById(fallbackId)?.textContent?.trim();
+  return { rows: parseCSVObjects(emb || ''), source:'sample' };
+}
+function makeBar(el, labels, data, label, onClickIndex){
+  const ctx = document.getElementById(el).getContext('2d');
+  if (window[el]) window[el].destroy?.();
+  const chart = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets:[{ label, data, borderWidth:1 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{ y:{ beginAtZero:true } },
+      plugins:{ legend:{ display:false } },
+      onClick(_, elements){
+        if (!elements?.length) return;
+        const idx = elements[0].index;
+        onClickIndex?.(idx);
+      }
+    }
+  });
+  window[el] = chart;
+  return chart;
 }
 
-/* ========= Main ========= */
-ensureChartJs(async function(){
-  const { rows, source } = await loadCSVMaybe();
-  const meta = document.getElementById('dataset-meta');
-  meta.textContent = rows.length
-    ? `${rows.length} rows • ${new Date().toISOString().slice(0,10)} • ${source}`
-    : '0 rows';
-  if (!rows.length) return;
+/* ===== Global state ===== */
+let SIGNAL_ROWS = [];
+let ARTICLE_ROWS = [];
+let RANKED_SIGNALS = []; // array of {idx, keyword, score, volume, growth, lastSeen, tags, volN, groN, recN}
+let SIGNALS_CHART = null;
 
+/* ===== Boot ===== */
+(async function(){
+  const { rows: sRows, source: sSrc } = await loadCSVMaybe(SIGNALS_CSV_URL, 'embedded-signals');
+  const { rows: aRows }           = await loadCSVMaybe(ARTICLES_CSV_URL, 'embedded-articles');
+  SIGNAL_ROWS  = sRows;
+  ARTICLE_ROWS = aRows;
+
+  const datasetMeta = document.getElementById('dataset-meta');
+  datasetMeta.textContent = `${SIGNAL_ROWS.length} signals • ${new Date().toISOString().slice(0,10)} • ${sSrc}`;
+
+  if (!SIGNAL_ROWS.length){ document.getElementById('trend-errors').textContent = 'No signals data found.'; return; }
+
+  // Accessor helper
   const get = (r, k) => r[k] ?? r[k?.toLowerCase?.()] ?? r[k?.toUpperCase?.()];
 
-  // Core columns
-  const keywords = rows.map(r => String(get(r,'keyword') ?? '').trim() || '(untitled)');
-  const volumes  = rows.map(r => isFinite(+get(r,'volume')) ? +get(r,'volume') : 0);
-  const growths0 = rows.map(r => isFinite(+get(r,'growth_rate')) ? +get(r,'growth_rate') : 0);
-  const growths  = growths0.map(v => Math.max(0, v)); // clip negatives at 0 for scoring
-  const recency  = rows.map(r => recencyScoreFromDateStr(get(r,'last_seen')));
-  const tagsRaw  = rows.map(r => String(get(r,'tags') || '').split(',').map(s => s.trim()).filter(Boolean));
+  // Extract fields
+  const keywords = SIGNAL_ROWS.map(r => String(get(r,'keyword') ?? '').trim() || '(untitled)');
+  const volumes  = SIGNAL_ROWS.map(r => isFinite(+get(r,'volume')) ? +get(r,'volume') : 0);
+  const growths0 = SIGNAL_ROWS.map(r => isFinite(+get(r,'growth_rate')) ? +get(r,'growth_rate') : 0);
+  const growths  = growths0.map(v => Math.max(0, v)); // clip negatives for scoring
+  const recency  = SIGNAL_ROWS.map(r => recencyScoreFromDateStr(get(r,'last_seen')));
+  const tagsRaw  = SIGNAL_ROWS.map(r => String(get(r,'tags') || '').split(',').map(s => s.trim()).filter(Boolean));
 
-  /* ===== Trend Score ===== */
+  // Trend Score base
   const volN = minmaxNormalize(volumes);
   const groN = minmaxNormalize(growths);
   const recN = recency;
-  const scores = volN.map((_, i) => Math.round(0.40*volN[i] + 0.40*groN[i] + 0.20*recN[i]));
-  const ranked = keywords.map((k,i) => ({ keyword:k, score:scores[i], volN:Math.round(volN[i]), groN:Math.round(groN[i]), recN:Math.round(recN[i]) }))
-                         .sort((a,b) => b.score - a.score);
-  const topTrend = ranked.slice(0, 15);
-  makeBar('trendScoreChart', topTrend.map(d => d.keyword), topTrend.map(d => d.score), 'Trend Score (0–100)');
-  document.getElementById('trend-meta').textContent = `(Top ${topTrend.length} of ${rows.length} signals)`;
+  const trendScores = volN.map((_, i) => Math.round(0.40*volN[i] + 0.40*groN[i] + 0.20*recN[i]));
 
+  /* ===== 1) Trend Score — Top 15 ===== */
+  const rankedTrend = keywords.map((k,i)=>({ keyword:k, score:trendScores[i], volN:Math.round(volN[i]), groN:Math.round(groN[i]), recN:Math.round(recN[i]) }))
+                              .sort((a,b)=>b.score - a.score)
+                              .slice(0,15);
+  makeBar('trendScoreChart', rankedTrend.map(d=>d.keyword), rankedTrend.map(d=>d.score), 'Trend Score (0–100)');
+  document.getElementById('trend-meta').textContent = `(Top ${rankedTrend.length} of ${SIGNAL_ROWS.length} signals)`;
+
+  // Trend table
   const tbl = document.createElement('table');
   tbl.innerHTML = `<thead><tr><th>#</th><th>Signal</th><th>Score</th><th>Volumeₙ</th><th>Growthₙ</th><th>Recencyₙ</th></tr></thead><tbody></tbody>`;
-  topTrend.forEach((d,i) => {
+  rankedTrend.forEach((d,i) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${i+1}</td><td>${d.keyword}</td><td style="font-weight:600">${d.score}</td>
                     <td class="muted">${d.volN}</td><td class="muted">${d.groN}</td><td class="muted">${d.recN}</td>`;
@@ -311,7 +310,99 @@ ensureChartJs(async function(){
   });
   document.getElementById('trend-table').appendChild(tbl);
 
-  /* ===== Top Tags ===== */
+  /* ===== 2) SIGNALS — Top 25 + Insights ===== */
+  function buildRank(mode='trend'){
+    RANKED_SIGNALS = keywords.map((k,i)=>({
+      idx:i,
+      keyword:k,
+      score:trendScores[i],
+      volume:volumes[i],
+      growth:growths0[i],
+      lastSeen:get(SIGNAL_ROWS[i],'last_seen'),
+      tags:tagsRaw[i],
+      volN:Math.round(volN[i]),
+      groN:Math.round(groN[i]),
+      recN:Math.round(recN[i]),
+    }));
+    if (mode === 'volume') RANKED_SIGNALS.sort((a,b)=> (b.volume||0)-(a.volume||0));
+    else RANKED_SIGNALS.sort((a,b)=> (b.score||0)-(a.score||0)); // trend default
+    return RANKED_SIGNALS.slice(0,25);
+  }
+  function renderSignals(mode='trend'){
+    const top = buildRank(mode);
+    document.getElementById('signals-meta').textContent = `(Top ${top.length} by ${mode === 'volume' ? 'Volume' : 'Trend Score'})`;
+    SIGNALS_CHART = makeBar('signalsChart', top.map(d=>d.keyword), top.map(d => (mode==='volume' ? d.volume : d.score)),
+      (mode==='volume' ? 'Volume' : 'Trend Score (0–100)'),
+      (i) => selectSignal(top[i]));
+  }
+  renderSignals('trend');
+  document.getElementById('rank-by').addEventListener('change', (e)=> renderSignals(e.target.value));
+
+  // Insights panel: select + render
+  function selectSignal(d){
+    if (!d) return;
+    document.getElementById('signal-title').textContent = d.keyword;
+    const tagsEl = document.getElementById('signal-tags');
+    tagsEl.innerHTML = '';
+    (d.tags||[]).forEach(t => {
+      const span = document.createElement('span');
+      span.className = 'tag-pill';
+      span.textContent = t;
+      tagsEl.appendChild(span);
+    });
+
+    document.getElementById('kpi-score').textContent   = isFinite(d.score)  ? d.score  : '–';
+    document.getElementById('kpi-volume').textContent  = isFinite(d.volume) ? d.volume : '–';
+    document.getElementById('kpi-growth').textContent  = isFinite(d.growth) ? d.growth : '–';
+    document.getElementById('kpi-lastseen').textContent = d.lastSeen || '–';
+
+    // Articles
+    const list = document.getElementById('articles-list');
+    const arts = ARTICLE_ROWS.filter(a => String((a.keyword||'').toLowerCase()) === String(d.keyword).toLowerCase());
+    if (!arts.length){
+      list.innerHTML = `<span class="muted">No related articles yet for “${d.keyword}”.</span>`;
+    } else {
+      const frag = document.createElement('div');
+      arts.slice(0,6).forEach(a => {
+        const item = document.createElement('div');
+        item.style.marginBottom = '10px';
+        const date = a.date ? new Date(a.date).toISOString().slice(0,10) : '';
+        item.innerHTML = `
+          <div><a href="${a.url}" target="_blank" rel="noopener" style="font-weight:600;text-decoration:none;color:#111827;">${a.title || a.url}</a></div>
+          <div class="muted" style="font-size:12px;">${a.source || ''} ${date ? '• ' + date : ''}</div>`;
+        frag.appendChild(item);
+      });
+      list.innerHTML = ''; list.appendChild(frag);
+    }
+
+    // Copy summary button
+    const summary = makeSummary(d);
+    const btn = document.getElementById('copy-summary');
+    btn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(summary);
+        btn.textContent = 'Copied ✓';
+        setTimeout(()=> btn.textContent = 'Copy summary', 1200);
+      } catch {
+        btn.textContent = 'Copy failed';
+        setTimeout(()=> btn.textContent = 'Copy summary', 1200);
+      }
+    };
+  }
+  function makeSummary(d){
+    // Simple editorial summary (rule-based)
+    const heat = v => v >= 75 ? 'very high' : v >= 50 ? 'high' : v >= 25 ? 'moderate' : 'low';
+    const volNote = `Volume ${isFinite(d.volume)?d.volume:'–'} (${heat(d.volN)})`;
+    const groNote = `growth ${isFinite(d.growth)?d.growth+'%':'–'} (${heat(d.groN)})`;
+    const recNote = `recency ${heat(d.recN)}${d.lastSeen?`; last seen ${d.lastSeen}`:''}`;
+    const tags = (d.tags && d.tags.length) ? `Tags: ${d.tags.join(', ')}` : '';
+    return `${d.keyword} — Trend Score ${d.score}. ${volNote}, ${groNote}, ${recNote}. ${tags}`.trim();
+  }
+
+  // Auto-select first bar so panel isn’t empty
+  selectSignal(buildRank('trend')[0]);
+
+  /* ===== 3) Top Tags ===== */
   const tagCounts = new Map();
   tagsRaw.forEach(list => list.forEach(t => tagCounts.set(t, (tagCounts.get(t) || 0) + 1)));
   const tagsSorted = Array.from(tagCounts.entries()).sort((a,b) => b[1]-a[1]).slice(0,25);
@@ -323,101 +414,10 @@ ensureChartJs(async function(){
     });
   }
 
-  /* ===== Top Signals by Volume ===== */
-  const volRank = keywords.map((k,i)=>({k,v:volumes[i]})).sort((a,b)=>b.v-a.v).slice(0,25);
-  makeBar('volumeBarChart', volRank.map(d=>d.k), volRank.map(d=>d.v), 'Volume');
-  document.getElementById('vol-meta').textContent = `(Top ${volRank.length})`;
-
-  /* ===== Fastest Rising (Growth Rate) ===== */
+  /* ===== 4) Legacy: Fastest Rising (Growth Rate) ===== */
   const grRankAll = keywords.map((k,i)=>({k,g:growths0[i]})).filter(d=>isFinite(d.g)).sort((a,b)=>b.g-a.g);
   const grRank = grRankAll.filter(d => d.g > 0).slice(0,15);
   makeBar('growthBarChart', grRank.map(d=>d.k), grRank.map(d=>d.g), 'Growth rate');
   document.getElementById('growth-meta').textContent = grRank.length ? `(Top ${grRank.length})` : '(no positive growth values)';
-
-  /* ===== Volume vs Growth Scatter ===== */
-  const scatterPts = keywords.map((k,i)=>({ x:growths0[i]||0, y:volumes[i]||0, _k:k }))
-                             .sort((a,b)=> (b.y + Math.abs(b.x)) - (a.y + Math.abs(a.x))).slice(0,150);
-  makeScatter('scatterChart', scatterPts, 'Signal');
-
-  /* ===== Recency — last 12 weeks ===== */
-  function weekStart(d) {
-    const dt = new Date(d); if (isNaN(dt)) return null;
-    const day = dt.getDay(); const diff = (day === 0 ? -6 : 1 - day); // Monday start
-    const m = new Date(dt); m.setDate(dt.getDate() + diff); m.setHours(0,0,0,0); return m;
-  }
-  const byWeek = new Map();
-  rows.forEach((r,i) => {
-    const ws = weekStart(get(r,'last_seen')); if (!ws) return;
-    const key = ws.toISOString().slice(0,10);
-    byWeek.set(key, (byWeek.get(key) || 0) + 1);
-  });
-  const weeks = Array.from(byWeek.keys()).sort();
-  const last12 = weeks.slice(Math.max(0, weeks.length - 12));
-  const recencyCounts = last12.map(k => byWeek.get(k) || 0);
-  makeLine('recencyLineChart', last12, recencyCounts, 'Signals seen');
-  document.getElementById('recency-meta').textContent = last12.length ? `(${last12[0]} → ${last12[last12.length-1]})` : '(no dates)';
-
-  /* ===== Tag Co-occurrence matrix ===== */
-  const matrixTags = tagsSorted.slice(0,10).map(([t])=>t);
-  const pairCounts = new Map();
-  tagsRaw.forEach(list => {
-    const u = [...new Set(list.filter(t => matrixTags.includes(t)))];
-    for (let i=0;i<u.length;i++){
-      for (let j=i+1;j<u.length;j++){
-        const a=u[i], b=u[j];
-        const key = a <= b ? `${a}|||${b}` : `${b}|||${a}`;
-        pairCounts.set(key, (pairCounts.get(key) || 0) + 1);
-      }
-    }
-  });
-  renderMatrix('matrix-wrap', pairCounts, matrixTags);
-  document.getElementById('matrix-meta').textContent = matrixTags.length ? `(Top ${matrixTags.length} tags)` : '(no tags)';
-
-  function renderMatrix(containerId, pairsMap, tagList){
-    const wrap = document.getElementById(containerId);
-    const N = tagList.length;
-    const tbl = document.createElement('table');
-    const thead = document.createElement('thead'); const htr = document.createElement('tr');
-    htr.appendChild(document.createElement('th'));
-    tagList.forEach(t => { const th = document.createElement('th'); th.textContent = t; htr.appendChild(th); });
-    thead.appendChild(htr); tbl.appendChild(thead);
-    const tbody = document.createElement('tbody');
-
-    let max = 0;
-    for (let i=0;i<N;i++) for(let j=0;j<N;j++){
-      const a=tagList[i], b=tagList[j];
-      const key = a <= b ? `${a}|||${b}` : `${b}|||${a}`;
-      max = Math.max(max, pairsMap.get(key) || 0);
-    }
-    function colorFor(v){ const p = max ? v/max : 0; const light = 98 - Math.round(p*60); return `hsl(210, 60%, ${light}%)`; }
-
-    for (let i=0;i<N;i++){
-      const tr = document.createElement('tr');
-      const rowTh = document.createElement('th'); rowTh.textContent = tagList[i]; tr.appendChild(rowTh);
-      for (let j=0;j<N;j++){
-        const a=tagList[i], b=tagList[j];
-        const key = a <= b ? `${a}|||${b}` : `${b}|||${a}`;
-        const count = (i===j) ? 0 : (pairsMap.get(key) || 0);
-        const td = document.createElement('td');
-        td.style.background = colorFor(count);
-        td.style.minWidth = '36px';
-        td.title = `${a} × ${b}: ${count}`;
-        td.textContent = count ? count : '';
-        tr.appendChild(td);
-      }
-      tbody.appendChild(tr);
-    }
-    tbl.appendChild(tbody);
-    wrap.innerHTML = ''; wrap.appendChild(tbl);
-
-    const minEl = document.getElementById('legend-min');
-    const midEl = document.getElementById('legend-mid');
-    const maxEl = document.getElementById('legend-max');
-    if (minEl && midEl && maxEl){
-      minEl.style.background = 'hsl(210,60%,98%)';
-      midEl.style.background = 'hsl(210,60%,68%)';
-      maxEl.style.background = 'hsl(210,60%,38%)';
-    }
-  }
-});
+})();
 </script>
