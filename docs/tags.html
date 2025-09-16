@@ -36,6 +36,9 @@
   .row{display:flex;flex-wrap:wrap;gap:8px}
   .select{border:1px solid var(--border);border-radius:8px;padding:6px 8px;background:#fff}
   .divider{height:1px;background:var(--border);margin:12px 0}
+  .why{font-size:12px;color:#4b5563}
+  .feasibility{display:flex;align-items:center;gap:8px;margin-top:6px}
+  .feasibility input{width:160px}
 </style>
 
 <header>
@@ -54,17 +57,11 @@
     <details style="margin-top:12px;">
       <summary><strong>How we calculate Momentum Score</strong></summary>
       <div class="muted" style="margin-top:8px;">
-        <p style="margin:0 0 6px 0;"><strong>Formula:</strong></p>
         <pre style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:10px;overflow:auto;margin:0 0 10px 0;font-size:13px;">
 Momentum = 0.55 × Growthₙ + 0.35 × Recencyₙ + 0.10 × Noveltyₙ
 Noveltyₙ = 100 − Volumeₙ
         </pre>
-        <ul style="margin:0 0 10px 18px;padding:0;">
-          <li><strong>Growthₙ</strong>: 0–100 from <em>growth_rate</em> (negatives clipped at 0).</li>
-          <li><strong>Recencyₙ</strong>: 0–100 from <em>last_seen</em> (100 = today; 0 = ≥90 days).</li>
-          <li><strong>Noveltyₙ</strong>: favors lower-base signals (lower volume → higher novelty).</li>
-        </ul>
-        <p style="margin:0;">Use Momentum to spot **emerging** signals; use Trend Score for overall **heat**.</p>
+        <p style="margin:0;">Momentum spots **emerging / breaking** signals. Trend Score (below) shows overall **heat**.</p>
       </div>
     </details>
   </section>
@@ -89,12 +86,11 @@ Noveltyₙ = 100 − Volumeₙ
       <small class="muted" style="display:block;margin-top:6px;">Click a bar to analyze the signal on the right.</small>
 
       <details style="margin-top:12px;">
-        <summary><strong>Trend Score (for reference)</strong></summary>
+        <summary><strong>Trend Score (reference)</strong></summary>
         <div class="muted" style="margin-top:8px;">
           <pre style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:10px;overflow:auto;margin:0 0 10px 0;font-size:13px;">
 Trend = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
           </pre>
-          <p style="margin:0;">Trend balances **magnitude** (volume) with **acceleration** (growth) and **freshness** (recency).</p>
         </div>
       </details>
     </div>
@@ -115,31 +111,50 @@ Trend = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
         <div class="box"><div class="muted">Last seen</div><b id="kpi-lastseen">–</b></div>
       </div>
 
+      <div class="feasibility">
+        <label class="muted" for="feasibility-slider">Feasibility (you)</label>
+        <input id="feasibility-slider" type="range" min="0" max="100" value="60">
+        <span id="feasibility-val" class="pill">60</span>
+      </div>
+
       <div class="divider"></div>
       <h3>Related Articles</h3>
       <div id="articles-list" class="muted">No signal selected.</div>
     </aside>
   </section>
 
-  <!-- 3) Top Tags & Legacy Growth -->
-  <section class="grid grid-2-even">
-    <section class="card">
-      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
-        <h2>Top Tags</h2>
-        <small class="muted" id="tags-meta"></small>
-      </div>
-      <div class="chart-wrap-sm"><canvas id="tagsBarChart"></canvas></div>
-      <div id="tags-cloud" class="tags-cloud" style="margin-top:10px;"></div>
-    </section>
+  <!-- 3) Opportunity — What to cover now -->
+  <section class="card">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+      <h2>Opportunity — What to cover now (Top 12)</h2>
+      <small id="opp-meta" class="muted"></small>
+    </div>
+    <div class="chart-wrap-sm"><canvas id="oppChart"></canvas></div>
 
-    <section class="card">
-      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
-        <h2>Fastest Rising (Growth Rate)</h2>
-        <small class="muted" id="growth-meta"></small>
+    <details style="margin-top:12px;">
+      <summary><strong>How we calculate Opportunity</strong></summary>
+      <div class="muted" style="margin-top:8px;">
+        <pre style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:10px;overflow:auto;margin:0 0 10px 0;font-size:13px;">
+Opp = 0.45 × Momentum + 0.25 × (100 − Saturationₙ) + 0.20 × CrossIndustryₙ + 0.10 × Feasibility
+Saturationₙ = min–max normalized article_count per signal (more coverage = higher saturation)
+CrossIndustryₙ = (# of verticals present among {Fashion, Beauty, Wellness} / 3) × 100
+Feasibility = your slider (per-signal override; default 60)
+        </pre>
+        <p style="margin:0;">Use Opportunity to pick **newsletter topics** and **sales angles** that are timely, white-space, and cross-vertical.</p>
       </div>
-      <div class="chart-wrap-sm"><canvas id="growthBarChart"></canvas></div>
-      <small class="muted" style="display:block;margin-top:6px;">(Legacy view — covered by “Rank by → Growth %”.)</small>
-    </section>
+    </details>
+
+    <div id="opp-table" style="margin-top:12px;overflow:auto;"></div>
+  </section>
+
+  <!-- 4) Top Tags -->
+  <section class="card">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+      <h2>Top Tags</h2>
+      <small class="muted" id="tags-meta"></small>
+    </div>
+    <div class="chart-wrap-sm"><canvas id="tagsBarChart"></canvas></div>
+    <div id="tags-cloud" class="tags-cloud" style="margin-top:10px;"></div>
   </section>
 </main>
 
@@ -176,7 +191,7 @@ keyword,title,url,source,date
 
 <script>
 /* ===== CONFIG =====
-Place real CSVs (optional) at:
+Optional real CSVs at:
 - data/signals.csv  (keyword, volume, growth_rate, last_seen, tags)
 - data/articles.csv (keyword, title, url, source, date)
 */
@@ -218,15 +233,27 @@ function makeBar(el, labels, data, label, onClickIndex){
 }
 
 /* ===== Global ===== */
-let SIGNAL_ROWS=[], ARTICLE_ROWS=[];
+let SIGNAL_ROWS=[], ARTICLE_ROWS=[], ARTICLES_MAP = new Map();
 let trendScores=[], momentumScores=[], volN=[], groN=[], recN=[];
-let RANKED_SIGNALS=[], SIGNALS_CHART=null;
+let RANKED_SIGNALS=[], SIGNALS_CHART=null, OPP_CHART=null;
+let FEASIBILITY_OVERRIDES = {}; // per-signal { [keyword]: 0..100 }
+const FEASIBILITY_BASELINE = 60;
 
 /* ===== Boot ===== */
 (async function(){
+  try{ const stored = JSON.parse(localStorage.getItem('af_feasibility_overrides')||'{}'); FEASIBILITY_OVERRIDES = stored; }catch{}
   const {rows:sRows, source:sSrc}=await loadCSVMaybe(SIGNALS_CSV_URL,'embedded-signals');
   const {rows:aRows}=await loadCSVMaybe(ARTICLES_CSV_URL,'embedded-articles');
   SIGNAL_ROWS=sRows; ARTICLE_ROWS=aRows;
+
+  // map articles by keyword (case-insensitive)
+  ARTICLES_MAP = new Map();
+  ARTICLE_ROWS.forEach(a=>{
+    const k = String((a.keyword||'')).toLowerCase();
+    if(!ARTICLES_MAP.has(k)) ARTICLES_MAP.set(k, []);
+    ARTICLES_MAP.get(k).push(a);
+  });
+
   document.getElementById('dataset-meta').textContent=`${SIGNAL_ROWS.length} signals • ${new Date().toISOString().slice(0,10)} • ${sSrc}`;
   if(!SIGNAL_ROWS.length) return;
 
@@ -243,12 +270,12 @@ let RANKED_SIGNALS=[], SIGNALS_CHART=null;
   const noveltyN = volN.map(v=>100 - v);
   momentumScores = volN.map((_,i)=>Math.round(0.55*groN[i] + 0.35*recN[i] + 0.10*noveltyN[i]));
 
-  /* ===== Momentum — Breakouts Top 15 ===== */
+  /* ===== 1) Momentum — Breakouts Top 15 ===== */
   const rankedMomentum = keywords.map((k,i)=>({k, m:momentumScores[i]})).sort((a,b)=>b.m-a.m).slice(0,15);
   makeBar('momentumChart', rankedMomentum.map(d=>d.k), rankedMomentum.map(d=>d.m), 'Momentum (0–100)');
   document.getElementById('momentum-meta').textContent=`(Top ${rankedMomentum.length} of ${SIGNAL_ROWS.length} signals)`;
 
-  /* ===== Signals — chart + panel ===== */
+  /* ===== 2) Signals — chart + panel ===== */
   function buildRank(mode='trend'){
     RANKED_SIGNALS = keywords.map((k,i)=>({
       idx:i, keyword:k,
@@ -275,6 +302,7 @@ let RANKED_SIGNALS=[], SIGNALS_CHART=null;
   renderSignals('trend');
   document.getElementById('rank-by').addEventListener('change', e=>renderSignals(e.target.value));
 
+  // Insights select
   function selectSignal(d){
     if(!d) return;
     document.getElementById('signal-title').textContent=d.keyword;
@@ -286,8 +314,23 @@ let RANKED_SIGNALS=[], SIGNALS_CHART=null;
     document.getElementById('kpi-growth').textContent=isFinite(d.growth)?d.growth:'–';
     document.getElementById('kpi-lastseen').textContent=d.lastSeen||'–';
 
+    // Feasibility slider for this signal
+    const key = d.keyword;
+    const slider = document.getElementById('feasibility-slider');
+    const label  = document.getElementById('feasibility-val');
+    const current = (FEASIBILITY_OVERRIDES[key] ?? FEASIBILITY_BASELINE);
+    slider.value = current; label.textContent = current;
+    slider.oninput = (ev)=>{ const v = +ev.target.value; label.textContent = v; };
+    slider.onchange = (ev)=>{
+      const v = +ev.target.value;
+      FEASIBILITY_OVERRIDES[key] = v;
+      localStorage.setItem('af_feasibility_overrides', JSON.stringify(FEASIBILITY_OVERRIDES));
+      renderOpportunity(); // recompute with override
+    };
+
+    // Articles list
     const list=document.getElementById('articles-list');
-    const arts=ARTICLE_ROWS.filter(a=>String((a.keyword||'').toLowerCase())===String(d.keyword).toLowerCase());
+    const arts=(ARTICLES_MAP.get(String(key.toLowerCase()))||[]);
     if(!arts.length){ list.innerHTML=`<span class="muted">No related articles yet for “${d.keyword}”.</span>`; }
     else{
       const frag=document.createElement('div');
@@ -300,6 +343,8 @@ let RANKED_SIGNALS=[], SIGNALS_CHART=null;
       });
       list.innerHTML=''; list.appendChild(frag);
     }
+
+    // Copy summary
     const summary = makeSummary(d);
     const btn=document.getElementById('copy-summary');
     btn.onclick=async ()=>{ try{ await navigator.clipboard.writeText(summary); btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent='Copy summary',1200); } catch{ btn.textContent='Copy failed'; setTimeout(()=>btn.textContent='Copy summary',1200); } };
@@ -314,7 +359,91 @@ let RANKED_SIGNALS=[], SIGNALS_CHART=null;
   }
   selectSignal(buildRank('trend')[0]);
 
-  /* ===== Top Tags ===== */
+  /* ===== 3) Opportunity — What to cover now ===== */
+  function verticalsFromTags(tags){
+    const t = (tags||[]).map(x=>x.toLowerCase());
+    const hasFashion = t.some(x=> /fashion|style|apparel|tailor|couture|athleisure/.test(x));
+    const hasBeauty  = t.some(x=> /beauty|skincare|skin|makeup|hair|fragrance|cosmetic/.test(x));
+    const hasWell    = t.some(x=> /wellness|health|fitness|sleep|spa|home|lifestyle|nutrition/.test(x)); // treat "home" as wellness/lifestyle
+    let count = 0; if (hasFashion) count++; if (hasBeauty) count++; if (hasWell) count++;
+    return { hasFashion, hasBeauty, hasWell, count };
+  }
+  function whyNow(d, artCount, cross){
+    const bits=[];
+    if ((d.momentum||0) >= 65) bits.push('fast acceleration');
+    if ((d.recN||0) >= 70) bits.push('very recent');
+    if (artCount === 0) bits.push('white space (no coverage)');
+    else if (artCount <= 2) bits.push('low coverage');
+    if (cross.count >= 2) bits.push('cross-vertical potential');
+    if ((d.score||0) >= 70) bits.push('high baseline interest');
+    return bits.length ? bits.join(' · ') : 'steady signal';
+  }
+  function computeOpportunity(){
+    const articleCounts = SIGNAL_ROWS.map((_,i)=>{
+      const key = String((keywords[i]||'').toLowerCase());
+      return (ARTICLES_MAP.get(key)||[]).length;
+    });
+    const saturationN = minmaxNormalize(articleCounts); // higher = more saturated
+    const crossN = SIGNAL_ROWS.map((_,i)=> {
+      const cross = verticalsFromTags(tagsRaw[i]); return Math.round((cross.count/3)*100);
+    });
+
+    const opp = SIGNAL_ROWS.map((_,i)=>{
+      const key = keywords[i]; const feas = FEASIBILITY_OVERRIDES[key] ?? FEASIBILITY_BASELINE;
+      const val = 0.45*(momentumScores[i]||0) + 0.25*(100 - (saturationN[i]||0)) + 0.20*(crossN[i]||0) + 0.10*(feas||0);
+      return Math.round(val);
+    });
+
+    // build rows
+    const rows = SIGNAL_ROWS.map((_,i)=>({
+      keyword: keywords[i],
+      opportunity: opp[i],
+      momentum: momentumScores[i],
+      trend: trendScores[i],
+      volume: volumes[i],
+      growth: growths0[i],
+      recN: Math.round(recN[i]),
+      articles: (ARTICLES_MAP.get(String(keywords[i].toLowerCase()))||[]).length,
+      cross: verticalsFromTags(tagsRaw[i])
+    })).sort((a,b)=> b.opportunity - a.opportunity);
+
+    return { rows, saturationN, crossN, articleCounts: articleCounts };
+  }
+  function renderOpportunity(){
+    const { rows } = computeOpportunity();
+    const top = rows.slice(0,12);
+    // chart
+    OPP_CHART = makeBar('oppChart', top.map(d=>d.keyword), top.map(d=>d.opportunity), 'Opportunity (0–100)',
+      (i)=> {
+        // also focus the signal on click
+        const sel = RANKED_SIGNALS.find(r => r.keyword === top[i].keyword) || { keyword: top[i].keyword, score: top[i].trend, momentum: top[i].momentum, volume: top[i].volume, growth: top[i].growth, lastSeen: '', tags: [] , volN:0, groN:0, recN: top[i].recN};
+        selectSignal(sel);
+        // also switch Signals rank to Trend for context
+        document.getElementById('rank-by').value = 'trend';
+        renderSignals('trend');
+      });
+    document.getElementById('opp-meta').textContent = `(Top ${top.length} by Opportunity)`;
+
+    // table
+    const tbl = document.createElement('table');
+    tbl.innerHTML = `<thead><tr>
+      <th>#</th><th>Signal</th><th>Opp</th><th>Momentum</th><th>Articles</th><th>Why now</th>
+    </tr></thead><tbody></tbody>`;
+    top.forEach((d,i)=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = `<td>${i+1}</td>
+        <td><b>${d.keyword}</b></td>
+        <td>${d.opportunity}</td>
+        <td class="muted">${d.momentum}</td>
+        <td class="muted">${d.articles}</td>
+        <td class="why">${whyNow(d, d.articles, d.cross)}</td>`;
+      tbl.querySelector('tbody').appendChild(tr);
+    });
+    const wrap = document.getElementById('opp-table'); wrap.innerHTML=''; wrap.appendChild(tbl);
+  }
+  renderOpportunity();
+
+  /* ===== 4) Top Tags ===== */
   const tagCounts=new Map();
   tagsRaw.forEach(list=>list.forEach(t=>tagCounts.set(t,(tagCounts.get(t)||0)+1)));
   const tagsSorted=Array.from(tagCounts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,25);
@@ -323,11 +452,5 @@ let RANKED_SIGNALS=[], SIGNALS_CHART=null;
     makeBar('tagsBarChart', tagsSorted.map(([t])=>t), tagsSorted.map(([,c])=>c), 'Count');
     const cloud=document.getElementById('tags-cloud'); tagsSorted.forEach(([t,c])=>{ const s=document.createElement('span'); s.className='tag-pill'; s.textContent=`${t} • ${c}`; cloud.appendChild(s); });
   }
-
-  /* ===== Legacy: Fastest Rising ===== */
-  const grRankAll=keywords.map((k,i)=>({k,g:growths0[i]})).filter(d=>isFinite(d.g)).sort((a,b)=>b.g-a.g);
-  const grRank=grRankAll.filter(d=>d.g>0).slice(0,15);
-  makeBar('growthBarChart', grRank.map(d=>d.k), grRank.map(d=>d.g), 'Growth rate');
-  document.getElementById('growth-meta').textContent=grRank.length?`(Top ${grRank.length})`:'(no positive growth values)';
 })();
 </script>
