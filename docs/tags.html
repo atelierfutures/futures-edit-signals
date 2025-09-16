@@ -8,44 +8,69 @@
 
 <style>
   :root{
-    --bg:#ffffff; --fg:#111827; --muted:#6b7280;
-    --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
-    --shadow:0 10px 28px rgba(2,6,23,.06);
+    --bg:#ffffff; --fg:#0f172a; --muted:#6b7280;
+    --card:#ffffff; --border:#e5e7eb; --pill:#f7f7fb;
+    --shadow:0 12px 30px rgba(15,23,42,.06);
     --ctl-w:180px;
-    --ok:#22c55e; --warn:#f59e0b; --soft:#94a3b8; --info:#3b82f6;
+
+    /* status colors */
+    --ok:#2ecc71;   /* emerald */
+    --warn:#f59e0b; /* amber  */
+    --soft:#94a3b8; /* slate  */
+
+    /* header */
+    --hdr-bg: linear-gradient(180deg, rgba(250,250,255,.9), rgba(250,250,255,.7));
+    --hdr-ring: rgba(2,6,23,.06);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial}
-  a{color:#2563eb;text-decoration:none}
-  .bar{position:sticky;top:0;z-index:20;backdrop-filter:saturate(180%) blur(10px);
-    background:color-mix(in oklab, var(--bg) 92%, transparent); border-bottom:1px solid var(--border)}
-  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .title{font-weight:700; font-size:15px}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Inter,Segoe UI,Roboto,Helvetica,Arial}
+  a{color:#1f6feb;text-decoration:none}
+  /* Sticky header */
+  .bar{position:sticky;top:0;z-index:20;background:var(--hdr-bg);
+    backdrop-filter:saturate(180%) blur(10px); border-bottom:1px solid var(--border)}
+  .bar-inner{max-width:1120px;margin:0 auto;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .title{font-weight:800; font-size:16px; letter-spacing:.2px}
+
+  /* Controls */
   .btn, .select, .input{
     background:var(--card); color:var(--fg); border:1px solid var(--border);
-    border-radius:12px; padding:10px 12px; box-shadow:var(--shadow);
+    border-radius:14px; padding:10px 12px; box-shadow:var(--shadow);
   }
+  .btn{font-weight:600}
   .btn:active{transform:translateY(1px)}
   .select{width:var(--ctl-w)} .spacer{flex:1}
-  .wrap{max-width:1100px;margin:0 auto;padding:16px 20px}
+
+  /* Layout */
+  .wrap{max-width:1120px;margin:0 auto;padding:16px 16px}
   .grid{display:grid;gap:16px}
   @media(min-width:1024px){ .grid.two{grid-template-columns:1fr 1fr} }
   .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:14px}
+
   .legend{color:var(--muted);font-size:12px;margin-top:6px}
   .mini{max-width:100%}
-  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .mini.thin{height:86px !important}      /* thinner status bar */
+  .mini.short{height:180px !important}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
   .small{font-size:12px;color:var(--muted)}
-  .pill{ padding:6px 10px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
-  .kpi{display:flex; gap:10px; flex-wrap:wrap; margin:8px 0 4px}
-  .kpi .pill{font-size:12px}
+  /* KPI bubbles */
+  .pill{
+    padding:8px 12px; font-size:12px; line-height:1;
+    border:1px solid var(--border); border-radius:999px;
+    background: radial-gradient(120% 120% at 10% 10%, #fff, var(--pill));
+    box-shadow: inset 0 0 0 2px var(--hdr-ring);
+  }
   ul.list{list-style:none; padding:0; margin:8px 0 0; max-height:200px; overflow:auto}
   ul.list li{display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed var(--border)}
   .muted{color:var(--muted)}
+
+  /* Guardrails */
   .notes{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fcfcfd;margin-top:10px}
   .flag{display:flex;align-items:flex-start;gap:8px;margin:6px 0}
   .dot{width:10px;height:10px;border-radius:999px;margin-top:5px}
-  .warn{background:var(--warn)} .ok{background:var(--ok)} .infoDot{background:var(--info)}
-  details.kit summary{cursor:pointer;font-weight:600}
+  .warn{background:var(--warn)} .ok{background:var(--ok)} .infoDot{background:#3b82f6}
+
+  /* Content kit (collapsed) */
+  details.kit summary{cursor:pointer;font-weight:700}
   details.kit > div{margin-top:8px}
   .kit pre{white-space:pre-wrap;margin:0}
 </style>
@@ -64,8 +89,8 @@
       <option>emerging</option><option>bubbling</option><option>mainstream</option>
     </select>
 
-    <input id="from" type="date" class="input">
-    <input id="to"   type="date" class="input">
+    <input id="from" type="date" class="input" aria-label="From date">
+    <input id="to"   type="date" class="input" aria-label="To date">
     <select id="quick" class="select">
       <option value="">All time</option>
       <option value="30">Last 30 days</option>
@@ -73,40 +98,40 @@
       <option value="180">Last 180 days</option>
     </select>
     <button id="clear" class="btn">Clear</button>
+    <span class="spacer"></span>
   </div>
 </div>
 
 <div class="wrap">
   <div class="row">
-    <label class="small">Top keywords
-      <input id="topN" type="range" min="5" max="25" step="1" value="25" style="margin-left:6px">
-      <span id="topNVal" class="small">25</span>
+    <label class="small">Top signals
+      <input id="topN" type="range" min="5" max="40" step="1" value="30" style="margin-left:6px">
+      <span id="topNVal" class="small">30</span>
     </label>
-    <label class="small">Filter keywords…
-      <input id="kwSearch" type="search" class="input" placeholder="type to filter bar" style="width:220px">
+    <label class="small">Filter signals…
+      <input id="kwSearch" type="search" class="input" placeholder="type to filter bar" style="width:240px">
     </label>
-    <span id="metaCount" class="pill">…</span>
   </div>
 
-  <!-- Row 1: Top keywords + Keyword details -->
+  <!-- Row 1: Top signals + Signal details -->
   <div class="grid two">
     <div class="card">
-      <h3 style="margin:4px 0 8px 0">Top keywords</h3>
+      <h3 style="margin:4px 0 8px 0">Top signals</h3>
       <canvas id="chartKeywords" class="mini" aria-describedby="kwHelp"></canvas>
-      <div id="kwHelp" class="legend">Click a bar to inspect that keyword.</div>
+      <div id="kwHelp" class="legend">Click a bar to inspect that signal.</div>
     </div>
 
     <div class="card" id="kwPanel">
-      <h3 style="margin:4px 0 8px 0">Keyword details <span id="kwTitle" class="small" style="margin-left:8px;color:var(--muted)"></span></h3>
-      <div class="kpi" id="kwKpis" style="display:none">
+      <h3 style="margin:4px 0 8px 0">Signal details <span id="kwTitle" class="small" style="margin-left:8px;color:var(--muted)"></span></h3>
+      <div class="row kpi" id="kwKpis" style="display:none">
         <span class="pill" id="kpiTotal">Total: 0</span>
         <span class="pill" id="kpiAvg">Avg score: 0</span>
         <span class="pill" id="kpiCat">Top category: –</span>
         <a class="btn" id="openList" target="_blank" rel="noopener">Open in list</a>
       </div>
 
-      <canvas id="chartKwStatus" class="mini" aria-label="Status mix bar"></canvas>
-      <div class="legend">Status mix for the selected keyword.</div>
+      <canvas id="chartKwStatus" class="mini thin" aria-label="Status mix bar"></canvas>
+      <div class="legend">Status mix for the selected signal.</div>
 
       <div class="row" style="gap:8px; margin-top:6px;">
         <button id="btnToggleMore" class="btn">Show more</button>
@@ -123,7 +148,7 @@
       <details class="notes kit" id="kitBox">
         <summary>Content Kit</summary>
         <div>
-          <div class="small muted" id="kitTip" style="margin-bottom:6px;">Auto-generated from the selected keyword + sources.</div>
+          <div class="small muted" id="kitTip" style="margin-bottom:6px;">Auto-generated from the selected signal + sources.</div>
           <div style="display:grid;gap:8px">
             <div><b>Executive takeaway</b><pre id="kitTake"></pre></div>
             <div><b>Newsletter blurb</b><pre id="kitNews"></pre></div>
@@ -139,29 +164,42 @@
   <!-- Row 2: Fastest-rising + Newcomers -->
   <div class="grid two" style="margin-top:16px">
     <div class="card">
-      <h3 style="margin:4px 0 8px 0">Fastest-rising keywords (current vs previous)</h3>
-      <canvas id="chartRisers" class="mini"></canvas>
+      <h3 style="margin:4px 0 8px 0">Fastest-rising signals (current vs previous)</h3>
+      <canvas id="chartRisers" class="mini short"></canvas>
       <div class="legend">Change in mentions between the current filters and a same-length previous window.</div>
     </div>
 
     <div class="card">
-      <h3 style="margin:4px 0 8px 0">Newcomer keywords (first appearances)</h3>
+      <h3 style="margin:4px 0 8px 0">Newcomer signals (first appearances)</h3>
       <ul id="newcomersList" class="list"></ul>
-      <div class="legend">Keywords that didn’t appear in the previous window but do appear now.</div>
+      <div class="legend">Signals that didn’t appear in the previous window but do appear now.</div>
     </div>
   </div>
 
-  <!-- Row 3: Status mix only -->
-  <div class="card" style="margin-top:16px">
-    <h3 style="margin:4px 0 8px 0">Status mix by category</h3>
-    <canvas id="chartMix" class="mini"></canvas>
-    <div class="legend">100% stacked bars: emerging / bubbling / mainstream share by category.</div>
+  <!-- Row 3: Status mix + Freshness by category -->
+  <div class="grid two" style="margin-top:16px">
+    <div class="card">
+      <h3 style="margin:4px 0 8px 0">Status mix by category</h3>
+      <canvas id="chartMix" class="mini short"></canvas>
+      <div class="legend">100% stacked bars: emerging / bubbling / mainstream share by category.</div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:4px 0 8px 0">Freshness by category (median days)</h3>
+      <canvas id="chartFresh" class="mini short"></canvas>
+      <div class="legend">Lower is fresher: helpful for prioritizing what to cover now.</div>
+    </div>
   </div>
 </div>
 
 <script>
-/* --- css var helper --- */
-function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || name; }
+/* ----- palette: muted design/fashion set ----- */
+const FASHION_PALETTE = [
+  '#1c1c29', '#58506b', '#7a7281', '#a78fb3', '#d4a5c3',
+  '#f2b5a8', '#f0c38e', '#c2d39b', '#86c5a6', '#6bb7b6',
+  '#5aa3c2', '#7ea5e3', '#b4c2f2', '#d7d3f2', '#e8e4f8',
+  '#efcfe3', '#f6d6c3', '#e6e2da'
+];
 
 /* --- helpers --- */
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -173,11 +211,11 @@ function inRange(iso, from, to){
   return true;
 }
 function palette(n){
-  const base = ['#2563eb','#0891b2','#10b981','#84cc16','#f59e0b','#ef4444','#a855f7','#ec4899','#14b8a6','#22c55e','#eab308'];
+  const base = FASHION_PALETTE;
   const out = []; for(let i=0;i<n;i++) out.push(base[i%base.length]); return out;
 }
 
-/* --- Keyword normalization --- */
+/* --- Keyword normalization -> "signals" --- */
 const KW_MAP = new Map([
   ['anti aging','longevity'], ['anti-ageing','longevity'], ['anti ageing','longevity'],
   ['retinol routine','retinoid routines'], ['skin cycling','retinoid routines'],
@@ -222,7 +260,6 @@ const els = {
   topNVal:document.getElementById('topNVal'),
   kwSearch:document.getElementById('kwSearch'),
   kwTitle:document.getElementById('kwTitle'),
-  metaCount:document.getElementById('metaCount'),
   kpiTotal:document.getElementById('kpiTotal'),
   kpiAvg:document.getElementById('kpiAvg'),
   kpiCat:document.getElementById('kpiCat'),
@@ -241,7 +278,7 @@ const els = {
   kitKpis:document.getElementById('kitKpis'),
 };
 
-/* --- filters --- */
+/* Controls */
 function getFiltered(){
   const c = els.cat.value, s = els.stat.value, f=els.from.value, t=els.to.value;
   return rowsAll.filter(r=>{
@@ -280,7 +317,7 @@ els.topN.oninput = ()=>{ els.topNVal.textContent = els.topN.value; render(); };
 els.kwSearch.oninput = ()=> render();
 window.addEventListener('resize', ()=> adjustKeywordsHeight());
 
-/* --- chart helper --- */
+/* Chart helper */
 function makeOrUpdate(id, type, data, opt){
   const ctx = document.getElementById(id);
   if(charts[id]){ charts[id].data = data; charts[id].options = opt; charts[id].update(); return charts[id]; }
@@ -288,8 +325,8 @@ function makeOrUpdate(id, type, data, opt){
   return charts[id];
 }
 
-/* --- computations --- */
-function topKeywords(rows, limit, filterTxt){
+/* computations */
+function topSignals(rows, limit, filterTxt){
   const m = new Map();
   for(const r of rows){ const k=getKw(r); if(!k) continue; m.set(k,(m.get(k)||0)+1); }
   let arr = [...m.entries()];
@@ -308,6 +345,17 @@ function statusMixByCategory(rows){
   });
   return {cats, stats, perc: table};
 }
+function freshnessByCategory(rows){
+  const cats = ['fashion','beauty','wellness'];
+  const today = Date.now();
+  const med = (arr)=>{ if(!arr.length) return 0; const s=arr.slice().sort((a,b)=>a-b); const m=Math.floor(s.length/2); return s.length%2?s[m]:(s[m-1]+s[m])/2; };
+  const vals = cats.map(c=>{
+    const ages = rows.filter(r=>r.category===c && Date.parse(r.published))
+      .map(r=> Math.round((today - Date.parse(r.published))/86400000) );
+    return med(ages);
+  });
+  return {cats, days: vals};
+}
 function rowsForKeyword(rows, kw){
   const target = normalizeKw(kw);
   return rows.filter(r => getKw(r) === target);
@@ -323,7 +371,7 @@ function topCat(rows){
   return best||"–";
 }
 
-/* --- momentum & newcomers --- */
+/* momentum & newcomers */
 function countKeywords(rows){
   const m = new Map();
   for(const r of rows){ const k=getKw(r); if(!k) continue; m.set(k,(m.get(k)||0)+1); }
@@ -353,31 +401,23 @@ function newcomerKeywords(curRows, prevRows, limit=20){
   return out.slice(0, limit);
 }
 
-/* --- dynamic height for Top keywords --- */
+/* dynamic height for Top signals */
 function adjustKeywordsHeight(labelsCount=0){
   const n = labelsCount || (charts.chartKeywords?.data?.labels?.length || 0);
-  const h = Math.min(1200, Math.max(220, 22*n + 40));
+  const h = Math.min(1400, Math.max(240, 22*n + 40));
   els.kwCanvas.style.height = h+"px";
 }
 
-/* ---------- Guardrails logic ---------- */
+/* Guardrails */
 const SEASONAL_HINTS = [
   /coat|puffer|parka|boot|knit|sweater|cashmere|tights|beanie|scarf|thermal/i,
   /linen|bikini|swim|sandal|shorts|sundress|beach|resort|straw|raffia/i,
   /prom|graduation|wedding|bridal|festival|halloween|christmas|holiday/i
 ];
 function isSeasonalKeyword(k){ return SEASONAL_HINTS.some(re => re.test(k||'')); }
-function guard_seasonality(keyword){
-  if(isSeasonalKeyword(keyword)){
-    return {type:'warn', text:'Seasonality: likely in-season spike — prefer YoY context over short windows.'};
-  }
-  return null;
-}
+function guard_seasonality(keyword){ if(isSeasonalKeyword(keyword)) return {type:'warn', text:'Seasonality: likely in-season spike — prefer YoY context over short windows.'}; return null; }
 function guard_lowBase(curCount, prevCount){
-  const total = curCount;
-  if(total <= 3 && (curCount - prevCount) >= 2){
-    return {type:'warn', text:'Low base effect: big % change off tiny count — not enough to call a real trend yet.'};
-  }
+  if(curCount <= 3 && (curCount - prevCount) >= 2) return {type:'warn', text:'Low base effect: big % change off tiny count — not enough to call a real trend yet.'};
   return null;
 }
 function guard_variantConflict(keyword, curRows, prevRows){
@@ -401,9 +441,7 @@ function guard_variantConflict(keyword, curRows, prevRows){
       if(dirC !== 0 && dirMain !== 0 && dirC !== dirMain) conflicts++;
     }
   });
-  if(cousins>=2 && conflicts>=1){
-    return {type:'warn', text:'Variant mismatch: close terms point in different directions — beware cherry-picking.'};
-  }
+  if(cousins>=2 && conflicts>=1) return {type:'warn', text:'Variant mismatch: close terms point in different directions — beware cherry-picking.'};
   return null;
 }
 function guard_sourceSkew(rows){
@@ -423,13 +461,11 @@ function guard_sourceSkew(rows){
 function guard_mainstream(statusCounts){
   const tot = statusCounts.reduce((a,b)=>a+b,0)||1;
   const mainstreamShare = statusCounts[2]/tot;
-  if(mainstreamShare >= 0.7){
-    return {type:'info', text:'Established: already mainstream — good for “what’s happening now”, not early prediction.'};
-  }
+  if(mainstreamShare >= 0.7) return {type:'info', text:'Established: already mainstream — good for “what’s happening now”, not early prediction.'};
   return null;
 }
 
-/* ---------- Content Kit (simple) ---------- */
+/* Content kit (simple) */
 function implicationsFromCat(cat){
   switch((cat||'').toLowerCase()){
     case 'fashion': return ['Test capsule or merchandising angle','Map creator narratives','Pilot in one channel then scale'];
@@ -488,21 +524,21 @@ function buildContentKit(keyword, rkw, statsText, firstGuardText){
   return {takeaway, nl, li, hooks, kpis:kpis.join(' • ')};
 }
 
-/* --- render --- */
+/* render */
 function render(){
   const rows = getFiltered();
-  document.getElementById('metaCount').textContent = `${rows.length} articles in current filters`;
 
-  // 1) Top keywords (horizontal, dynamic height)
-  const topK = topKeywords(rows, parseInt(els.topN.value,10), els.kwSearch.value.trim());
+  // Top signals (horizontal)
+  const topK = topSignals(rows, parseInt(els.topN.value,10), els.kwSearch.value.trim());
   adjustKeywordsHeight(topK.length);
+  const colors = palette(topK.length);
   const kwChart = makeOrUpdate('chartKeywords','bar',{
     labels: topK.map(([k])=>k),
-    datasets:[{label:'count', data: topK.map(([,v])=>v), backgroundColor: palette(topK.length)}]
+    datasets:[{label:'count', data: topK.map(([,v])=>v), backgroundColor: colors, borderRadius:8, barThickness:16 }]
   },{
     responsive:true, indexAxis:'y',
     plugins:{legend:{display:false}},
-    scales:{x:{beginAtZero:true}}
+    scales:{x:{beginAtZero:true}, y:{ticks:{mirror:false}}}
   });
   charts.chartKeywords = kwChart;
   kwChart.options.onClick = (e)=>{
@@ -513,56 +549,64 @@ function render(){
     renderKwDetails();
   };
 
-  // Auto-select the first keyword if none selected
-  if(!selectedKw && topK.length){
-    selectedKw = topK[0][0];
-  }
+  if(!selectedKw && topK.length){ selectedKw = topK[0][0]; }
   if(selectedKw) renderKwDetails(); else resetKwDetails();
 
-  // 3) Fastest-rising
+  // Fastest-rising
   const {curFrom, curTo, prevFrom, prevTo} = getWindowBounds();
   const curRows  = rowsInRange(rowsAll, curFrom, curTo);
   const prevRows = rowsInRange(rowsAll, prevFrom, prevTo);
   const risers = fastestRisers(curRows, prevRows, 12);
   makeOrUpdate('chartRisers','bar',{
     labels: risers.map(r=>r.k),
-    datasets:[{label:'Δ vs previous window', data: risers.map(r=>r.delta), backgroundColor: palette(risers.length)}]
+    datasets:[{label:'Δ vs previous', data: risers.map(r=>r.delta), backgroundColor: palette(risers.length), borderRadius:8 }]
   },{
     plugins:{legend:{display:false}},
     scales:{y:{beginAtZero:true}}
   });
 
-  // 4) Newcomers
+  // Newcomers
   const newbies = newcomerKeywords(curRows, prevRows, 20);
   document.getElementById('newcomersList').innerHTML =
     newbies.map(n => `<li><span>${n.k}</span><span class="muted">+${n.c}</span></li>`).join('') ||
     `<li class="muted">No newcomers in this window.</li>`;
 
-  // 5) Status mix by category
-  const ok = cssVar('--ok'), warn = cssVar('--warn'), soft = cssVar('--soft');
+  // Status mix by category
+  const ok = getComputedStyle(document.documentElement).getPropertyValue('--ok').trim();
+  const warn = getComputedStyle(document.documentElement).getPropertyValue('--warn').trim();
+  const soft = getComputedStyle(document.documentElement).getPropertyValue('--soft').trim();
   const mix = statusMixByCategory(rows);
   makeOrUpdate('chartMix','bar',{
     labels: mix.cats,
     datasets: [
-      {label:'emerging',  data: mix.perc.map(r=>r[0]), backgroundColor:ok},
-      {label:'bubbling',  data: mix.perc.map(r=>r[1]), backgroundColor:warn},
-      {label:'mainstream',data: mix.perc.map(r=>r[2]), backgroundColor:soft},
+      {label:'emerging',  data: mix.perc.map(r=>r[0]), backgroundColor:ok,   borderRadius:6},
+      {label:'bubbling',  data: mix.perc.map(r=>r[1]), backgroundColor:warn, borderRadius:6},
+      {label:'mainstream',data: mix.perc.map(r=>r[2]), backgroundColor:soft, borderRadius:6},
     ]
   },{
     responsive:true, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,max:100}},
     plugins:{tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%`}}, legend:{position:'bottom'}}
   });
+
+  // Freshness by category
+  const fresh = freshnessByCategory(rows);
+  makeOrUpdate('chartFresh','bar',{
+    labels: fresh.cats,
+    datasets:[{label:'median days', data:fresh.days, backgroundColor: palette(fresh.cats.length), borderRadius:8}]
+  },{
+    plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>`${c.parsed.y} days`}}},
+    scales:{y:{beginAtZero:true}}
+  });
 }
 
-/* keyword inspector */
+/* signal inspector */
 function resetKwDetails(){
-  els.kwTitle.textContent = '(select a keyword)';
+  els.kwTitle.textContent = '(select a signal)';
   els.kpis.style.display='none';
   els.kwList.innerHTML = '';
   els.guardrailsBox.style.display='none';
   makeOrUpdate('chartKwStatus','bar',{labels:[],datasets:[]},{});
 }
-
 function renderKwDetails(){
   if(!selectedKw){ resetKwDetails(); return; }
   els.kwTitle.textContent = selectedKw;
@@ -584,23 +628,25 @@ function renderKwDetails(){
   els.openList.href = './?'+p.toString();
   els.kpis.style.display='flex';
 
-  // status stacked bar for this keyword
-  const ok = cssVar('--ok'), warn = cssVar('--warn'), soft = cssVar('--soft');
+  // status stacked bar (thin height)
+  const ok = getComputedStyle(document.documentElement).getPropertyValue('--ok').trim();
+  const warn = getComputedStyle(document.documentElement).getPropertyValue('--warn').trim();
+  const soft = getComputedStyle(document.documentElement).getPropertyValue('--soft').trim();
   const stats = ['emerging','bubbling','mainstream'];
   const counts = stats.map(s=>rkw.filter(r=>(r.status||'').toLowerCase()===s).length);
   makeOrUpdate('chartKwStatus','bar',{
     labels:['status mix'],
     datasets:[
-      {label:'emerging',  data:[counts[0]], backgroundColor:ok},
-      {label:'bubbling',  data:[counts[1]], backgroundColor:warn},
-      {label:'mainstream',data:[counts[2]], backgroundColor:soft},
+      {label:'emerging',  data:[counts[0]], backgroundColor:ok,   borderRadius:6},
+      {label:'bubbling',  data:[counts[1]], backgroundColor:warn, borderRadius:6},
+      {label:'mainstream',data:[counts[2]], backgroundColor:soft, borderRadius:6},
     ]
   },{
-    indexAxis:'y', scales:{x:{stacked:true,beginAtZero:true}, y:{stacked:true}},
+    indexAxis:'y', scales:{x:{stacked:true,beginAtZero:true,max:Math.max(1, counts.reduce((a,b)=>a+b,0))}, y:{stacked:true}},
     plugins:{legend:{position:'bottom'}}
   });
 
-  // articles: latest list with Show more/less
+  // latest articles list + Show more/less
   const MAX_INIT = 8;
   const sorted = rkw.slice().sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0));
   const shown = showAllArticles ? sorted : sorted.slice(0,MAX_INIT);
@@ -622,36 +668,31 @@ function renderKwDetails(){
   const prevCount= rowsForKeyword(prevRows, selectedKw).length;
 
   const guards = [];
-  const s1 = guard_seasonality(selectedKw);
-  if(s1) guards.push(s1);
-  const s2 = guard_lowBase(curCount, prevCount);
-  if(s2) guards.push(s2);
-  const s3 = guard_variantConflict(selectedKw, curRows, prevRows);
-  if(s3) guards.push(s3);
-  const s4 = guard_sourceSkew(rkw);
-  if(s4) guards.push(s4);
-  const s5 = guard_mainstream(counts);
-  if(s5) guards.push(s5);
+  const s1 = guard_seasonality(selectedKw); if(s1) guards.push(s1);
+  const s2 = guard_lowBase(curCount, prevCount); if(s2) guards.push(s2);
+  const s3 = guard_variantConflict(selectedKw, curRows, prevRows); if(s3) guards.push(s3);
+  const s4 = guard_sourceSkew(rkw); if(s4) guards.push(s4);
+  const s5 = guard_mainstream(counts); if(s5) guards.push(s5);
 
   els.guards.innerHTML = '';
   if(guards.length){
     els.guardrailsBox.style.display='block';
     guards.forEach(g=>{
       const dotClass = g.type==='warn' ? 'warn' : (g.type==='info' ? 'infoDot' : 'ok');
-      const div = document.createElement('div');
+      const div=document.createElement('div');
       div.className='flag';
       div.innerHTML = `<span class="dot ${dotClass}"></span><div>${g.text}</div>`;
       els.guards.appendChild(div);
     });
   }else{
     els.guardrailsBox.style.display='block';
-    const div = document.createElement('div');
+    const div=document.createElement('div');
     div.className='flag';
     div.innerHTML = `<span class="dot ok"></span><div>No major flags from seasonality, base effects, variant mismatch or source skew.</div>`;
     els.guards.appendChild(div);
   }
 
-  // Content Kit (simple) built from current stats (kept collapsed by default)
+  // Content Kit (collapsed by default)
   const statsText = `Total ${rkw.length}, avg score ${avgScore(rkw)}, top category ${topCat(rkw)}`;
   const firstGuardText = guards[0]?.text || '';
   const kit = buildContentKit(selectedKw, rkw, statsText, firstGuardText);
@@ -662,7 +703,7 @@ function renderKwDetails(){
   els.kitKpis.textContent  = kit.kpis;
 }
 
-/* --- load CSV --- */
+/* load CSV */
 function load(){
   const bust = new Date().toISOString().slice(0,10);
   fetch('signals_simple.csv?ts='+bust)
