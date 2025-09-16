@@ -8,45 +8,45 @@
 
 <style>
   :root{
-    --bg:#ffffff; --fg:#141414; --muted:#6b7280;
+    --bg:#ffffff; --fg:#111827; --muted:#6b7280;
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
-    --shadow:0 8px 24px rgba(0,0,0,.06);
+    --shadow:0 10px 28px rgba(2,6,23,.06);
     --ctl-w:180px;
     --ok:#22c55e; --warn:#f59e0b; --soft:#94a3b8; --info:#3b82f6;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Segoe UI,Inter,Roboto,Helvetica,Arial}
   a{color:#2563eb;text-decoration:none}
   .bar{position:sticky;top:0;z-index:20;backdrop-filter:saturate(180%) blur(10px);
     background:color-mix(in oklab, var(--bg) 92%, transparent); border-bottom:1px solid var(--border)}
   .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .title{font-weight:700}
+  .title{font-weight:700; font-size:15px}
   .btn, .select, .input{
     background:var(--card); color:var(--fg); border:1px solid var(--border);
-    border-radius:10px; padding:10px 12px; box-shadow:var(--shadow);
+    border-radius:12px; padding:10px 12px; box-shadow:var(--shadow);
   }
   .btn:active{transform:translateY(1px)}
   .select{width:var(--ctl-w)} .spacer{flex:1}
   .wrap{max-width:1100px;margin:0 auto;padding:16px 20px}
   .grid{display:grid;gap:16px}
   @media(min-width:1024px){ .grid.two{grid-template-columns:1fr 1fr} }
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:12px}
-  .card.sm{padding:10px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:14px}
   .legend{color:var(--muted);font-size:12px;margin-top:6px}
   .mini{max-width:100%}
-  .mini.sm{height:160px !important}
   .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
   .small{font-size:12px;color:var(--muted)}
-  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
-  .kpi{display:flex; gap:12px; margin:8px 0 4px}
+  .pill{ padding:6px 10px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
+  .kpi{display:flex; gap:10px; flex-wrap:wrap; margin:8px 0 4px}
   .kpi .pill{font-size:12px}
-  ul.list{list-style:none; padding:0; margin:8px 0 0; max-height:180px; overflow:auto}
-  ul.list li{display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px dashed var(--border)}
+  ul.list{list-style:none; padding:0; margin:8px 0 0; max-height:200px; overflow:auto}
+  ul.list li{display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed var(--border)}
   .muted{color:var(--muted)}
-  .notes{border:1px solid var(--border);border-radius:12px;padding:10px;background:#fcfcfd;margin-top:10px}
+  .notes{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fcfcfd;margin-top:10px}
   .flag{display:flex;align-items:flex-start;gap:8px;margin:6px 0}
   .dot{width:10px;height:10px;border-radius:999px;margin-top:5px}
   .warn{background:var(--warn)} .ok{background:var(--ok)} .infoDot{background:var(--info)}
+  details.kit summary{cursor:pointer;font-weight:600}
+  details.kit > div{margin-top:8px}
   .kit pre{white-space:pre-wrap;margin:0}
 </style>
 
@@ -91,13 +91,13 @@
   <!-- Row 1: Top keywords + Keyword details -->
   <div class="grid two">
     <div class="card">
-      <h3>Top keywords</h3>
+      <h3 style="margin:4px 0 8px 0">Top keywords</h3>
       <canvas id="chartKeywords" class="mini" aria-describedby="kwHelp"></canvas>
       <div id="kwHelp" class="legend">Click a bar to inspect that keyword.</div>
     </div>
 
     <div class="card" id="kwPanel">
-      <h3>Keyword details <span id="kwTitle" class="small" style="margin-left:8px;color:var(--muted)"></span></h3>
+      <h3 style="margin:4px 0 8px 0">Keyword details <span id="kwTitle" class="small" style="margin-left:8px;color:var(--muted)"></span></h3>
       <div class="kpi" id="kwKpis" style="display:none">
         <span class="pill" id="kpiTotal">Total: 0</span>
         <span class="pill" id="kpiAvg">Avg score: 0</span>
@@ -109,8 +109,6 @@
       <div class="legend">Status mix for the selected keyword.</div>
 
       <div class="row" style="gap:8px; margin-top:6px;">
-        <button id="btnOpenTop5" class="btn">Open top 5</button>
-        <button id="btnCopyCites" class="btn">Copy citations</button>
         <button id="btnToggleMore" class="btn">Show more</button>
       </div>
 
@@ -122,61 +120,42 @@
         <div id="guards"></div>
       </div>
 
-      <div class="notes kit" id="kitBox" style="display:none">
-        <h4 style="margin:0 0 4px 0;">Content Kit</h4>
-        <div class="small muted" id="kitTip" style="margin-bottom:6px;">Auto-generated from the selected keyword + sources.</div>
-        <div style="display:grid;gap:6px">
-          <div><b>Executive takeaway</b><pre id="kitTake"></pre></div>
-          <div><b>Newsletter blurb</b><pre id="kitNews"></pre></div>
-          <div><b>LinkedIn post</b><pre id="kitLi"></pre></div>
-          <div><b>Social hooks (3)</b><pre id="kitHooks"></pre></div>
-          <div><b>KPIs (3)</b><pre id="kitKpis"></pre></div>
+      <details class="notes kit" id="kitBox">
+        <summary>Content Kit</summary>
+        <div>
+          <div class="small muted" id="kitTip" style="margin-bottom:6px;">Auto-generated from the selected keyword + sources.</div>
+          <div style="display:grid;gap:8px">
+            <div><b>Executive takeaway</b><pre id="kitTake"></pre></div>
+            <div><b>Newsletter blurb</b><pre id="kitNews"></pre></div>
+            <div><b>LinkedIn post</b><pre id="kitLi"></pre></div>
+            <div><b>Social hooks (3)</b><pre id="kitHooks"></pre></div>
+            <div><b>KPIs (3)</b><pre id="kitKpis"></pre></div>
+          </div>
         </div>
-      </div>
+      </details>
     </div>
   </div>
 
   <!-- Row 2: Fastest-rising + Newcomers -->
   <div class="grid two" style="margin-top:16px">
     <div class="card">
-      <h3>Fastest-rising keywords (current vs previous)</h3>
+      <h3 style="margin:4px 0 8px 0">Fastest-rising keywords (current vs previous)</h3>
       <canvas id="chartRisers" class="mini"></canvas>
       <div class="legend">Change in mentions between the current filters and a same-length previous window.</div>
     </div>
 
     <div class="card">
-      <h3>Newcomer keywords (first appearances)</h3>
+      <h3 style="margin:4px 0 8px 0">Newcomer keywords (first appearances)</h3>
       <ul id="newcomersList" class="list"></ul>
       <div class="legend">Keywords that didn’t appear in the previous window but do appear now.</div>
     </div>
   </div>
 
-  <!-- Row 3: Status mix + Top sources -->
-  <div class="grid two" style="margin-top:16px">
-    <div class="card">
-      <h3>Status mix by category</h3>
-      <canvas id="chartMix" class="mini"></canvas>
-      <div class="legend">100% stacked bars: emerging / bubbling / mainstream share by category.</div>
-    </div>
-
-    <div class="card">
-      <h3>Top sources (share)</h3>
-      <canvas id="chartSourcesStack" class="mini"></canvas>
-      <div class="legend">100% stacked bar: domain share within current filters (top 10 domains + others).</div>
-    </div>
-  </div>
-
-  <!-- Methodology & Caveats -->
+  <!-- Row 3: Status mix only -->
   <div class="card" style="margin-top:16px">
-    <h3 style="margin:0 0 6px 0;">Methodology & Caveats</h3>
-    <ul class="small" style="margin:6px 0 0 16px;">
-      <li><b>Data is subjective.</b> We curate beyond raw volume; otherwise the top items are always “white tee”, “Levi’s”.</li>
-      <li><b>Seasonality exists.</b> Seasonal surges ≠ trend. Prefer YoY context for seasonal terms.</li>
-      <li><b>Low base ≠ big trend.</b> Huge % gains off tiny counts are flagged.</li>
-      <li><b>Cherry-picking risk.</b> We check close term variants for conflicting signals.</li>
-      <li><b>Source matters.</b> TikTok (entertainment) vs Pinterest (styling intent) changes interpretation.</li>
-      <li><b>Data shows what’s happening.</b> High volume is often “now”, not prediction.</li>
-    </ul>
+    <h3 style="margin:4px 0 8px 0">Status mix by category</h3>
+    <canvas id="chartMix" class="mini"></canvas>
+    <div class="legend">100% stacked bars: emerging / bubbling / mainstream share by category.</div>
   </div>
 </div>
 
@@ -251,8 +230,6 @@ const els = {
   openList:document.getElementById('openList'),
   kwList:document.getElementById('kwList'),
   kwCanvas:document.getElementById('chartKeywords'),
-  btnOpenTop5:document.getElementById('btnOpenTop5'),
-  btnCopyCites:document.getElementById('btnCopyCites'),
   btnToggleMore:document.getElementById('btnToggleMore'),
   guardrailsBox:document.getElementById('guardrailsBox'),
   guards:document.getElementById('guards'),
@@ -331,16 +308,6 @@ function statusMixByCategory(rows){
   });
   return {cats, stats, perc: table};
 }
-function topSourcesShare(rows){
-  const map = new Map();
-  for(const r of rows){ const h = hostOf(r.link); if(!h) continue; map.set(h,(map.get(h)||0)+1); }
-  const sorted = [...map.entries()].sort((a,b)=>b[1]-a[1]);
-  const top = sorted.slice(0,10);
-  const others = sorted.slice(10).reduce((s,[,v])=>s+v,0);
-  if(others>0) top.push(["others", others]);
-  const total = [...map.values()].reduce((a,b)=>a+b,0) || 1;
-  return top.map(([h,v]) => ({label:h, pct: v/total*100}));
-}
 function rowsForKeyword(rows, kw){
   const target = normalizeKw(kw);
   return rows.filter(r => getKw(r) === target);
@@ -393,18 +360,17 @@ function adjustKeywordsHeight(labelsCount=0){
   els.kwCanvas.style.height = h+"px";
 }
 
-/* ---------- Guardrails logic (Style Analytics-inspired) ---------- */
+/* ---------- Guardrails logic ---------- */
 const SEASONAL_HINTS = [
   /coat|puffer|parka|boot|knit|sweater|cashmere|tights|beanie|scarf|thermal/i,
   /linen|bikini|swim|sandal|shorts|sundress|beach|resort|straw|raffia/i,
   /prom|graduation|wedding|bridal|festival|halloween|christmas|holiday/i
 ];
 function isSeasonalKeyword(k){ return SEASONAL_HINTS.some(re => re.test(k||'')); }
-function guard_seasonality(keyword, lastDates){
+function guard_seasonality(keyword){
   if(isSeasonalKeyword(keyword)){
     return {type:'warn', text:'Seasonality: likely in-season spike — prefer YoY context over short windows.'};
   }
-  // also: if >70% of mentions in warm/cold months for warm/cold items, warn
   return null;
 }
 function guard_lowBase(curCount, prevCount){
@@ -415,7 +381,6 @@ function guard_lowBase(curCount, prevCount){
   return null;
 }
 function guard_variantConflict(keyword, curRows, prevRows){
-  // find cousins sharing at least one non-stop token
   const stop=new Set(['the','a','an','and','or','of','to','for','with','trend','trends','style','outfit','looks','aesthetic']);
   const tok=(s)=>String(s||'').toLowerCase().split(/\W+/).filter(w=>w && !stop.has(w));
   const t0=new Set(tok(keyword));
@@ -425,7 +390,7 @@ function guard_variantConflict(keyword, curRows, prevRows){
     if(k===keyword) return;
     const t1=new Set(tok(k));
     const overlap=[...t1].filter(w=>t0.has(w)).length;
-    if(overlap>=1){ // cousin
+    if(overlap>=1){
       cousins++;
       const cCur = rowsForKeyword(curRows, k).length;
       const cPrev= rowsForKeyword(prevRows, k).length;
@@ -451,8 +416,8 @@ function guard_sourceSkew(rows){
     if(h.includes('youtube')) counts.youtube++;
   });
   if(counts.tiktok/total >= 0.6) return {type:'info', text:'Source skew: TikTok-heavy (entertainment). Look for styling/intent sources to confirm wearability.'};
-  if(counts.pinterest/total >= 0.6) return {type:'info', text:'Source skew: Pinterest-heavy (styling intent). Good for “how to wear”, less for virality.'};
-  if(counts.youtube/total >= 0.6) return {type:'info', text:'Source skew: YouTube-heavy (deep dives). Consider time-to-adoption in shorter formats.'};
+  if(counts.pinterest/total >= 0.6) return {type:'info', text:'Source skew: Pinterest-heavy (styling intent).'};
+  if(counts.youtube/total >= 0.6) return {type:'info', text:'Source skew: YouTube-heavy (deep dives).'};
   return null;
 }
 function guard_mainstream(statusCounts){
@@ -587,24 +552,6 @@ function render(){
     responsive:true, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,max:100}},
     plugins:{tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%`}}, legend:{position:'bottom'}}
   });
-
-  // 6) Top sources — 100% stacked bar, single y bar
-  const srcShare = topSourcesShare(rows);
-  const srcColors = palette(srcShare.length);
-  makeOrUpdate('chartSourcesStack','bar',{
-    labels:['share'],
-    datasets: srcShare.map((s, i)=>({
-      label: s.label, data:[s.pct], backgroundColor: srcColors[i]
-    }))
-  },{
-    indexAxis:'y',
-    responsive:true,
-    scales:{x:{stacked:true,beginAtZero:true,max:100}, y:{stacked:true}},
-    plugins:{
-      legend:{position:'bottom'},
-      tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.x.toFixed(0)}%`}}
-    }
-  });
 }
 
 /* keyword inspector */
@@ -613,7 +560,6 @@ function resetKwDetails(){
   els.kpis.style.display='none';
   els.kwList.innerHTML = '';
   els.guardrailsBox.style.display='none';
-  els.kitBox.style.display='none';
   makeOrUpdate('chartKwStatus','bar',{labels:[],datasets:[]},{});
 }
 
@@ -668,20 +614,6 @@ function renderKwDetails(){
   els.btnToggleMore.textContent = showAllArticles ? 'Show less' : 'Show more';
   els.btnToggleMore.onclick = ()=>{ showAllArticles = !showAllArticles; renderKwDetails(); };
 
-  // open top 5
-  els.btnOpenTop5.onclick = ()=>{
-    sorted.slice(0,5).forEach(r=>{ if(r.link) window.open(r.link,'_blank','noopener'); });
-  };
-  // copy citations
-  els.btnCopyCites.onclick = async ()=>{
-    const blob = sorted.slice(0,50).map(r=>{
-      const host = hostOf(r.link)||'';
-      const d = (r.published||'').slice(0,10);
-      return `- ${r.title||r.link} (${host}${d?`, ${d}`:''}): ${r.link}`;
-    }).join('\n');
-    try{ await navigator.clipboard.writeText(blob); }catch{}
-  };
-
   // guardrails
   const {curFrom, curTo, prevFrom, prevTo} = getWindowBounds();
   const curRows  = rowsInRange(rowsAll, curFrom, curTo);
@@ -719,7 +651,7 @@ function renderKwDetails(){
     els.guards.appendChild(div);
   }
 
-  // Content Kit (simple) built from current stats
+  // Content Kit (simple) built from current stats (kept collapsed by default)
   const statsText = `Total ${rkw.length}, avg score ${avgScore(rkw)}, top category ${topCat(rkw)}`;
   const firstGuardText = guards[0]?.text || '';
   const kit = buildContentKit(selectedKw, rkw, statsText, firstGuardText);
@@ -728,7 +660,6 @@ function renderKwDetails(){
   els.kitLi.textContent    = kit.li;
   els.kitHooks.textContent = kit.hooks;
   els.kitKpis.textContent  = kit.kpis;
-  els.kitBox.style.display = 'block';
 }
 
 /* --- load CSV --- */
