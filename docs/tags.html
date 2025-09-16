@@ -1,7 +1,7 @@
 <!doctype html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>The Futures Edit — Tags & Trend Score</title>
+<title>The Futures Edit — Tags, Trends & Graphs</title>
 
 <!-- Libraries -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -12,42 +12,49 @@
   :root{
     --bg:#ffffff; --fg:#141414; --muted:#6b7280;
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
-    --shadow:0 8px 24px rgba(0,0,0,.06);
-    --bar-h:84px;
+    --shadow:0 8px 24px rgba(0,0,0,.06); --bar-h:84px;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);
-       font:14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif}
-  header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--border);
-         height:var(--bar-h);display:flex;align-items:center;gap:12px;padding:0 18px;z-index:10}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif}
+  header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--border);height:var(--bar-h);
+    display:flex;align-items:center;gap:12px;padding:0 18px;z-index:10}
   h1{margin:0;font-weight:700;font-size:18px}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:.3rem .55rem;border-radius:999px;
-        background:var(--pill);border:1px solid var(--border);font-size:12px;color:#111827}
-  main{max-width:1100px;margin:22px auto;padding:0 16px}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:.3rem .55rem;border-radius:999px;background:var(--pill);
+    border:1px solid var(--border);font-size:12px;color:#111827}
+  main{max-width:1200px;margin:22px auto;padding:0 16px}
+  .grid{display:grid;grid-template-columns:1fr;gap:16px}
+  @media (min-width: 980px){ .grid-2{grid-template-columns:1fr 1fr} .grid-3{grid-template-columns:1fr 1fr 1fr} }
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:16px}
   h2{margin:0 0 8px 0;font:600 18px/1.2 inherit}
+  h3{margin:0 0 6px 0;font:600 15px/1.2 inherit}
   small,.muted{color:var(--muted)}
   .chart-wrap{height:340px}
+  .chart-wrap-sm{height:280px}
   table{width:100%;border-collapse:collapse}
-  th,td{padding:8px;border-bottom:1px solid #f3f4f6;text-align:left}
+  th,td{padding:8px;border-bottom:1px solid #f3f4f6;text-align:left;vertical-align:top}
   thead th{background:#f9fafb;border-bottom:1px solid var(--border)}
   details summary{cursor:pointer}
+  .matrix{border:1px solid var(--border);border-radius:12px;overflow:auto}
+  .matrix table th, .matrix table td{font-size:12px;text-align:center;border-bottom:1px solid #f3f4f6;border-right:1px solid #f3f4f6}
+  .legend{display:flex;align-items:center;gap:6px}
+  .legend > span{width:14px;height:10px;display:inline-block;border:1px solid var(--border)}
+  .tags-cloud{display:flex;flex-wrap:wrap;gap:8px}
+  .tag-pill{display:inline-block;padding:.25rem .5rem;border-radius:999px;background:var(--pill);border:1px solid var(--border);font-size:12px;color:#111827}
 </style>
 
 <header>
-  <h1>The Futures Edit — Tags & Trend Score</h1>
+  <h1>The Futures Edit — Tags, Trends & Graphs</h1>
   <span class="pill" id="dataset-meta">loading…</span>
 </header>
 
-<main>
-  <!-- Trend Score -->
-  <section class="card" id="trend-score">
+<main class="grid">
+  <!-- 1) Trend Score -->
+  <section class="card" id="sec-trend">
     <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
       <h2>Trend Score — Top 15</h2>
-      <small id="trend-sample-meta" class="muted"></small>
+      <small id="trend-meta" class="muted"></small>
     </div>
     <div class="chart-wrap"><canvas id="trendScoreChart"></canvas></div>
-
     <details style="margin-top:12px;">
       <summary><strong>How we calculate Trend Score</strong></summary>
       <div class="muted" style="margin-top:8px;">
@@ -56,26 +63,81 @@
 TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
         </pre>
         <ul style="margin:0 0 10px 18px;padding:0;">
-          <li><strong>Volumeₙ</strong>: min–max normalized 0–100 from the <em>volume</em> column.</li>
+          <li><strong>Volumeₙ</strong>: min–max normalized 0–100 from <em>volume</em>.</li>
           <li><strong>Growthₙ</strong>: min–max normalized 0–100 from <em>growth_rate</em> (negatives clipped at 0).</li>
-          <li><strong>Recencyₙ</strong>: 0–100 from <em>last_seen</em>. 100 = today; 0 = ≥90 days ago; linear in between.</li>
+          <li><strong>Recencyₙ</strong>: 0–100 from <em>last_seen</em> (100 = today; 0 = ≥90 days; linear).</li>
         </ul>
-        <p style="margin:0;">We scale each component to 0–100, apply the weights above, then round.</p>
       </div>
     </details>
-
     <div id="trend-table" style="margin-top:14px;overflow:auto;"></div>
     <div id="trend-errors" style="margin-top:10px;color:#b91c1c;"></div>
   </section>
 
-  <!-- Tags Overview -->
-  <section class="card" style="margin-top:16px;">
-    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
-      <h2>Top Tags</h2>
-      <small class="muted" id="tags-meta"></small>
-    </div>
-    <div class="chart-wrap"><canvas id="tagsBarChart"></canvas></div>
-    <div id="tags-cloud" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;"></div>
+  <!-- 2) Classic / "old" graphics -->
+  <section class="grid grid-2">
+    <!-- Top Tags -->
+    <section class="card">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+        <h2>Top Tags</h2>
+        <small class="muted" id="tags-meta"></small>
+      </div>
+      <div class="chart-wrap-sm"><canvas id="tagsBarChart"></canvas></div>
+      <div id="tags-cloud" class="tags-cloud" style="margin-top:10px;"></div>
+    </section>
+
+    <!-- Top Keywords by Volume -->
+    <section class="card">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+        <h2>Top Signals by Volume</h2>
+        <small class="muted" id="vol-meta"></small>
+      </div>
+      <div class="chart-wrap-sm"><canvas id="volumeBarChart"></canvas></div>
+    </section>
+
+    <!-- Legacy: Fastest Rising -->
+    <section class="card">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+        <h2>Fastest Rising (Growth Rate)</h2>
+        <small class="muted" id="growth-meta"></small>
+      </div>
+      <div class="chart-wrap-sm"><canvas id="growthBarChart"></canvas></div>
+      <small class="muted" style="display:block;margin-top:6px;">(Legacy view — you can hide this later if not useful.)</small>
+    </section>
+
+    <!-- Volume vs Growth Scatter -->
+    <section class="card">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+        <h2>Volume vs Growth</h2>
+        <small class="muted" id="scatter-meta"></small>
+      </div>
+      <div class="chart-wrap-sm"><canvas id="scatterChart"></canvas></div>
+    </section>
+  </section>
+
+  <!-- 3) Recency timeline + Tag co-occurrence -->
+  <section class="grid grid-2">
+    <!-- Recency timeline -->
+    <section class="card">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+        <h2>Recency — Last 12 Weeks</h2>
+        <small class="muted" id="recency-meta"></small>
+      </div>
+      <div class="chart-wrap-sm"><canvas id="recencyLineChart"></canvas></div>
+    </section>
+
+    <!-- Tag Co-occurrence -->
+    <section class="card">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+        <h2>Tag Co-occurrence</h2>
+        <small class="muted" id="matrix-meta"></small>
+      </div>
+      <div class="legend" style="margin-bottom:8px;">
+        <span id="legend-min"></span><small class="muted">low</small>
+        <span id="legend-mid"></span><small class="muted">mid</small>
+        <span id="legend-max"></span><small class="muted">high</small>
+      </div>
+      <div class="matrix" id="matrix-wrap"></div>
+    </section>
   </section>
 </main>
 
@@ -100,14 +162,11 @@ keyword,volume,growth_rate,last_seen,tags
 </script>
 
 <script>
-/* ===========================
-   BASIC CONFIG (no coding needed)
-   ===========================
-   - If you have a real CSV, put it at: data/signals.csv
-     Columns expected: keyword, volume, growth_rate, last_seen, tags
-   - This page will try to load it. If it can't, it will use the embedded sample above.
+/* ===== CONFIG =====
+Put your real CSV at data/signals.csv with headers:
+keyword, volume, growth_rate, last_seen, tags
 */
-const CSV_URL = 'data/signals.csv'; // keep as is unless your path is different
+const CSV_URL = 'data/signals.csv';
 
 // ---------- Utils ----------
 const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
@@ -125,28 +184,41 @@ function recencyScoreFromDateStr(dateStr) {
   const score = 100 - (days / 90) * 100; // 0d → 100, ≥90d → 0
   return clamp(score, 0, 100);
 }
-function showError(msg){
-  const e = document.getElementById('trend-errors');
-  if (e) e.textContent = msg;
-  console.error('[tags.html]', msg);
-}
-function makeBar(canvasId, labels, data, label) {
-  const ctx = document.getElementById(canvasId).getContext('2d');
-  if (window[canvasId]) window[canvasId].destroy?.();
-  window[canvasId] = new Chart(ctx, {
+function makeBar(el, labels, data, label) {
+  const ctx = document.getElementById(el).getContext('2d');
+  if (window[el]) window[el].destroy?.();
+  window[el] = new Chart(ctx, {
     type: 'bar',
     data: { labels, datasets: [{ label, data, borderWidth: 1 }] },
+    options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true } }, plugins:{ legend:{ display:false } } }
+  });
+}
+function makeLine(el, labels, data, label){
+  const ctx = document.getElementById(el).getContext('2d');
+  if (window[el]) window[el].destroy?.();
+  window[el] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{ label, data, tension:0.25, pointRadius:2, borderWidth:2 }] },
+    options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true } }, plugins:{ legend:{ display:false } } }
+  });
+}
+function makeScatter(el, points, label){
+  const ctx = document.getElementById(el).getContext('2d');
+  if (window[el]) window[el].destroy?.();
+  window[el] = new Chart(ctx, {
+    type: 'scatter',
+    data: { datasets: [{ label, data: points, borderWidth:1, pointRadius:3 }] },
     options: {
-      responsive: true, maintainAspectRatio: false,
-      scales: { y: { beginAtZero: true } },
-      plugins: { legend: { display: false } }
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ tooltip:{ callbacks:{ label: (c) => `${c.raw._k}: vol ${c.raw.y}, gr ${c.raw.x}` } }, legend:{ display:false } },
+      scales: { x: { title:{ display:true, text:'Growth rate' } }, y: { title:{ display:true, text:'Volume' }, beginAtZero:true } }
     }
   });
 }
+function showError(msg){ const e = document.getElementById('trend-errors'); if(e) e.textContent = msg; console.error('[tags.html]', msg); }
 
-// ---------- Data loading with graceful fallback ----------
+// ---------- Data loading with fallback ----------
 async function loadSignals() {
-  // Try external CSV first
   try {
     const parsed = await new Promise((res, rej) => {
       Papa.parse(CSV_URL, { download:true, header:true, dynamicTyping:true, complete:res, error:rej });
@@ -154,9 +226,8 @@ async function loadSignals() {
     const rows = (parsed?.data || []).filter(r => r && Object.keys(r).length);
     if (rows.length) return { rows, source: 'csv' };
   } catch (err) {
-    // ignore, we'll fallback
+    // fall through to embedded
   }
-  // Fallback to embedded CSV
   const embedded = document.getElementById('embedded-signals')?.textContent?.trim();
   if (!embedded) { showError('No data available (CSV missing and no embedded sample).'); return { rows: [], source: 'none' }; }
   const parsed2 = Papa.parse(embedded, { header:true, dynamicTyping:true });
@@ -164,82 +235,96 @@ async function loadSignals() {
   return { rows, source: 'embedded' };
 }
 
+// ---------- Co-occurrence matrix (HTML table with shaded cells) ----------
+function renderMatrix(containerId, pairsMap, tagList){
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  const N = tagList.length;
+  const tbl = document.createElement('table');
+  const thead = document.createElement('thead');
+  const htr = document.createElement('tr');
+  htr.appendChild(document.createElement('th')); // corner
+  tagList.forEach(t => { const th = document.createElement('th'); th.textContent = t; htr.appendChild(th); });
+  thead.appendChild(htr);
+  tbl.appendChild(thead);
+  const tbody = document.createElement('tbody');
+
+  // find max for color scale
+  let max = 0;
+  for (let i=0;i<N;i++) for(let j=0;j<N;j++){
+    const a=tagList[i], b=tagList[j];
+    const key = a <= b ? `${a}|||${b}` : `${b}|||${a}`;
+    max = Math.max(max, pairsMap.get(key) || 0);
+  }
+  // Color function (light → dark)
+  function colorFor(v){
+    const p = max ? v/max : 0;
+    const light = 98 - Math.round(p*60); // 98% → 38%
+    return `hsl(210, 60%, ${light}%)`;
+  }
+
+  for (let i=0;i<N;i++){
+    const tr = document.createElement('tr');
+    const rowTh = document.createElement('th'); rowTh.textContent = tagList[i]; tr.appendChild(rowTh);
+    for (let j=0;j<N;j++){
+      const a=tagList[i], b=tagList[j];
+      const key = a <= b ? `${a}|||${b}` : `${b}|||${a}`;
+      const count = (i===j) ? 0 : (pairsMap.get(key) || 0);
+      const td = document.createElement('td');
+      td.style.background = colorFor(count);
+      td.style.minWidth = '36px';
+      td.title = `${a} × ${b}: ${count}`;
+      td.textContent = count ? count : '';
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  tbl.appendChild(tbody);
+  wrap.innerHTML = ''; wrap.appendChild(tbl);
+
+  // Legend swatches
+  const minEl = document.getElementById('legend-min');
+  const midEl = document.getElementById('legend-mid');
+  const maxEl = document.getElementById('legend-max');
+  if (minEl && midEl && maxEl){
+    minEl.style.background = 'hsl(210,60%,98%)';
+    midEl.style.background = 'hsl(210,60%,68%)';
+    maxEl.style.background = 'hsl(210,60%,38%)';
+  }
+}
+
 // ---------- Main render ----------
 (async function () {
   const { rows, source } = await loadSignals();
-
   const datasetMeta = document.getElementById('dataset-meta');
   datasetMeta.textContent = rows.length
     ? `${rows.length} rows • ${new Date().toISOString().slice(0,10)} • ${source === 'csv' ? 'CSV' : 'sample'}`
     : '0 rows';
-
   if (!rows.length) return;
 
-  // Map columns
+  // Access helpers
   const get = (r, k) => r[k] ?? r[k?.toLowerCase?.()] ?? r[k?.toUpperCase?.()];
+
+  // Extract core columns
   const keywords = rows.map(r => String(get(r,'keyword') ?? '').trim() || '(untitled)');
   const volumes  = rows.map(r => Number.isFinite(+get(r,'volume')) ? +get(r,'volume') : 0);
   const growths0 = rows.map(r => Number.isFinite(+get(r,'growth_rate')) ? +get(r,'growth_rate') : 0);
-  const growths  = growths0.map(v => Math.max(0, v)); // negatives clipped at 0 for score
+  const growths  = growths0.map(v => Math.max(0, v)); // clip negatives at 0 for scoring
   const recency  = rows.map(r => recencyScoreFromDateStr(get(r,'last_seen')));
+  const tagsRaw  = rows.map(r => String(get(r,'tags') || '').split(',').map(s => s.trim()).filter(Boolean));
 
-  // Normalize & score
+  // === Trend Score ===
   const volN = minmaxNormalize(volumes);
   const groN = minmaxNormalize(growths);
   const recN = recency;
   const scores = volN.map((_, i) => Math.round(0.40*volN[i] + 0.40*groN[i] + 0.20*recN[i]));
+  const ranked = keywords.map((k,i) => ({ keyword:k, score:scores[i], volN:Math.round(volN[i]), groN:Math.round(groN[i]), recN:Math.round(recN[i]) }))
+                         .sort((a,b) => b.score - a.score);
+  const topTrend = ranked.slice(0, 15);
+  makeBar('trendScoreChart', topTrend.map(d => d.keyword), topTrend.map(d => d.score), 'Trend Score (0–100)');
+  document.getElementById('trend-meta').textContent = `(Top ${topTrend.length} of ${rows.length} signals)`;
 
-  // Rank Top 15
-  const ranked = keywords.map((k,i) => ({
-    keyword:k, score:scores[i],
-    volN:Math.round(volN[i]), groN:Math.round(groN[i]), recN:Math.round(recN[i])
-  })).sort((a,b) => b.score - a.score);
-
-  const top = ranked.slice(0, 15);
-  makeBar('trendScoreChart', top.map(d => d.keyword), top.map(d => d.score), 'Trend Score (0–100)');
-  document.getElementById('trend-sample-meta').textContent = `(Top ${top.length} of ${rows.length} signals)`;
-
-  // Table
+  // Trend table
   const tbl = document.createElement('table');
-  tbl.innerHTML = `
-    <thead><tr>
-      <th>#</th><th>Signal</th><th>Score</th>
-      <th>Volumeₙ</th><th>Growthₙ</th><th>Recencyₙ</th>
-    </tr></thead><tbody></tbody>`;
-  top.forEach((d,i) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${i+1}</td>
-      <td>${d.keyword}</td>
-      <td style="font-weight:600">${d.score}</td>
-      <td class="muted">${d.volN}</td>
-      <td class="muted">${d.groN}</td>
-      <td class="muted">${d.recN}</td>`;
-    tbl.querySelector('tbody').appendChild(tr);
-  });
-  document.getElementById('trend-table').appendChild(tbl);
-
-  // Tags overview
-  const tagCounts = new Map();
-  rows.forEach(r => {
-    const raw = get(r,'tags');
-    if (!raw) return;
-    String(raw).split(',').map(s => s.trim()).filter(Boolean).forEach(t => {
-      tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
-    });
-  });
-  const tagsSorted = Array.from(tagCounts.entries()).sort((a,b) => b[1]-a[1]).slice(0,25);
-  document.getElementById('tags-meta').textContent = tagsSorted.length ? `(Top ${tagsSorted.length})` : '(no tags found)';
-
-  if (tagsSorted.length){
-    makeBar('tagsBarChart', tagsSorted.map(([t])=>t), tagsSorted.map(([,c])=>c), 'Count');
-    const cloud = document.getElementById('tags-cloud');
-    tagsSorted.forEach(([t,c]) => {
-      const span = document.createElement('span');
-      span.className = 'pill';
-      span.textContent = `${t} • ${c}`;
-      cloud.appendChild(span);
-    });
-  }
-})();
-</script>
+  tbl.innerHTML = `<thead><tr><th>#</th><th>Signal</th><th>Score</th><th>Volumeₙ</th><th>Growthₙ</th><th>Recencyₙ</th></tr></thead><tbody></tbody>`;
+  topTrend.forEach((d,i) => {
