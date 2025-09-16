@@ -39,6 +39,8 @@
   .why{font-size:12px;color:#4b5563}
   .feasibility{display:flex;align-items:center;gap:8px;margin-top:6px}
   .feasibility input{width:160px}
+  .kit{border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:12px;background:#fcfcfc}
+  .kit pre{white-space:pre-wrap}
 </style>
 
 <header>
@@ -61,12 +63,12 @@
 Momentum = 0.55 × Growthₙ + 0.35 × Recencyₙ + 0.10 × Noveltyₙ
 Noveltyₙ = 100 − Volumeₙ
         </pre>
-        <p style="margin:0;">Momentum spots **emerging / breaking** signals. Trend Score (below) shows overall **heat**.</p>
+        <p style="margin:0;">Momentum spots <strong>emerging / breaking</strong> signals; Trend Score shows overall <strong>heat</strong>.</p>
       </div>
     </details>
   </section>
 
-  <!-- 2) SIGNALS — Top 25 + insights -->
+  <!-- 2) SIGNALS — Top 25 + insights + Content Kit -->
   <section class="grid grid-2 card" style="display:grid;gap:16px;">
     <div>
       <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -120,6 +122,23 @@ Trend = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
       <div class="divider"></div>
       <h3>Related Articles</h3>
       <div id="articles-list" class="muted">No signal selected.</div>
+
+      <div class="divider"></div>
+      <h3>Content Kit</h3>
+      <div class="row">
+        <button id="gen-kit" class="btn">Generate kit</button>
+        <button id="copy-kit" class="btn">Copy all</button>
+      </div>
+      <div id="kit-out" class="kit" style="display:none;">
+        <h4 style="margin:0 0 6px 0;">Newsletter blurb</h4>
+        <pre id="kit-news"></pre>
+        <h4 style="margin:10px 0 6px 0;">LinkedIn post</h4>
+        <pre id="kit-li"></pre>
+        <h4 style="margin:10px 0 6px 0;">Medium outline</h4>
+        <pre id="kit-med"></pre>
+        <h4 style="margin:10px 0 6px 0;">Social hooks</h4>
+        <pre id="kit-hooks"></pre>
+      </div>
     </aside>
   </section>
 
@@ -137,10 +156,9 @@ Trend = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
         <pre style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:10px;overflow:auto;margin:0 0 10px 0;font-size:13px;">
 Opp = 0.45 × Momentum + 0.25 × (100 − Saturationₙ) + 0.20 × CrossIndustryₙ + 0.10 × Feasibility
 Saturationₙ = min–max normalized article_count per signal (more coverage = higher saturation)
-CrossIndustryₙ = (# of verticals present among {Fashion, Beauty, Wellness} / 3) × 100
-Feasibility = your slider (per-signal override; default 60)
+CrossIndustryₙ = (# of verticals among {Fashion, Beauty, Wellness} / 3) × 100
+Feasibility = your slider (per-signal; default 60, saved locally)
         </pre>
-        <p style="margin:0;">Use Opportunity to pick **newsletter topics** and **sales angles** that are timely, white-space, and cross-vertical.</p>
       </div>
     </details>
 
@@ -158,7 +176,7 @@ Feasibility = your slider (per-signal override; default 60)
   </section>
 </main>
 
-<!-- Embedded fallback data -->
+<!-- Embedded fallback data (used only if CSVs can’t be fetched locally) -->
 <script type="text/plain" id="embedded-signals">
 keyword,volume,growth_rate,last_seen,tags
 "glazed blush",78,22,"2025-09-12","beauty, makeup"
@@ -190,11 +208,7 @@ keyword,title,url,source,date
 </script>
 
 <script>
-/* ===== CONFIG =====
-Optional real CSVs at:
-- data/signals.csv  (keyword, volume, growth_rate, last_seen, tags)
-- data/articles.csv (keyword, title, url, source, date)
-*/
+/* ===== CONFIG (optional CSVs) ===== */
 const SIGNALS_CSV_URL  = 'data/signals.csv';
 const ARTICLES_CSV_URL = 'data/articles.csv';
 
@@ -236,8 +250,7 @@ function makeBar(el, labels, data, label, onClickIndex){
 let SIGNAL_ROWS=[], ARTICLE_ROWS=[], ARTICLES_MAP = new Map();
 let trendScores=[], momentumScores=[], volN=[], groN=[], recN=[];
 let RANKED_SIGNALS=[], SIGNALS_CHART=null, OPP_CHART=null;
-let FEASIBILITY_OVERRIDES = {}; // per-signal { [keyword]: 0..100 }
-const FEASIBILITY_BASELINE = 60;
+let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
 
 /* ===== Boot ===== */
 (async function(){
@@ -246,7 +259,6 @@ const FEASIBILITY_BASELINE = 60;
   const {rows:aRows}=await loadCSVMaybe(ARTICLES_CSV_URL,'embedded-articles');
   SIGNAL_ROWS=sRows; ARTICLE_ROWS=aRows;
 
-  // map articles by keyword (case-insensitive)
   ARTICLES_MAP = new Map();
   ARTICLE_ROWS.forEach(a=>{
     const k = String((a.keyword||'')).toLowerCase();
@@ -344,10 +356,11 @@ const FEASIBILITY_BASELINE = 60;
       list.innerHTML=''; list.appendChild(frag);
     }
 
-    // Copy summary
-    const summary = makeSummary(d);
-    const btn=document.getElementById('copy-summary');
-    btn.onclick=async ()=>{ try{ await navigator.clipboard.writeText(summary); btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent='Copy summary',1200); } catch{ btn.textContent='Copy failed'; setTimeout(()=>btn.textContent='Copy summary',1200); } };
+    // Content Kit generation & copy
+    const btnGen = document.getElementById('gen-kit');
+    const btnCopy= document.getElementById('copy-kit');
+    btnGen.onclick = ()=> generateKit(d, (ARTICLES_MAP.get(String(key.toLowerCase()))||[]));
+    btnCopy.onclick = copyKitAll;
   }
   function makeSummary(d){
     const heat=v=>v>=75?'very high':v>=50?'high':v>=25?'moderate':'low';
@@ -357,6 +370,10 @@ const FEASIBILITY_BASELINE = 60;
     const tags=(d.tags&&d.tags.length)?`Tags: ${d.tags.join(', ')}`:'';
     return `${d.keyword} — Trend ${d.score}, Momentum ${d.momentum}. ${volNote}, ${groNote}, ${recNote}. ${tags}`.trim();
   }
+  document.getElementById('copy-summary').onclick = async ()=>{
+    const sel = RANKED_SIGNALS[0]; if(!sel) return;
+    try{ await navigator.clipboard.writeText(makeSummary(sel)); }catch{}
+  };
   selectSignal(buildRank('trend')[0]);
 
   /* ===== 3) Opportunity — What to cover now ===== */
@@ -364,9 +381,9 @@ const FEASIBILITY_BASELINE = 60;
     const t = (tags||[]).map(x=>x.toLowerCase());
     const hasFashion = t.some(x=> /fashion|style|apparel|tailor|couture|athleisure/.test(x));
     const hasBeauty  = t.some(x=> /beauty|skincare|skin|makeup|hair|fragrance|cosmetic/.test(x));
-    const hasWell    = t.some(x=> /wellness|health|fitness|sleep|spa|home|lifestyle|nutrition/.test(x)); // treat "home" as wellness/lifestyle
+    const hasWell    = t.some(x=> /wellness|health|fitness|sleep|spa|home|lifestyle|nutrition/.test(x));
     let count = 0; if (hasFashion) count++; if (hasBeauty) count++; if (hasWell) count++;
-    return { hasFashion, hasBeauty, hasWell, count };
+    return { count };
   }
   function whyNow(d, artCount, cross){
     const bits=[];
@@ -383,10 +400,8 @@ const FEASIBILITY_BASELINE = 60;
       const key = String((keywords[i]||'').toLowerCase());
       return (ARTICLES_MAP.get(key)||[]).length;
     });
-    const saturationN = minmaxNormalize(articleCounts); // higher = more saturated
-    const crossN = SIGNAL_ROWS.map((_,i)=> {
-      const cross = verticalsFromTags(tagsRaw[i]); return Math.round((cross.count/3)*100);
-    });
+    const saturationN = minmaxNormalize(articleCounts);
+    const crossN = SIGNAL_ROWS.map((_,i)=> Math.round((verticalsFromTags(tagsRaw[i]).count/3)*100));
 
     const opp = SIGNAL_ROWS.map((_,i)=>{
       const key = keywords[i]; const feas = FEASIBILITY_OVERRIDES[key] ?? FEASIBILITY_BASELINE;
@@ -394,7 +409,6 @@ const FEASIBILITY_BASELINE = 60;
       return Math.round(val);
     });
 
-    // build rows
     const rows = SIGNAL_ROWS.map((_,i)=>({
       keyword: keywords[i],
       opportunity: opp[i],
@@ -407,24 +421,20 @@ const FEASIBILITY_BASELINE = 60;
       cross: verticalsFromTags(tagsRaw[i])
     })).sort((a,b)=> b.opportunity - a.opportunity);
 
-    return { rows, saturationN, crossN, articleCounts: articleCounts };
+    return { rows, saturationN, crossN, articleCounts };
   }
   function renderOpportunity(){
     const { rows } = computeOpportunity();
     const top = rows.slice(0,12);
-    // chart
     OPP_CHART = makeBar('oppChart', top.map(d=>d.keyword), top.map(d=>d.opportunity), 'Opportunity (0–100)',
       (i)=> {
-        // also focus the signal on click
         const sel = RANKED_SIGNALS.find(r => r.keyword === top[i].keyword) || { keyword: top[i].keyword, score: top[i].trend, momentum: top[i].momentum, volume: top[i].volume, growth: top[i].growth, lastSeen: '', tags: [] , volN:0, groN:0, recN: top[i].recN};
         selectSignal(sel);
-        // also switch Signals rank to Trend for context
         document.getElementById('rank-by').value = 'trend';
         renderSignals('trend');
       });
     document.getElementById('opp-meta').textContent = `(Top ${top.length} by Opportunity)`;
 
-    // table
     const tbl = document.createElement('table');
     tbl.innerHTML = `<thead><tr>
       <th>#</th><th>Signal</th><th>Opp</th><th>Momentum</th><th>Articles</th><th>Why now</th>
@@ -446,11 +456,98 @@ const FEASIBILITY_BASELINE = 60;
   /* ===== 4) Top Tags ===== */
   const tagCounts=new Map();
   tagsRaw.forEach(list=>list.forEach(t=>tagCounts.set(t,(tagCounts.get(t)||0)+1)));
-  const tagsSorted=Array.from(tagCounts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,25);
+  const tagsSorted=Array.from(tagCounts.entries()).sort((a,b) => b[1]-a[1]).slice(0,25);
   document.getElementById('tags-meta').textContent=tagsSorted.length?`(Top ${tagsSorted.length})`:'(no tags found)';
   if(tagsSorted.length){
     makeBar('tagsBarChart', tagsSorted.map(([t])=>t), tagsSorted.map(([,c])=>c), 'Count');
     const cloud=document.getElementById('tags-cloud'); tagsSorted.forEach(([t,c])=>{ const s=document.createElement('span'); s.className='tag-pill'; s.textContent=`${t} • ${c}`; cloud.appendChild(s); });
+  }
+
+  /* ===== Content Kit Generator ===== */
+  function pickAngle(tags, momentum, trend){
+    const t = (tags||[]).map(x=>x.toLowerCase());
+    if (t.includes('sustainability')) return 'Sustainability as retention + brand moat';
+    if (t.includes('tech')) return 'UX upgrade via beauty/fashion-tech';
+    if (t.includes('skincare')) return 'Science-backed self-care ritual';
+    if (t.includes('fragrance')) return 'Scent as memory & merchandising';
+    if (t.includes('packaging')) return 'Experience-led refill & retail';
+    if (momentum >= 70 && trend < 60) return 'Early breakout to watch';
+    if (trend >= 75) return 'Mainstream heat with room to play';
+    return 'Niche signal with upside';
+    }
+  function bulletImplications(tags){
+    const out=[];
+    if (tags.includes('sustainability')) out.push('Shift capex to refill & repair pilots');
+    if (tags.includes('tech')) out.push('Test AR try-on or AI-assisted sizing');
+    if (tags.includes('skincare')) out.push('Bundle routine steps into a ritual SKU');
+    if (tags.includes('fragrance')) out.push('Use scent zoning in-store');
+    if (tags.includes('packaging')) out.push('Swap to mono-material packs');
+    if (!out.length) out.push('Pilot with 1 hero product + content storyline');
+    return out.slice(0,3);
+  }
+  function sentenceJoin(arr){ return arr.filter(Boolean).join(' • '); }
+  function generateKit(d, articles){
+    const title = d.keyword;
+    const tags = d.tags || [];
+    const momentum = d.momentum||0, trend = d.score||0, vol = d.volume||0, growth = d.growth||0, rec = d.recN||0;
+    const angle = pickAngle(tags, momentum, trend);
+    const sources = (articles||[]).slice(0,3).map(a => `${a.source || (new URL(a.url).hostname.replace(/^www\./,''))} (${a.date||''})`).join(', ');
+    const evidence = sources ? `Evidence: ${sources}.` : '';
+    const intro = `${title}: ${angle}. Momentum ${momentum}, Trend ${trend}, volume ${vol}, growth ${growth}%, recency ${rec}.`;
+    // Newsletter (120–160 words approx)
+    const nl = [
+      intro,
+      `Why it matters: ${sentenceJoin(bulletImplications(tags))}.`,
+      evidence,
+      `What we’re watching: brand trials, creator adoption, and retail signals.`,
+      `Reply for the deck or to scope a brand-specific playbook.`
+    ].join(' ');
+    // LinkedIn
+    const li = [
+      `⚡ ${title}: ${angle}`,
+      ``,
+      `• Momentum ${momentum} / Trend ${trend} / Growth ${growth}%`,
+      `• Tags: ${tags.join(', ') || '—'}`,
+      sources ? `• ${evidence}` : '',
+      ``,
+      `👉 We’re mapping brand opportunities in fashion, beauty & wellness.`,
+      `DM for the 1-pager or a working session.`
+    ].filter(Boolean).join('\n');
+    // Medium outline
+    const med = [
+      `# ${title}: ${angle}`,
+      `## What it is`,
+      `Short definition + examples.`,
+      `## Why now`,
+      `Momentum ${momentum}, Trend ${trend}, growth ${growth}% — ${evidence || 'add 2–3 sources.'}`,
+      `## Who it serves`,
+      `Segments, price tiers, aesthetics.`,
+      `## How brands can act`,
+      ...bulletImplications(tags).map(b => `- ${b}`),
+      `## Watchouts`,
+      `Supply, CX, or brand stretch risks.`
+    ].join('\n');
+    // Hooks
+    const hooks = [
+      `${title}: the micro-trend brands keep missing`,
+      `${title} → from hype to business impact`,
+      `Why ${title} is peaking now`,
+      `3 ways to activate ${title}`
+    ].join('\n');
+
+    document.getElementById('kit-out').style.display='block';
+    document.getElementById('kit-news').textContent = nl;
+    document.getElementById('kit-li').textContent   = li;
+    document.getElementById('kit-med').textContent  = med;
+    document.getElementById('kit-hooks').textContent= hooks;
+  }
+  async function copyKitAll(){
+    const news = document.getElementById('kit-news').textContent || '';
+    const li   = document.getElementById('kit-li').textContent   || '';
+    const med  = document.getElementById('kit-med').textContent  || '';
+    const hk   = document.getElementById('kit-hooks').textContent|| '';
+    const blob = `NEWSLETTER\n\n${news}\n\nLINKEDIN\n\n${li}\n\nMEDIUM OUTLINE\n\n${med}\n\nHOOKS\n\n${hk}`;
+    try{ await navigator.clipboard.writeText(blob); }catch{}
   }
 })();
 </script>
