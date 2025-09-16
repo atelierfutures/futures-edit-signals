@@ -49,8 +49,8 @@
   .mini{max-width:100%}
   .mini.thin{height:86px !important}
   .mini.short{height:180px}
-  /* make Search intent shorter to better balance with Top signals */
-  #chartIntent{height:120px !important}
+  /* Make Search intent definitely compact */
+  #chartIntent{height:100px !important}
 
   .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
   .small{font-size:12px;color:var(--muted)}
@@ -63,10 +63,13 @@
     box-shadow: inset 0 0 0 2px var(--hdr-ring);
   }
 
-  /* lists scroll (keeps full content but caps height) */
-  ul.list{list-style:none; padding:0; margin:8px 0 0; max-height:280px; overflow:auto}
+  /* Lists (scroll inside the card) */
+  ul.list{list-style:none; padding:0; margin:8px 0 0; border-top:1px dashed var(--border)}
   ul.list li{display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed var(--border)}
   .muted{color:var(--muted)}
+  /* dedicated heights so right card stays tidy */
+  #qList{max-height:160px; overflow:auto}
+  #kwList{max-height:260px; overflow:auto}
 
   .notes{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fcfcfd;margin-top:10px}
   .flag{display:flex;align-items:flex-start;gap:8px;margin:6px 0}
@@ -107,6 +110,7 @@
 </div>
 
 <div class="wrap">
+  <!-- Row 1 -->
   <div class="grid two">
     <div class="card">
       <h3 style="margin:4px 0 8px 0">Top signals (Top 30)</h3>
@@ -141,6 +145,7 @@
     </div>
   </div>
 
+  <!-- Row 2 -->
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <h3 style="margin:4px 0 8px 0">Fastest-rising signals (current vs previous)</h3>
@@ -150,11 +155,12 @@
 
     <div class="card">
       <h3 style="margin:4px 0 8px 0">Newcomer signals (first appearances)</h3>
-      <ul id="newcomersList" class="list"></ul>
+      <ul id="newcomersList" class="list" style="max-height:316px;overflow:auto"></ul>
       <div class="legend">Signals that didn’t appear in the previous window but do appear now.</div>
     </div>
   </div>
 
+  <!-- Row 3 -->
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <h3 style="margin:4px 0 8px 0">Status mix by category</h3>
@@ -447,8 +453,9 @@ function render(){
     labels: top.map(([k])=>k),
     datasets:[{label:'count', data: top.map(([,v])=>v), backgroundColor:colors, borderRadius:8, barThickness:16 }]
   },{
-    responsive:true, indexAxis:'y', plugins:{legend:{display:false}},
-    scales:{x:{beginAtZero:true}}
+    responsive:true, indexAxis:'y',
+    plugins:{legend:{display:false}},
+    scales:{x:{beginAtZero:true}, y:{ticks:{autoSkip:false}}}
   });
   charts.chartSignals=sigChart;
   sigChart.options.onClick=(e)=>{
@@ -469,13 +476,7 @@ function render(){
 
   makeOrUpdate('chartRisers','bar',{
     labels: risers.map(r=>r.k),
-    datasets:[{
-      label:'Δ vs previous',
-      data: risers.map(r=>r.delta),
-      backgroundColor: palette(risers.length),
-      borderRadius:8,
-      barThickness:16
-    }]
+    datasets:[{label:'Δ vs previous', data: risers.map(r=>r.delta), backgroundColor: palette(risers.length), borderRadius:8, barThickness:16}]
   },{
     indexAxis:'y',
     plugins:{legend:{display:false}},
@@ -577,10 +578,15 @@ function renderDetails(){
     }))
   },{
     indexAxis:'y',
-    scales:{x:{stacked:true,beginAtZero:true,max:100}, y:{stacked:true,ticks:{display:false},grid:{display:false}}},
-    plugins:{legend:{position:'bottom'}, tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.x}%`}}}
+    maintainAspectRatio:false,           // <- force height to our CSS
+    layout:{padding:0},
+    plugins:{
+      legend:{position:'bottom', labels:{boxWidth:12, boxHeight:12, font:{size:11}}},
+      tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.x}%`}}
+    },
+    scales:{x:{stacked:true,beginAtZero:true,max:100}, y:{stacked:true,ticks:{display:false},grid:{display:false}}}
   });
-  els.intentMeta.textContent = stack.total ? `${stack.total.toLocaleString()} impressions across queries` : 'No GSC rows for this signal (using sample or none).';
+  els.intentMeta.textContent = stack.total ? `${stack.total.toLocaleString()} impressions across queries` : 'No GSC rows for this signal (sample shown).';
 
   const qs = topQuestions(gscRows, 10);
   els.qList.innerHTML = qs.length
@@ -593,7 +599,7 @@ function renderDetails(){
   const gap = answerGapPct(rkw, gscRows);
   els.gapBadge.textContent = `Answer Gap: ${gap}%`;
 
-  /* latest articles — back to 12, with scroll via .list max-height */
+  // Latest 12 articles (scrolls inside the list)
   const latest = rkw.slice()
     .sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0))
     .slice(0,12);
