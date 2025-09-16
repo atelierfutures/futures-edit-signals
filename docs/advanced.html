@@ -13,9 +13,9 @@
     --shadow:0 12px 30px rgba(15,23,42,.06);
 
     /* Design palette */
-    --ink:#1c1c29;   /* mainstream */
-    --peri:#7ea5e3;  /* emerging */
-    --mauve:#d4a5c3; /* bubbling */
+    --ink:#1c1c29;
+    --peri:#7ea5e3;
+    --mauve:#d4a5c3;
 
     /* header */
     --hdr-bg: linear-gradient(180deg, rgba(250,250,255,.92), rgba(250,250,255,.70));
@@ -47,9 +47,9 @@
 
   .legend{color:var(--muted);font-size:12px;margin-top:6px}
   .mini{max-width:100%}
-  .mini.short{height:180px}
-  #chartIntent{height:140px !important} /* compact + readable */
-
+  .mini.thin{height:86px !important}
+  .mini.short{height:180px !important}
+  .mini.intent{height:140px !important}    /* tighter so legend fits */
   .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
   .small{font-size:12px;color:var(--muted)}
 
@@ -61,17 +61,21 @@
     box-shadow: inset 0 0 0 2px var(--hdr-ring);
   }
 
-  /* Scrollable lists */
-  ul.list{list-style:none; padding:0; margin:8px 0 0; border-top:1px dashed var(--border)}
+  ul.list{list-style:none; padding:0; margin:8px 0 0; max-height:280px; overflow:auto}
   ul.list li{display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed var(--border)}
-  #qList{max-height:160px; overflow:auto}
-  #kwList{max-height:260px; overflow:auto}
   .muted{color:var(--muted)}
 
-  /* External legend chips */
-  .legend-chips{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:6px}
-  .legend-chips .chip{display:inline-flex;align-items:center;gap:6px;margin-bottom:4px}
-  .legend-chips .sw{width:14px;height:10px;border-radius:3px;border:1px solid var(--border);display:inline-block}
+  /* notes */
+  .notes{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fcfcfd;margin-top:10px}
+  .flag{display:flex;align-items:flex-start;gap:8px;margin:6px 0}
+  .dot{width:10px;height:10px;border-radius:999px;margin-top:5px}
+  .warn{background:#f59e0b} .ok{background:#2ecc71} .infoDot{background:#3b82f6}
+  details.kit summary{cursor:pointer;font-weight:700}
+  details.kit > div{margin-top:8px}
+  .kit pre{white-space:pre-wrap;margin:0}
+
+  /* hide the explicit date pickers from the UI */
+  .hidden{display:none !important}
 </style>
 
 <div class="bar">
@@ -87,24 +91,31 @@
       <option value="">All status</option>
       <option>emerging</option><option>bubbling</option><option>mainstream</option>
     </select>
-    <input id="from" type="date" class="input" aria-label="From date">
-    <input id="to"   type="date" class="input" aria-label="To date">
+
+    <!-- Quick ranges only (date pickers are kept in DOM but hidden) -->
     <select id="quick" class="select">
       <option value="">All time</option>
+      <option value="7">Last 7 days</option>
       <option value="30">Last 30 days</option>
       <option value="90">Last 90 days</option>
       <option value="180">Last 180 days</option>
+      <option value="365">Last year</option>
     </select>
     <button id="clear" class="btn">Clear</button>
+
     <span class="spacer"></span>
     <label class="small">Filter signals…
       <input id="kwSearch" type="search" class="input" placeholder="type to filter bar" style="width:240px">
     </label>
+
+    <!-- keep functional, but hidden -->
+    <input id="from" type="date" class="input hidden" aria-label="From date">
+    <input id="to"   type="date" class="input hidden" aria-label="To date">
   </div>
 </div>
 
 <div class="wrap">
-  <!-- Row 1 -->
+  <!-- Row 1: Top signals + details (Search Intent + Qs + Articles) -->
   <div class="grid two">
     <div class="card">
       <h3 style="margin:4px 0 8px 0">Top signals (Top 30)</h3>
@@ -121,10 +132,9 @@
         <a class="btn" id="openList" target="_blank" rel="noopener">Open in list</a>
       </div>
 
-      <!-- Search intent only (uses space from removed status mix) -->
+      <!-- Intent stack only -->
       <h4 class="small" style="margin-top:6px">Search intent (GSC)</h4>
-      <canvas id="chartIntent" class="mini"></canvas>
-      <div id="intentLegend" class="legend-chips"></div>
+      <canvas id="chartIntent" class="mini intent"></canvas>
       <div id="intentMeta" class="legend"></div>
 
       <!-- Questions + Answer gap -->
@@ -140,7 +150,7 @@
     </div>
   </div>
 
-  <!-- Row 2 -->
+  <!-- Row 2: Fastest-rising + Newcomers -->
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <h3 style="margin:4px 0 8px 0">Fastest-rising signals (current vs previous)</h3>
@@ -150,12 +160,12 @@
 
     <div class="card">
       <h3 style="margin:4px 0 8px 0">Newcomer signals (first appearances)</h3>
-      <ul id="newcomersList" class="list" style="max-height:316px;overflow:auto"></ul>
+      <ul id="newcomersList" class="list"></ul>
       <div class="legend">Signals that didn’t appear in the previous window but do appear now.</div>
     </div>
   </div>
 
-  <!-- Row 3: Keep the category-level analytics -->
+  <!-- Row 3: Status mix + Executive summary -->
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <h3 style="margin:4px 0 8px 0">Status mix by category</h3>
@@ -164,22 +174,15 @@
     </div>
 
     <div class="card">
-      <div class="row" style="justify-content:space-between;align-items:center;margin:0 0 6px 0;">
-        <h3 style="margin:0">Category insight</h3>
-        <select id="insightMode" class="select" style="width:220px">
-          <option value="concentration" selected>Signal concentration</option>
-          <option value="newcomers">Newcomer share</option>
-          <option value="gainers">Gainer share</option>
-          <option value="cross">Cross-vertical</option>
-        </select>
+      <h3 style="margin:4px 0 8px 0">Executive summary</h3>
+      <div id="summaryBox" class="notes" style="min-height:140px">
+        <div class="flag"><span class="dot infoDot"></span><div>Adjust filters or click a signal to populate the summary.</div></div>
       </div>
-      <canvas id="chartInsight" class="mini short"></canvas>
-      <div id="insightLegend" class="legend"></div>
     </div>
   </div>
 </div>
 
-<!-- Fallback sample for GSC -->
+<!-- ======= Embedded samples (safe fallbacks) ======= -->
 <script type="text/plain" id="embedded-gsc">
 signal,query,impressions,clicks,date
 "longevity","what is glp-1 longevity",1200,60,"2025-09-01"
@@ -199,14 +202,17 @@ signal,query,impressions,clicks,date
 const FASHION_PALETTE = [
   '#1c1c29','#58506b','#7a7281','#a78fb3','#d4a5c3',
   '#f2b5a8','#f0c38e','#c2d39b','#86c5a6','#6bb7b6',
-  '#5aa3c2','#7ea5e3','#b4c2f2','#d7d3f2','#e8e4f8','#efcfe3'
+  '#5aa3c2','#7ea5e3','#b4c2f2','#d7d3f2','#e8e4f8',
+  '#efcfe3','#f6d6c3','#e6e2da'
 ];
 function palette(n){ const out=[]; for(let i=0;i<n;i++) out.push(FASHION_PALETTE[i%FASHION_PALETTE.length]); return out; }
-function getCSS(name,fallback){ const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v||fallback; }
+
 const COLORS_STATUS = { emerging:getCSS('--peri','#7ea5e3'), bubbling:getCSS('--mauve','#d4a5c3'), mainstream:getCSS('--ink','#1c1c29') };
+function getCSS(name, fallback){ const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v||fallback; }
 
 /* ---------------- Helpers ---------------- */
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function hostOf(u){ try{ return new URL(u).host.replace(/^www\./,''); }catch{return ""; } }
 function inRange(iso, from, to){
   const t = Date.parse(iso||""); if(isNaN(t)) return false;
   if(from && t < new Date(from).setUTCHours(0,0,0,0)) return false;
@@ -257,11 +263,10 @@ const els={
   kwTitle:byId('kwTitle'),
   kpiRow:byId('kpiRow'), kpiTotal:byId('kpiTotal'), kpiAvg:byId('kpiAvg'), kpiCat:byId('kpiCat'),
   openList:byId('openList'), kwList:byId('kwList'),
-  chartIntent:byId('chartIntent'), intentLegend:byId('intentLegend'), intentMeta:byId('intentMeta'),
-  gapBadge:byId('gapBadge'), qList:byId('qList'),
+  chartIntent:byId('chartIntent'), intentMeta:byId('intentMeta'), gapBadge:byId('gapBadge'), qList:byId('qList'),
   chartRisers:byId('chartRisers'), newcomersList:byId('newcomersList'),
   chartMix:byId('chartMix'),
-  insightMode:byId('insightMode'), chartInsight:byId('chartInsight'), insightLegend:byId('insightLegend')
+  summaryBox:byId('summaryBox')
 };
 function byId(id){ return document.getElementById(id); }
 
@@ -297,19 +302,14 @@ els.quick.onchange=()=>{
   render();
 };
 els.clear.onclick=()=>{ els.cat.value=""; els.stat.value=""; els.from.value=""; els.to.value=""; els.quick.value=""; els.kwSearch.value=""; selectedKw=""; render(); };
-['cat','stat','from','to'].forEach(id=> els[id].onchange=render);
+['cat','stat'].forEach(id=> els[id].onchange=render);
 els.kwSearch.oninput=()=> render();
-els.insightMode.onchange=()=> render();
 window.addEventListener('resize',()=> adjustHeight());
 
 /* ---------------- Charts ---------------- */
-function makeOrUpdate(id,type,data,opt){
-  const ctx=byId(id).getContext('2d');
-  if(charts[id]){ charts[id].data=data; charts[id].options=opt; charts[id].update(); return charts[id]; }
-  charts[id]=new Chart(ctx,{type,data,options:opt}); return charts[id];
-}
+function makeOrUpdate(id,type,data,opt){ const ctx=byId(id).getContext('2d'); if(charts[id]){ charts[id].data=data; charts[id].options=opt; charts[id].update(); return charts[id]; } charts[id]=new Chart(ctx,{type,data,options:opt}); return charts[id]; }
 function adjustHeight(n=0){
-  const count = n || (charts.chartSignals?.data?.labels?.length || 0);
+  const count = n || (charts.chartSignals?.data?.labels?.length||0);
   const h = Math.min(1400, Math.max(240, 22*count + 40));
   els.chartSignals.style.height = h+"px";
 }
@@ -323,7 +323,7 @@ function topSignals(rows, limit, filterTxt){
   return arr.slice(0,limit);
 }
 function rowsForKeyword(rows, kw){ const t=normalizeKw(kw); return rows.filter(r=> getKw(r)===t); }
-function avgScore(rows){ const nums=rows.map(r=>+r.trend_score||0).filter(n=>!isNaN(n)); if(!nums.length) return 0; return Math.round((nums.reduce((a,b)=>a+b,0)/nums.length)*100)/100; }
+function avgScore(rows){ const nums=rows.map(r=>+r.trend_score||0).filter(n=>!isNaN(n)); if(!nums.length) return 0; return Math.round( (nums.reduce((a,b)=>a+b,0)/nums.length)*100)/100; }
 function topCat(rows){ const m=new Map(); rows.forEach(r=>{ if(r.category) m.set(r.category,(m.get(r.category)||0)+1); }); let best="",cnt=-1; m.forEach((v,k)=>{ if(v>cnt){cnt=v;best=k;} }); return best||"–"; }
 function statusMixByCategory(rows){
   const cats=['fashion','beauty','wellness'], stats=['emerging','bubbling','mainstream'];
@@ -350,46 +350,6 @@ function newcomerKeywords(curRows,prevRows,limit=20){
   cur.forEach((c,k)=>{ if(c>0 && !prev.has(k)) out.push({k,c}); });
   out.sort((a,b)=> b.c - a.c);
   return out.slice(0,limit);
-}
-
-/* Category insight metrics */
-function concentrationByCategory(rows){
-  const cats=['fashion','beauty','wellness'];
-  const values=cats.map(cat=>{
-    const sub=rows.filter(r=>r.category===cat);
-    const m=new Map(); sub.forEach(r=>{ const k=getKw(r); if(!k) return; m.set(k,(m.get(k)||0)+1); });
-    const total=[...m.values()].reduce((a,b)=>a+b,0)||1;
-    const top=[...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
-    const head=top.reduce((s,[,v])=>s+v,0);
-    return Math.round(head/total*100);
-  });
-  return {cats,values};
-}
-function newcomerShareByCategory(curRows,prevRows){
-  const cats=['fashion','beauty','wellness'];
-  return { cats, values: cats.map(c=>{
-    const curK=new Set(curRows.filter(r=>r.category===c).map(getKw)), prevK=new Set(prevRows.filter(r=>r.category===c).map(getKw));
-    let newcomers=0, tot=0; curK.forEach(k=>{ if(!k) return; tot++; if(!prevK.has(k)) newcomers++; });
-    return tot? Math.round(newcomers/tot*100):0;
-  })};
-}
-function gainerShareByCategory(curRows,prevRows){
-  const cats=['fashion','beauty','wellness'];
-  function map(rows,cat){ const m=new Map(); rows.filter(r=>r.category===cat).forEach(r=>{ const k=getKw(r); if(!k) return; m.set(k,(m.get(k)||0)+1); }); return m; }
-  return { cats, values: cats.map(c=>{
-    const cur=map(curRows,c), prev=map(prevRows,c); const keys=new Set([...cur.keys(),...prev.keys()]);
-    let gain=0, tot=0; keys.forEach(k=>{ const a=cur.get(k)||0, b=prev.get(k)||0; if(a===0&&b===0) return; tot++; if(a>b) gain++; });
-    return tot? Math.round(gain/tot*100):0;
-  })};
-}
-function crossVerticalShare(rows){
-  const cats=['fashion','beauty','wellness']; const byKw=new Map();
-  rows.forEach(r=>{ const k=getKw(r); if(!k) return; const s=byKw.get(k)||new Set(); s.add(r.category); byKw.set(k,s); });
-  return { cats, values: cats.map(c=>{
-    const set=new Set(rows.filter(r=>r.category===c).map(getKw).filter(Boolean));
-    let cross=0, tot=0; set.forEach(k=>{ tot++; if((byKw.get(k)||new Set()).size>=2) cross++; });
-    return tot? Math.round(cross/tot*100) : 0;
-  })};
 }
 
 /* ----------- GSC: intent & questions ----------- */
@@ -432,7 +392,6 @@ function answerGapPct(signalRows, gscRows){
   const qImp   = gscRows.filter(r => /\b(what|how|why|can|should|does|is|are)\b/i.test(r.query||'')).reduce((s,r)=> s + (+r.impressions||0), 0);
   const questionShare = totImp ? (qImp/totImp*100) : 0;
 
-  // crude “answer” share: article titles that look explanatory
   const ex = /(?:how|why|what|guide|explained|q&a|faq)/i;
   const titles = signalRows.map(r=> String(r.title||''));
   const answered = titles.filter(t=> ex.test(t)).length;
@@ -441,94 +400,102 @@ function answerGapPct(signalRows, gscRows){
   return Math.max(0, Math.round(questionShare - answerShare));
 }
 
+/* ---------------- Executive summary ---------------- */
+function writeSummary({rows, topArr, risers, newbies, mix, kw, stack, gap}){
+  const box = els.summaryBox;
+  if(!rows.length){ box.innerHTML = `<div class="flag"><span class="dot infoDot"></span><div>No rows match the current filters.</div></div>`; return; }
+
+  const top3 = topArr.slice(0,3).map(([k,v])=>`${k} (${v})`).join(', ') || '–';
+  const rise3 = risers.slice(0,3).map(r=>`${r.k} (+${r.delta})`).join(', ') || '–';
+  const new3 = newbies.slice(0,3).map(n=>`${n.k} (+${n.c})`).join(', ') || '–';
+
+  const cats = ['fashion','beauty','wellness'];
+  const emShare = cats.map((c,i)=>({c, v: Math.round(mix.perc[i][0])}));
+  const mainShare = cats.map((c,i)=>({c, v: Math.round(mix.perc[i][2])}));
+  emShare.sort((a,b)=>b.v-a.v); mainShare.sort((a,b)=>b.v-a.v);
+
+  const lines = [
+    `Top volume signals: <b>${top3}</b>.`,
+    `Fastest risers vs previous window: <b>${rise3}</b>.`,
+    `Newcomers: <b>${new3}</b>.`,
+    `Most “emerging” category right now: <b>${emShare[0].c}</b> (${emShare[0].v}% emerging).`,
+    `Most “mainstream” category: <b>${mainShare[0].c}</b> (${mainShare[0].v}% mainstream).`,
+  ];
+
+  if(kw){
+    const biggest = Object.entries(stack.pct).sort((a,b)=>b[1]-a[1])[0];
+    if(biggest){
+      const labelMap={what_is:'what is',how_to:'how to',best:'best',vs:'vs',review:'review',near_me:'near me',other:'other'};
+      lines.unshift(`For <b>${kw}</b>, dominant search intent: <b>${labelMap[biggest[0]]||biggest[0]}</b> (${biggest[1]}%). Answer Gap ≈ <b>${gap}%</b>.`);
+    }
+  }
+
+  box.innerHTML = lines.map(t => `<div class="flag"><span class="dot infoDot"></span><div>${t}</div></div>`).join('');
+}
+
 /* ---------------- Render ---------------- */
 function render(){
   const rows=getFiltered();
 
-  // Top signals (Top 30)
+  // Top signals
   const top = topSignals(rows, TOP_LIMIT, els.kwSearch.value.trim());
   adjustHeight(top.length);
-  const colors = palette(top.length);
+  const colors=palette(top.length);
   const sigChart = makeOrUpdate('chartSignals','bar',{
     labels: top.map(([k])=>k),
-    datasets:[{label:'count', data: top.map(([,v])=>v), backgroundColor: colors, borderRadius:8, barThickness:16 }]
+    datasets:[{label:'count', data: top.map(([,v])=>v), backgroundColor:colors, borderRadius:8, barThickness:16 }]
   },{
-    responsive:true, indexAxis:'y',
-    plugins:{legend:{display:false}},
-    scales:{x:{beginAtZero:true}, y:{ticks:{autoSkip:false}}}
+    responsive:true, indexAxis:'y', plugins:{legend:{display:false}},
+    scales:{x:{beginAtZero:true}}
   });
-  charts.chartSignals = sigChart;
-  sigChart.options.onClick = (e)=>{
-    const p = sigChart.getElementsAtEventForMode(e,'nearest',{intersect:true},true);
-    if(!p.length) return;
-    const idx = p[0].index;
-    selectedKw = sigChart.data.labels[idx];
-    renderDetails();
+  charts.chartSignals=sigChart;
+  sigChart.options.onClick=(e)=>{
+    const p=sigChart.getElementsAtEventForMode(e,'nearest',{intersect:true},true);
+    if(!p.length) return; const idx=p[0].index; selectedKw=sigChart.data.labels[idx]; renderDetails();
   };
-  if(!selectedKw && top.length){ selectedKw = top[0][0]; }
+  if(!selectedKw && top.length) selectedKw = top[0][0];
   if(selectedKw) renderDetails(); else resetDetails();
 
-  // Fastest-rising & Newcomers
-  const {curFrom, curTo, prevFrom, prevTo} = getWindowBounds();
-  const curRows  = rowsInRange(rowsAll, curFrom, curTo);
-  const prevRows = rowsInRange(rowsAll, prevFrom, prevTo);
+  // Risers / newcomers
+  const {curFrom,curTo,prevFrom,prevTo}=getWindowBounds();
+  const curRows=rowsInRange(rowsAll,curFrom,curTo);
+  const prevRows=rowsInRange(rowsAll,prevFrom,prevTo);
 
-  const risers = fastestRisers(curRows, prevRows, 12);
-  els.chartRisers.style.height = Math.min(440, Math.max(220, 22*risers.length+40))+'px';
+  const risers=fastestRisers(curRows,prevRows,12);
   makeOrUpdate('chartRisers','bar',{
-    labels: risers.map(r=>r.k),
-    datasets:[{label:'Δ vs previous', data: risers.map(r=>r.delta), backgroundColor: palette(risers.length), borderRadius:8, barThickness:16 }]
-  },{
-    indexAxis:'y', plugins:{legend:{display:false}},
-    scales:{x:{beginAtZero:true}, y:{ticks:{autoSkip:false}}}
-  });
+    labels:risers.map(r=>r.k),
+    datasets:[{label:'Δ vs previous', data:risers.map(r=>r.delta), backgroundColor:palette(risers.length), borderRadius:8}]
+  },{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}});
 
-  const newbies = newcomerKeywords(curRows, prevRows, 20);
-  els.newcomersList.innerHTML =
-    newbies.map(n => `<li><span>${n.k}</span><span class="muted">+${n.c}</span></li>`).join('') ||
-    `<li class="muted">No newcomers in this window.</li>`;
+  const newbies=newcomerKeywords(curRows,prevRows,20);
+  els.newcomersList.innerHTML = newbies.map(n=>`<li><span>${n.k}</span><span class="muted">+${n.c}</span></li>`).join('') || `<li class="muted">No newcomers in this window.</li>`;
 
   // Status mix by category
-  const mix = statusMixByCategory(rows);
+  const mix=statusMixByCategory(rows);
   makeOrUpdate('chartMix','bar',{
-    labels: mix.cats,
-    datasets: [
-      {label:'emerging',  data: mix.perc.map(r=>r[0]), backgroundColor:COLORS_STATUS.emerging,  borderRadius:6},
-      {label:'bubbling',  data: mix.perc.map(r=>r[1]), backgroundColor:COLORS_STATUS.bubbling,  borderRadius:6},
-      {label:'mainstream',data: mix.perc.map(r=>r[2]), backgroundColor:COLORS_STATUS.mainstream,borderRadius:6},
+    labels:mix.cats,
+    datasets:[
+      {label:'emerging',  data:mix.perc.map(r=>r[0]), backgroundColor:COLORS_STATUS.emerging,  borderRadius:6},
+      {label:'bubbling',  data:mix.perc.map(r=>r[1]), backgroundColor:COLORS_STATUS.bubbling,  borderRadius:6},
+      {label:'mainstream',data:mix.perc.map(r=>r[2]), backgroundColor:COLORS_STATUS.mainstream,borderRadius:6},
     ]
   },{
-    responsive:true,
-    scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,max:100}},
-    plugins:{legend:{position:'bottom'}, tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%`}}}
+    responsive:true, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,max:100}},
+    plugins:{legend:{position:'bottom'}, tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.y.toFixed(0)}%`}}}
   });
 
-  // Category insight
-  const mode = els.insightMode.value;
-  let insight, legend;
-  if(mode==='concentration'){ insight = concentrationByCategory(rows); legend = 'Head share = % of mentions captured by top 5 signals (lower = more fragmented / whitespace).'; }
-  else if(mode==='newcomers'){ const wb=getWindowBounds(); insight = newcomerShareByCategory(rowsInRange(rowsAll,wb.curFrom,wb.curTo), rowsInRange(rowsAll,wb.prevFrom,wb.prevTo)); legend='Share of signals that appear now but not in previous window.'; }
-  else if(mode==='gainers'){ const wb=getWindowBounds(); insight = gainerShareByCategory(rowsInRange(rowsAll,wb.curFrom,wb.curTo), rowsInRange(rowsAll,wb.prevFrom,wb.prevTo)); legend='Share of signals with positive Δ vs previous window.'; }
-  else { insight = crossVerticalShare(rows); legend = 'Share of signals that also appear in ≥1 other category (cross-vertical).'; }
-
-  makeOrUpdate('chartInsight','bar',{
-    labels: insight.cats,
-    datasets:[{label:'%', data: insight.values, backgroundColor: palette(insight.cats.length), borderRadius:8}]
-  },{
-    plugins:{legend:{display:false}},
-    scales:{y:{beginAtZero:true,max:100}}
-  });
-  els.insightLegend.textContent = legend;
+  // Executive summary (rows context + current selected kw if any)
+  const gscRows = selectedKw ? gscForSignal(selectedKw) : [];
+  const stack = selectedKw ? intentStack(gscRows) : {pct:{}};
+  const gap = selectedKw ? answerGapPct(rowsForKeyword(rows, selectedKw), gscRows) : 0;
+  writeSummary({rows, topArr:top, risers, newbies, mix, kw:selectedKw, stack, gap});
 }
 
 function resetDetails(){
-  els.kwTitle.textContent = '(select a signal)';
+  els.kwTitle.textContent='(select a signal)';
   els.kpiRow.style.display='none';
-  els.kwList.innerHTML = '';
-  els.qList.innerHTML = '';
-  els.intentMeta.textContent = '';
-  els.intentLegend.innerHTML = '';
-  els.gapBadge.textContent = 'Answer Gap: –';
+  els.kwList.innerHTML=''; els.qList.innerHTML='';
+  els.intentMeta.textContent=''; els.gapBadge.textContent='Answer Gap: –';
   makeOrUpdate('chartIntent','bar',{labels:[],datasets:[]},{});
 }
 
@@ -536,52 +503,45 @@ function renderDetails(){
   if(!selectedKw){ resetDetails(); return; }
   els.kwTitle.textContent = selectedKw;
 
-  const rows = getFiltered();
-  const rkw = rowsForKeyword(rows, selectedKw);
+  const rows=getFiltered();
+  const rkw=rowsForKeyword(rows,selectedKw);
 
   // KPIs
   els.kpiTotal.textContent = `Total: ${rkw.length}`;
   els.kpiAvg.textContent   = `Avg score: ${avgScore(rkw)}`;
   els.kpiCat.textContent   = `Top category: ${topCat(rkw)}`;
-  const p = new URLSearchParams();
-  p.set('q', selectedKw);
-  if(els.cat.value)  p.set('cat', els.cat.value);
-  if(els.stat.value) p.set('stat', els.stat.value);
-  if(els.from.value) p.set('from', els.from.value);
-  if(els.to.value)   p.set('to', els.to.value);
+  const p=new URLSearchParams();
+  p.set('q',selectedKw);
+  if(els.cat.value) p.set('cat',els.cat.value);
+  if(els.stat.value) p.set('stat',els.stat.value);
+  if(els.from.value) p.set('from',els.from.value);
+  if(els.to.value)   p.set('to',els.to.value);
   p.set('view','table');
-  els.openList.href = './?'+p.toString();
+  els.openList.href='./?'+p.toString();
   els.kpiRow.style.display='flex';
 
-  // ---------- Intent stack & legend ----------
+  // ---------- Intent stack & questions ----------
   const gscRows = gscForSignal(selectedKw);
   const stack = intentStack(gscRows);
   const order = ['what_is','how_to','best','vs','review','near_me','other'];
-  const intentColors = palette(order.length);
-
+  // tighten height explicitly (and keep legend visible)
+  els.chartIntent.style.height = '140px';
   makeOrUpdate('chartIntent','bar',{
     labels:['intent'],
     datasets: order.map((k,i)=>({
       label: INTENTS.find(t=>t.key===k)?.label || (k==='other'?'other':k),
       data:[stack.pct[k]||0],
-      backgroundColor: intentColors[i],
+      backgroundColor: palette(order.length)[i],
       borderRadius:6
     }))
   },{
+    maintainAspectRatio:false,
     indexAxis:'y',
     scales:{x:{stacked:true,beginAtZero:true,max:100}, y:{stacked:true,ticks:{display:false},grid:{display:false}}},
-    plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.x}%`}}}
+    plugins:{legend:{position:'bottom'}, tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.x}%`}}}
   });
-
-  // external legend chips (always readable)
-  els.intentLegend.innerHTML = order.map((k,i)=>{
-    const lbl = INTENTS.find(t=>t.key===k)?.label || (k==='other'?'other':k);
-    return `<span class="chip"><span class="sw" style="background:${intentColors[i]}"></span>${lbl}</span>`;
-  }).join('');
-
   els.intentMeta.textContent = stack.total ? `${stack.total.toLocaleString()} impressions across queries` : 'No GSC rows for this signal (using sample or none).';
 
-  // questions
   const qs = topQuestions(gscRows, 10);
   els.qList.innerHTML = qs.length
     ? qs.map(r=>{
@@ -590,18 +550,21 @@ function renderDetails(){
       }).join('')
     : `<li class="muted">No question-type queries found.</li>`;
 
-  // answer gap
   const gap = answerGapPct(rkw, gscRows);
   els.gapBadge.textContent = `Answer Gap: ${gap}%`;
 
-  // latest 12 articles (scrollable list)
-  const latest = rkw.slice().sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0)).slice(0,12);
-  els.kwList.innerHTML = latest.map(r=>{
-    const d = (r.published||"").slice(0,10);
-    const t = r.title||"(untitled)";
-    const safeUrl = r.link || '#';
-    return `<li><a href="${safeUrl}" target="_blank" rel="noopener">${t}</a><span class="muted">${d}</span></li>`;
-  }).join("") || `<li class="muted">No recent articles.</li>`;
+  // also refresh summary with this kw context
+  const {curFrom,curTo,prevFrom,prevTo}=getWindowBounds();
+  writeSummary({
+    rows:getFiltered(),
+    topArr:topSignals(getFiltered(), TOP_LIMIT, els.kwSearch.value.trim()),
+    risers:fastestRisers(rowsInRange(rowsAll,curFrom,curTo), rowsInRange(rowsAll,prevFrom,prevTo), 12),
+    newbies:newcomerKeywords(rowsInRange(rowsAll,curFrom,curTo), rowsInRange(rowsAll,prevFrom,prevTo), 20),
+    mix:statusMixByCategory(getFiltered()),
+    kw:selectedKw,
+    stack,
+    gap
+  });
 }
 
 /* ---------------- Boot ---------------- */
@@ -618,7 +581,4 @@ function renderDetails(){
 })();
 </script>
 
-<!-- Optional fallback for signals:
-<script type="text/plain" id="embedded-signals">published,title,link,category,primary_keyword,trend_score,status
-</script>
--->
+<!-- Optional: if you want a signals sample fallback, paste your earlier embedded CSV here with id="embedded-signals" -->
