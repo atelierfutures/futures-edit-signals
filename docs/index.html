@@ -104,6 +104,17 @@
     .filters-inline{flex-wrap:wrap}
     .cards{grid-template-columns:1fr}
   }
+
+  /* Stretch only the three filter dropdowns */
+.bar-row-inline { grid-template-columns: auto 1fr auto auto; } /* already present, fine to repeat */
+.filters-inline { flex: 1; }                      /* let the filters row expand */
+.filters-inline .select { 
+  flex: 1 1 0;                                    /* each dropdown grows evenly */
+  min-width: 160px;                               /* keeps them usable on smaller widths */
+}
+/* override the fixed width inside filters only */
+.filters-inline .select.fixed { width: auto; }
+  
 </style>
 
 <div class="bar" id="bar">
