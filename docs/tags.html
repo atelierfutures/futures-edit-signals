@@ -3,9 +3,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>The Futures Edit — Tags, Trends & Graphs</title>
 
-<!-- Libraries -->
+<!-- Chart.js (primary CDN) -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
 <style>
@@ -73,9 +72,8 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
     <div id="trend-errors" style="margin-top:10px;color:#b91c1c;"></div>
   </section>
 
-  <!-- 2) Classic / "old" graphics -->
+  <!-- 2) “Old” graphics -->
   <section class="grid grid-2">
-    <!-- Top Tags -->
     <section class="card">
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
         <h2>Top Tags</h2>
@@ -85,7 +83,6 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
       <div id="tags-cloud" class="tags-cloud" style="margin-top:10px;"></div>
     </section>
 
-    <!-- Top Keywords by Volume -->
     <section class="card">
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
         <h2>Top Signals by Volume</h2>
@@ -94,17 +91,15 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
       <div class="chart-wrap-sm"><canvas id="volumeBarChart"></canvas></div>
     </section>
 
-    <!-- Legacy: Fastest Rising -->
     <section class="card">
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
         <h2>Fastest Rising (Growth Rate)</h2>
         <small class="muted" id="growth-meta"></small>
       </div>
       <div class="chart-wrap-sm"><canvas id="growthBarChart"></canvas></div>
-      <small class="muted" style="display:block;margin-top:6px;">(Legacy view — you can hide this later if not useful.)</small>
+      <small class="muted" style="display:block;margin-top:6px;">(Legacy view — hide later if not useful.)</small>
     </section>
 
-    <!-- Volume vs Growth Scatter -->
     <section class="card">
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
         <h2>Volume vs Growth</h2>
@@ -116,7 +111,6 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
 
   <!-- 3) Recency timeline + Tag co-occurrence -->
   <section class="grid grid-2">
-    <!-- Recency timeline -->
     <section class="card">
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
         <h2>Recency — Last 12 Weeks</h2>
@@ -125,7 +119,6 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
       <div class="chart-wrap-sm"><canvas id="recencyLineChart"></canvas></div>
     </section>
 
-    <!-- Tag Co-occurrence -->
     <section class="card">
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
         <h2>Tag Co-occurrence</h2>
@@ -141,8 +134,8 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
   </section>
 </main>
 
-<!-- Embedded fallback data (used only if data/signals.csv is missing) -->
-<script type="text/csv" id="embedded-signals">
+<!-- Embedded fallback data (used if data/signals.csv can’t be fetched) -->
+<script type="text/plain" id="embedded-signals">
 keyword,volume,growth_rate,last_seen,tags
 "glazed blush",78,22,"2025-09-12","beauty, makeup"
 "vanilla girl",40,5,"2025-08-28","fashion, lifestyle"
@@ -162,13 +155,13 @@ keyword,volume,growth_rate,last_seen,tags
 </script>
 
 <script>
-/* ===== CONFIG =====
-Put your real CSV at data/signals.csv with headers:
-keyword, volume, growth_rate, last_seen, tags
+/* ========= CONFIG =========
+If you have a real CSV, put it at: data/signals.csv
+Headers expected: keyword, volume, growth_rate, last_seen, tags
 */
 const CSV_URL = 'data/signals.csv';
 
-// ---------- Utils ----------
+/* ========= Helpers ========= */
 const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
 function minmaxNormalize(values) {
   const arr = values.map(v => (isFinite(+v) ? +v : 0));
@@ -184,7 +177,50 @@ function recencyScoreFromDateStr(dateStr) {
   const score = 100 - (days / 90) * 100; // 0d → 100, ≥90d → 0
   return clamp(score, 0, 100);
 }
+// Minimal CSV → array of objects
+function parseCSVObjects(text){
+  const rows = [];
+  let i=0, field='', inQuotes=false, row=[];
+  function pushField(){ row.push(field); field=''; }
+  function pushRow(){ rows.push(row); row=[]; }
+  while(i < text.length){
+    const c = text[i];
+    if (inQuotes){
+      if (c === '"'){
+        if (text[i+1] === '"'){ field += '"'; i++; }
+        else { inQuotes = false; }
+      } else field += c;
+    } else {
+      if (c === '"'){ inQuotes = true; }
+      else if (c === ','){ pushField(); }
+      else if (c === '\r'){ /* ignore */ }
+      else if (c === '\n'){ pushField(); pushRow(); }
+      else field += c;
+    }
+    i++;
+  }
+  if (field.length || row.length) { pushField(); pushRow(); }
+  if (!rows.length) return [];
+  const header = rows[0].map(h => h.trim());
+  return rows.slice(1).filter(r => r.some(v => String(v).trim() !== ''))
+    .map(r => Object.fromEntries(header.map((h,idx) => [h, r[idx] ?? ''])));
+}
+function showError(msg){
+  const e = document.getElementById('trend-errors');
+  if (e) e.textContent = msg;
+  console.error('[tags.html]', msg);
+}
+function ensureChartJs(cb){
+  if (window.Chart) return cb();
+  // Try backup CDN
+  const s = document.createElement('script');
+  s.src = 'https://unpkg.com/chart.js@4.4.3/dist/chart.umd.js';
+  s.onload = cb;
+  s.onerror = () => { showError('Chart.js failed to load. Check your internet connection.'); };
+  document.head.appendChild(s);
+}
 function makeBar(el, labels, data, label) {
+  if (!window.Chart) return;
   const ctx = document.getElementById(el).getContext('2d');
   if (window[el]) window[el].destroy?.();
   window[el] = new Chart(ctx, {
@@ -194,6 +230,7 @@ function makeBar(el, labels, data, label) {
   });
 }
 function makeLine(el, labels, data, label){
+  if (!window.Chart) return;
   const ctx = document.getElementById(el).getContext('2d');
   if (window[el]) window[el].destroy?.();
   window[el] = new Chart(ctx, {
@@ -203,6 +240,7 @@ function makeLine(el, labels, data, label){
   });
 }
 function makeScatter(el, points, label){
+  if (!window.Chart) return;
   const ctx = document.getElementById(el).getContext('2d');
   if (window[el]) window[el].destroy?.();
   window[el] = new Chart(ctx, {
@@ -215,105 +253,44 @@ function makeScatter(el, points, label){
     }
   });
 }
-function showError(msg){ const e = document.getElementById('trend-errors'); if(e) e.textContent = msg; console.error('[tags.html]', msg); }
 
-// ---------- Data loading with fallback ----------
-async function loadSignals() {
+/* ========= Data loading with graceful fallback ========= */
+async function loadCSVMaybe(){
   try {
-    const parsed = await new Promise((res, rej) => {
-      Papa.parse(CSV_URL, { download:true, header:true, dynamicTyping:true, complete:res, error:rej });
-    });
-    const rows = (parsed?.data || []).filter(r => r && Object.keys(r).length);
+    if (!/^https?:/.test(location.protocol)) throw new Error('Not using http(s); skipping fetch.');
+    const resp = await fetch(CSV_URL, { cache: 'no-store' });
+    if (!resp.ok) throw new Error('CSV not found');
+    const text = await resp.text();
+    const rows = parseCSVObjects(text);
     if (rows.length) return { rows, source: 'csv' };
-  } catch (err) {
-    // fall through to embedded
+  } catch (e) {
+    // ignore and fallback
   }
   const embedded = document.getElementById('embedded-signals')?.textContent?.trim();
-  if (!embedded) { showError('No data available (CSV missing and no embedded sample).'); return { rows: [], source: 'none' }; }
-  const parsed2 = Papa.parse(embedded, { header:true, dynamicTyping:true });
-  const rows = (parsed2?.data || []).filter(r => r && Object.keys(r).length);
-  return { rows, source: 'embedded' };
+  if (!embedded){ showError('No data available (CSV missing and no embedded sample).'); return { rows: [], source: 'none' }; }
+  return { rows: parseCSVObjects(embedded), source: 'sample' };
 }
 
-// ---------- Co-occurrence matrix (HTML table with shaded cells) ----------
-function renderMatrix(containerId, pairsMap, tagList){
-  const wrap = document.getElementById(containerId);
-  if (!wrap) return;
-  const N = tagList.length;
-  const tbl = document.createElement('table');
-  const thead = document.createElement('thead');
-  const htr = document.createElement('tr');
-  htr.appendChild(document.createElement('th')); // corner
-  tagList.forEach(t => { const th = document.createElement('th'); th.textContent = t; htr.appendChild(th); });
-  thead.appendChild(htr);
-  tbl.appendChild(thead);
-  const tbody = document.createElement('tbody');
-
-  // find max for color scale
-  let max = 0;
-  for (let i=0;i<N;i++) for(let j=0;j<N;j++){
-    const a=tagList[i], b=tagList[j];
-    const key = a <= b ? `${a}|||${b}` : `${b}|||${a}`;
-    max = Math.max(max, pairsMap.get(key) || 0);
-  }
-  // Color function (light → dark)
-  function colorFor(v){
-    const p = max ? v/max : 0;
-    const light = 98 - Math.round(p*60); // 98% → 38%
-    return `hsl(210, 60%, ${light}%)`;
-  }
-
-  for (let i=0;i<N;i++){
-    const tr = document.createElement('tr');
-    const rowTh = document.createElement('th'); rowTh.textContent = tagList[i]; tr.appendChild(rowTh);
-    for (let j=0;j<N;j++){
-      const a=tagList[i], b=tagList[j];
-      const key = a <= b ? `${a}|||${b}` : `${b}|||${a}`;
-      const count = (i===j) ? 0 : (pairsMap.get(key) || 0);
-      const td = document.createElement('td');
-      td.style.background = colorFor(count);
-      td.style.minWidth = '36px';
-      td.title = `${a} × ${b}: ${count}`;
-      td.textContent = count ? count : '';
-      tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  }
-  tbl.appendChild(tbody);
-  wrap.innerHTML = ''; wrap.appendChild(tbl);
-
-  // Legend swatches
-  const minEl = document.getElementById('legend-min');
-  const midEl = document.getElementById('legend-mid');
-  const maxEl = document.getElementById('legend-max');
-  if (minEl && midEl && maxEl){
-    minEl.style.background = 'hsl(210,60%,98%)';
-    midEl.style.background = 'hsl(210,60%,68%)';
-    maxEl.style.background = 'hsl(210,60%,38%)';
-  }
-}
-
-// ---------- Main render ----------
-(async function () {
-  const { rows, source } = await loadSignals();
-  const datasetMeta = document.getElementById('dataset-meta');
-  datasetMeta.textContent = rows.length
-    ? `${rows.length} rows • ${new Date().toISOString().slice(0,10)} • ${source === 'csv' ? 'CSV' : 'sample'}`
+/* ========= Main ========= */
+ensureChartJs(async function(){
+  const { rows, source } = await loadCSVMaybe();
+  const meta = document.getElementById('dataset-meta');
+  meta.textContent = rows.length
+    ? `${rows.length} rows • ${new Date().toISOString().slice(0,10)} • ${source}`
     : '0 rows';
   if (!rows.length) return;
 
-  // Access helpers
   const get = (r, k) => r[k] ?? r[k?.toLowerCase?.()] ?? r[k?.toUpperCase?.()];
 
-  // Extract core columns
+  // Core columns
   const keywords = rows.map(r => String(get(r,'keyword') ?? '').trim() || '(untitled)');
-  const volumes  = rows.map(r => Number.isFinite(+get(r,'volume')) ? +get(r,'volume') : 0);
-  const growths0 = rows.map(r => Number.isFinite(+get(r,'growth_rate')) ? +get(r,'growth_rate') : 0);
+  const volumes  = rows.map(r => isFinite(+get(r,'volume')) ? +get(r,'volume') : 0);
+  const growths0 = rows.map(r => isFinite(+get(r,'growth_rate')) ? +get(r,'growth_rate') : 0);
   const growths  = growths0.map(v => Math.max(0, v)); // clip negatives at 0 for scoring
   const recency  = rows.map(r => recencyScoreFromDateStr(get(r,'last_seen')));
   const tagsRaw  = rows.map(r => String(get(r,'tags') || '').split(',').map(s => s.trim()).filter(Boolean));
 
-  // === Trend Score ===
+  /* ===== Trend Score ===== */
   const volN = minmaxNormalize(volumes);
   const groN = minmaxNormalize(growths);
   const recN = recency;
@@ -324,7 +301,123 @@ function renderMatrix(containerId, pairsMap, tagList){
   makeBar('trendScoreChart', topTrend.map(d => d.keyword), topTrend.map(d => d.score), 'Trend Score (0–100)');
   document.getElementById('trend-meta').textContent = `(Top ${topTrend.length} of ${rows.length} signals)`;
 
-  // Trend table
   const tbl = document.createElement('table');
   tbl.innerHTML = `<thead><tr><th>#</th><th>Signal</th><th>Score</th><th>Volumeₙ</th><th>Growthₙ</th><th>Recencyₙ</th></tr></thead><tbody></tbody>`;
   topTrend.forEach((d,i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${d.keyword}</td><td style="font-weight:600">${d.score}</td>
+                    <td class="muted">${d.volN}</td><td class="muted">${d.groN}</td><td class="muted">${d.recN}</td>`;
+    tbl.querySelector('tbody').appendChild(tr);
+  });
+  document.getElementById('trend-table').appendChild(tbl);
+
+  /* ===== Top Tags ===== */
+  const tagCounts = new Map();
+  tagsRaw.forEach(list => list.forEach(t => tagCounts.set(t, (tagCounts.get(t) || 0) + 1)));
+  const tagsSorted = Array.from(tagCounts.entries()).sort((a,b) => b[1]-a[1]).slice(0,25);
+  document.getElementById('tags-meta').textContent = tagsSorted.length ? `(Top ${tagsSorted.length})` : '(no tags found)';
+  if (tagsSorted.length){
+    makeBar('tagsBarChart', tagsSorted.map(([t])=>t), tagsSorted.map(([,c])=>c), 'Count');
+    const cloud = document.getElementById('tags-cloud'); tagsSorted.forEach(([t,c]) => {
+      const span = document.createElement('span'); span.className = 'tag-pill'; span.textContent = `${t} • ${c}`; cloud.appendChild(span);
+    });
+  }
+
+  /* ===== Top Signals by Volume ===== */
+  const volRank = keywords.map((k,i)=>({k,v:volumes[i]})).sort((a,b)=>b.v-a.v).slice(0,25);
+  makeBar('volumeBarChart', volRank.map(d=>d.k), volRank.map(d=>d.v), 'Volume');
+  document.getElementById('vol-meta').textContent = `(Top ${volRank.length})`;
+
+  /* ===== Fastest Rising (Growth Rate) ===== */
+  const grRankAll = keywords.map((k,i)=>({k,g:growths0[i]})).filter(d=>isFinite(d.g)).sort((a,b)=>b.g-a.g);
+  const grRank = grRankAll.filter(d => d.g > 0).slice(0,15);
+  makeBar('growthBarChart', grRank.map(d=>d.k), grRank.map(d=>d.g), 'Growth rate');
+  document.getElementById('growth-meta').textContent = grRank.length ? `(Top ${grRank.length})` : '(no positive growth values)';
+
+  /* ===== Volume vs Growth Scatter ===== */
+  const scatterPts = keywords.map((k,i)=>({ x:growths0[i]||0, y:volumes[i]||0, _k:k }))
+                             .sort((a,b)=> (b.y + Math.abs(b.x)) - (a.y + Math.abs(a.x))).slice(0,150);
+  makeScatter('scatterChart', scatterPts, 'Signal');
+
+  /* ===== Recency — last 12 weeks ===== */
+  function weekStart(d) {
+    const dt = new Date(d); if (isNaN(dt)) return null;
+    const day = dt.getDay(); const diff = (day === 0 ? -6 : 1 - day); // Monday start
+    const m = new Date(dt); m.setDate(dt.getDate() + diff); m.setHours(0,0,0,0); return m;
+  }
+  const byWeek = new Map();
+  rows.forEach((r,i) => {
+    const ws = weekStart(get(r,'last_seen')); if (!ws) return;
+    const key = ws.toISOString().slice(0,10);
+    byWeek.set(key, (byWeek.get(key) || 0) + 1);
+  });
+  const weeks = Array.from(byWeek.keys()).sort();
+  const last12 = weeks.slice(Math.max(0, weeks.length - 12));
+  const recencyCounts = last12.map(k => byWeek.get(k) || 0);
+  makeLine('recencyLineChart', last12, recencyCounts, 'Signals seen');
+  document.getElementById('recency-meta').textContent = last12.length ? `(${last12[0]} → ${last12[last12.length-1]})` : '(no dates)';
+
+  /* ===== Tag Co-occurrence matrix ===== */
+  const matrixTags = tagsSorted.slice(0,10).map(([t])=>t);
+  const pairCounts = new Map();
+  tagsRaw.forEach(list => {
+    const u = [...new Set(list.filter(t => matrixTags.includes(t)))];
+    for (let i=0;i<u.length;i++){
+      for (let j=i+1;j<u.length;j++){
+        const a=u[i], b=u[j];
+        const key = a <= b ? `${a}|||${b}` : `${b}|||${a}`;
+        pairCounts.set(key, (pairCounts.get(key) || 0) + 1);
+      }
+    }
+  });
+  renderMatrix('matrix-wrap', pairCounts, matrixTags);
+  document.getElementById('matrix-meta').textContent = matrixTags.length ? `(Top ${matrixTags.length} tags)` : '(no tags)';
+
+  function renderMatrix(containerId, pairsMap, tagList){
+    const wrap = document.getElementById(containerId);
+    const N = tagList.length;
+    const tbl = document.createElement('table');
+    const thead = document.createElement('thead'); const htr = document.createElement('tr');
+    htr.appendChild(document.createElement('th'));
+    tagList.forEach(t => { const th = document.createElement('th'); th.textContent = t; htr.appendChild(th); });
+    thead.appendChild(htr); tbl.appendChild(thead);
+    const tbody = document.createElement('tbody');
+
+    let max = 0;
+    for (let i=0;i<N;i++) for(let j=0;j<N;j++){
+      const a=tagList[i], b=tagList[j];
+      const key = a <= b ? `${a}|||${b}` : `${b}|||${a}`;
+      max = Math.max(max, pairsMap.get(key) || 0);
+    }
+    function colorFor(v){ const p = max ? v/max : 0; const light = 98 - Math.round(p*60); return `hsl(210, 60%, ${light}%)`; }
+
+    for (let i=0;i<N;i++){
+      const tr = document.createElement('tr');
+      const rowTh = document.createElement('th'); rowTh.textContent = tagList[i]; tr.appendChild(rowTh);
+      for (let j=0;j<N;j++){
+        const a=tagList[i], b=tagList[j];
+        const key = a <= b ? `${a}|||${b}` : `${b}|||${a}`;
+        const count = (i===j) ? 0 : (pairsMap.get(key) || 0);
+        const td = document.createElement('td');
+        td.style.background = colorFor(count);
+        td.style.minWidth = '36px';
+        td.title = `${a} × ${b}: ${count}`;
+        td.textContent = count ? count : '';
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+    tbl.appendChild(tbody);
+    wrap.innerHTML = ''; wrap.appendChild(tbl);
+
+    const minEl = document.getElementById('legend-min');
+    const midEl = document.getElementById('legend-mid');
+    const maxEl = document.getElementById('legend-max');
+    if (minEl && midEl && maxEl){
+      minEl.style.background = 'hsl(210,60%,98%)';
+      midEl.style.background = 'hsl(210,60%,68%)';
+      maxEl.style.background = 'hsl(210,60%,38%)';
+    }
+  }
+});
+</script>
