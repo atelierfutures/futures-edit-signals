@@ -1,7 +1,7 @@
 <!doctype html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Signals — Graphs & Insights</title>
+<title>The Futures Edit — Tags & Graphs</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
@@ -11,479 +11,191 @@
     --bg:#ffffff; --fg:#141414; --muted:#6b7280;
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
-    --ctl-w:180px;
-    --ok:#22c55e; --warn:#f59e0b; --soft:#94a3b8;
+    --bar-h: 80px;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-  a{color:#2563eb;text-decoration:none}
-  .bar{position:sticky;top:0;z-index:20;backdrop-filter:saturate(180%) blur(10px);
-    background:color-mix(in oklab, var(--bg) 92%, transparent); border-bottom:1px solid var(--border)}
-  .bar-inner{max-width:1100px;margin:0 auto;padding:12px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .title{font-weight:700}
-  .btn, .select, .input{
-    background:var(--card); color:var(--fg); border:1px solid var(--border);
-    border-radius:10px; padding:10px 12px; box-shadow:var(--shadow);
-  }
-  .select{width:var(--ctl-w)} .spacer{flex:1}
-  .wrap{max-width:1100px;margin:0 auto;padding:16px 20px}
-  .grid{display:grid;gap:16px}
-  @media(min-width:1024px){ .grid.two{grid-template-columns:1fr 1fr} }
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:12px}
-  .card.sm{padding:10px}
-  .legend{color:var(--muted);font-size:12px;margin-top:6px}
-  .mini{max-width:100%}
-  .mini.sm{height:160px !important}
-  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
-  .small{font-size:12px;color:var(--muted)}
-  .pill{ padding:4px 8px; font-size:11px; line-height:1; border:1px solid var(--border); border-radius:999px; background:var(--pill); }
-  .kpi{display:flex; gap:12px; margin:8px 0 4px}
-  .kpi .pill{font-size:12px}
-  ul.list{list-style:none; padding:0; margin:8px 0 0; max-height:160px; overflow:auto}
-  ul.list li{display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px dashed var(--border)}
-  .muted{color:var(--muted)}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif}
+  header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--border);height:var(--bar-h);display:flex;align-items:center;gap:16px;padding:0 20px;z-index:10}
+  h1{margin:0;font-weight:700;font-size:18px}
+  main{max-width:1100px;margin:24px auto;padding:0 16px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:16px}
+  .row{display:grid;grid-template-columns:1fr;gap:16px}
+  @media (min-width: 980px){ .row{grid-template-columns:1fr 1fr} }
+  h2{margin:0 0 8px 0;font:600 18px/1.2 inherit}
+  small, .muted{color:var(--muted)}
+  .pill{display:inline-block;padding:.25rem .5rem;border-radius:999px;background:var(--pill);border:1px solid var(--border);font-size:12px;color:#111827}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px;border-bottom:1px solid #f3f4f6;text-align:left}
+  thead th{background:#f9fafb;border-bottom:1px solid var(--border)}
+  details summary{cursor:pointer}
+  .chart-wrap{height:320px}
 </style>
 
-<div class="bar">
-  <div class="bar-inner">
-    <a class="btn" href="./">← Signals list</a>
-    <div class="title">Graphs & Insights</div>
+<header>
+  <h1>The Futures Edit — Signals: Tags & Graphs</h1>
+  <span class="pill" id="dataset-meta"></span>
+</header>
 
-    <select id="cat" class="select">
-      <option value="">All categories</option>
-      <option>fashion</option><option>beauty</option><option>wellness</option>
-    </select>
-    <select id="stat" class="select">
-      <option value="">All status</option>
-      <option>emerging</option><option>bubbling</option><option>mainstream</option>
-    </select>
-
-    <input id="from" type="date" class="input">
-    <input id="to"   type="date" class="input">
-    <select id="quick" class="select">
-      <option value="">All time</option>
-      <option value="30">Last 30 days</option>
-      <option value="90">Last 90 days</option>
-      <option value="180">Last 180 days</option>
-    </select>
-    <button id="clear" class="btn">Clear</button>
-  </div>
-</div>
-
-<div class="wrap">
-  <div class="row">
-    <label class="small">Top keywords
-      <input id="topN" type="range" min="5" max="25" step="1" value="25" style="margin-left:6px">
-      <span id="topNVal" class="small">25</span>
-    </label>
-    <label class="small">Filter keywords…
-      <input id="kwSearch" type="search" class="input" placeholder="type to filter bar" style="width:220px">
-    </label>
-    <span id="metaCount" class="pill">…</span>
-  </div>
-
-  <!-- Row 1: Top keywords + Keyword details on the same line -->
-  <div class="grid two">
-    <div class="card">
-      <h3>Top keywords</h3>
-      <canvas id="chartKeywords" class="mini" aria-describedby="kwHelp"></canvas>
-      <div id="kwHelp" class="legend">Click a bar to inspect that keyword.</div>
+<main>
+  <!-- Trend Score -->
+  <section class="card" id="trend-score">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+      <h2>Trend Score — Top 15</h2>
+      <small id="trend-sample-meta" class="muted"></small>
     </div>
+    <div class="chart-wrap"><canvas id="trendScoreChart"></canvas></div>
 
-    <div class="card" id="kwPanel">
-      <h3>Keyword details <span id="kwTitle" class="small" style="margin-left:8px;color:var(--muted)"></span></h3>
-      <div class="kpi" id="kwKpis" style="display:none">
-        <span class="pill" id="kpiTotal">Total: 0</span>
-        <span class="pill" id="kpiAvg">Avg score: 0</span>
-        <span class="pill" id="kpiCat">Top category: –</span>
-        <a class="btn" id="openList" target="_blank" rel="noopener">Open in list</a>
+    <details style="margin-top:12px;">
+      <summary><strong>How we calculate Trend Score</strong></summary>
+      <div class="muted" style="margin-top:8px;">
+        <p style="margin:0 0 6px 0;"><strong>Formula:</strong></p>
+        <pre style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:10px;overflow:auto;margin:0 0 10px 0;font-size:13px;">
+TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
+        </pre>
+        <ul style="margin:0 0 10px 18px;padding:0;">
+          <li><strong>Volumeₙ</strong>: min–max normalized 0–100 from the <em>volume</em> column.</li>
+          <li><strong>Growthₙ</strong>: min–max normalized 0–100 from <em>growth_rate</em> (negatives clipped at 0).</li>
+          <li><strong>Recencyₙ</strong>: 0–100 from <em>last_seen</em>. 100 = today; 0 = ≥90 days ago; linear in between.</li>
+        </ul>
+        <p style="margin:0;">We scale each component to 0–100, apply the weights above, then round.</p>
       </div>
-      <canvas id="chartKwStatus" class="mini" aria-label="Status mix bar"></canvas>
-      <div class="legend">Status mix for the selected keyword.</div>
+    </details>
 
-      <h4 class="small" style="margin-top:10px">Latest articles</h4>
-      <ul id="kwList" class="list"></ul>
-    </div>
-  </div>
+    <div id="trend-table" style="margin-top:14px;overflow:auto;"></div>
+  </section>
 
-  <!-- Row 2: Fastest-rising + Newcomers (same line) -->
-  <div class="grid two" style="margin-top:16px">
-    <div class="card">
-      <h3>Fastest-rising keywords (current vs previous)</h3>
-      <canvas id="chartRisers" class="mini"></canvas>
-      <div class="legend">Change in mentions between the current filters and a same-length previous window.</div>
+  <!-- Tags Overview (optional – tweak to your schema) -->
+  <section class="card" style="margin-top:16px;">
+    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
+      <h2>Top Tags</h2>
+      <small class="muted" id="tags-meta"></small>
     </div>
-
-    <div class="card">
-      <h3>Newcomer keywords (first appearances)</h3>
-      <ul id="newcomersList" class="list"></ul>
-      <div class="legend">Keywords that didn’t appear in the previous window but do appear now.</div>
-    </div>
-  </div>
-
-  <!-- Row 3: Status mix + Top sources (same line; same chart type: 100% stacked bars) -->
-  <div class="grid two" style="margin-top:16px">
-    <div class="card">
-      <h3>Status mix by category</h3>
-      <canvas id="chartMix" class="mini"></canvas>
-      <div class="legend">100% stacked bars: emerging / bubbling / mainstream share by category.</div>
-    </div>
-
-    <div class="card">
-      <h3>Top sources (share)</h3>
-      <canvas id="chartSourcesStack" class="mini"></canvas>
-      <div class="legend">100% stacked bar: domain share within current filters (top 10 domains + others).</div>
-    </div>
-  </div>
-</div>
+    <div class="chart-wrap"><canvas id="tagsBarChart"></canvas></div>
+    <div id="tags-cloud" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;"></div>
+  </section>
+</main>
 
 <script>
-/* --- css var helper --- */
-function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || name; }
-
-/* --- helpers --- */
-const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-function hostOf(u){ try{ return new URL(u).host.replace(/^www\./,''); }catch{return ""; } }
-function inRange(iso, from, to){
-  const t = Date.parse(iso||""); if(isNaN(t)) return false;
-  if(from && t < new Date(from).setUTCHours(0,0,0,0)) return false;
-  if(to   && t > new Date(to).setUTCHours(23,59,59,999)) return false;
-  return true;
-}
-function palette(n){
-  const base = ['#2563eb','#0891b2','#10b981','#84cc16','#f59e0b','#ef4444','#a855f7','#ec4899','#14b8a6','#22c55e','#eab308'];
-  const out = []; for(let i=0;i<n;i++) out.push(base[i%base.length]); return out;
-}
-
-/* --- Keyword normalization (downstream clean-up) --- */
-const KW_MAP = new Map([
-  ['anti aging','longevity'], ['anti-ageing','longevity'], ['anti ageing','longevity'],
-  ['retinol routine','retinoid routines'], ['skin cycling','retinoid routines'],
-  ['lip-oil','lip oil'], ['lip oils','lip oil'], ['lip oil','lip oil'],
-  ['biohacking','longevity'], ['sleep tech','sleep optimization'],
-  ['old money','quiet luxury'], ['stealth wealth','quiet luxury'],
-  ['westernwear','western'], ['cowboy core','western'],
-  ['gen ai','ai'], ['gen-ai','ai'], ['generative ai','ai']
-]);
-const KW_STOP = new Set([
-  'trend','trends','report','collection','editorial','new','drop','style','styled',
-  'look','looks','runway','season','fall','winter','spring','summer','2024','2025',
-  'brand','product','products','line','launch','limited','best','top',
-  'dress','dresses','shirt','shirts','pants','jeans','skirt','skirts','bag','bags','shoes'
-]);
-function normalizeKw(raw){
-  if(!raw) return '';
-  let s = String(raw).toLowerCase().trim();
-  s = s.replace(/[–—]/g,'-').replace(/\s+/g,' ').replace(/\s-\s/g,'-');
-  if (s.endsWith('s') && s.length > 4) s = s.slice(0,-1);
-  if (KW_MAP.has(s)) s = KW_MAP.get(s);
-  s = s.replace(/^[-_.,:;]+|[-_.,:;]+$/g,'');
-  if (s.length < 3) return '';
-  if (KW_STOP.has(s)) return '';
-  return s;
-}
-function getKw(r){ return normalizeKw(r.primary_keyword || ''); }
-
-/* --- state --- */
-let rowsAll = [];
-let charts = {};
-let selectedKw = "";
-const els = {
-  cat:document.getElementById('cat'),
-  stat:document.getElementById('stat'),
-  from:document.getElementById('from'),
-  to:document.getElementById('to'),
-  quick:document.getElementById('quick'),
-  clear:document.getElementById('clear'),
-  topN:document.getElementById('topN'),
-  topNVal:document.getElementById('topNVal'),
-  kwSearch:document.getElementById('kwSearch'),
-  kwTitle:document.getElementById('kwTitle'),
-  metaCount:document.getElementById('metaCount'),
-  kpiTotal:document.getElementById('kpiTotal'),
-  kpiAvg:document.getElementById('kpiAvg'),
-  kpiCat:document.getElementById('kpiCat'),
-  kpis:document.getElementById('kwKpis'),
-  openList:document.getElementById('openList'),
-  kwList:document.getElementById('kwList'),
-  kwCanvas:document.getElementById('chartKeywords'),
-};
-
-/* --- filters --- */
-function getFiltered(){
-  const c = els.cat.value, s = els.stat.value, f=els.from.value, t=els.to.value;
-  return rowsAll.filter(r=>{
-    if(c && r.category!==c) return false;
-    if(s && (r.status||'').toLowerCase()!==s) return false;
-    if(f || t){ if(!inRange(r.published, f, t)) return false; }
-    return true;
-  });
-}
-function getWindowBounds(){
-  const today=new Date();
-  const curTo=(els.to.value?new Date(els.to.value):today);
-  const curFrom=(els.from.value?new Date(els.from.value):new Date(today.getTime()-90*86400000));
-  const lenMs=curTo-curFrom;
-  const prevTo=new Date(curFrom.getTime()-1);
-  const prevFrom=new Date(prevTo.getTime()-lenMs+1);
-  return {curFrom,curTo,prevFrom,prevTo};
-}
-function rowsInRange(rows, from, to){
-  const isoFrom=from.toISOString().slice(0,10);
-  const isoTo=to.toISOString().slice(0,10);
-  return rows.filter(r=>inRange(r.published,isoFrom,isoTo));
-}
-els.quick.onchange = ()=>{
-  const d = parseInt(els.quick.value)||0;
-  if(!d){ els.from.value=""; els.to.value=""; render(); return; }
-  const today = new Date();
-  const start = new Date(today.getTime()-d*86400000);
-  els.from.value = start.toISOString().slice(0,10);
-  els.to.value = today.toISOString().slice(0,10);
-  render();
-};
-els.clear.onclick = ()=>{ els.cat.value=""; els.stat.value=""; els.from.value=""; els.to.value=""; els.quick.value=""; els.kwSearch.value=""; selectedKw=""; render(); };
-['cat','stat','from','to'].forEach(id => els[id].onchange=render);
-els.topN.oninput = ()=>{ els.topNVal.textContent = els.topN.value; render(); };
-els.kwSearch.oninput = ()=> render();
-window.addEventListener('resize', ()=> adjustKeywordsHeight());
-
-/* --- chart helper --- */
-function makeOrUpdate(id, type, data, opt){
-  const ctx = document.getElementById(id);
-  if(charts[id]){ charts[id].data = data; charts[id].options = opt; charts[id].update(); return charts[id]; }
-  charts[id] = new Chart(ctx, {type, data, options:opt});
-  return charts[id];
-}
-
-/* --- computations --- */
-function topKeywords(rows, limit, filterTxt){
-  const m = new Map();
-  for(const r of rows){ const k=getKw(r); if(!k) continue; m.set(k,(m.get(k)||0)+1); }
-  let arr = [...m.entries()];
-  if(filterTxt){ const re = new RegExp(escRe(filterTxt.trim()),'i'); arr = arr.filter(([k])=>re.test(k)); }
-  arr.sort((a,b)=>b[1]-a[1]);
-  return arr.slice(0,limit);
-}
-function statusMixByCategory(rows){
-  const cats = ['fashion','beauty','wellness'];
-  const stats = ['emerging','bubbling','mainstream'];
-  const table = cats.map(c=>{
-    const sub = rows.filter(r=>r.category===c);
-    const counts = stats.map(s=>sub.filter(r=>(r.status||'').toLowerCase()===s).length);
-    const tot = counts.reduce((a,b)=>a+b,0)||1;
-    return counts.map(v=>v/tot*100);
-  });
-  return {cats, stats, perc: table};
-}
-function topSourcesShare(rows){
-  const map = new Map();
-  for(const r of rows){ const h = hostOf(r.link); if(!h) continue; map.set(h,(map.get(h)||0)+1); }
-  const sorted = [...map.entries()].sort((a,b)=>b[1]-a[1]);
-  const top = sorted.slice(0,10);
-  const others = sorted.slice(10).reduce((s,[,v])=>s+v,0);
-  if(others>0) top.push(["others", others]);
-  const total = [...map.values()].reduce((a,b)=>a+b,0) || 1;
-  // return as [{label, pct}]
-  return top.map(([h,v]) => ({label:h, pct: v/total*100}));
-}
-function rowsForKeyword(rows, kw){
-  const target = normalizeKw(kw);
-  return rows.filter(r => getKw(r) === target);
-}
-function avgScore(rows){
-  const nums = rows.map(r=>parseFloat(r.trend_score||0)).filter(n=>!isNaN(n));
-  if(!nums.length) return 0;
-  return Math.round((nums.reduce((a,b)=>a+b,0)/nums.length)*100)/100;
-}
-function topCat(rows){
-  const m=new Map(); for(const r of rows){ if(r.category) m.set(r.category,(m.get(r.category)||0)+1); }
-  let best="",cnt=-1; m.forEach((v,k)=>{ if(v>cnt){cnt=v;best=k;} });
-  return best||"–";
-}
-
-/* --- momentum & newcomers --- */
-function countKeywords(rows){
-  const m = new Map();
-  for(const r of rows){ const k=getKw(r); if(!k) continue; m.set(k,(m.get(k)||0)+1); }
-  return m;
-}
-function fastestRisers(curRows, prevRows, top=12){
-  const cur = countKeywords(curRows);
-  const prev = countKeywords(prevRows);
-  const set = new Set([...cur.keys(), ...prev.keys()]);
-  const arr = [];
-  for(const k of set){
-    const c = cur.get(k)||0, p = prev.get(k)||0;
-    const delta = c - p;
-    if(c===0) continue;
-    arr.push({k, delta, c, p});
-  }
-  arr.sort((a,b)=> b.delta - a.delta || b.c - a.c);
-  return arr.slice(0, top);
-}
-function newcomerKeywords(curRows, prevRows, limit=20){
-  const cur = countKeywords(curRows), prev = countKeywords(prevRows);
-  const out = [];
-  for(const [k,c] of cur.entries()){
-    if(c>0 && !prev.has(k)) out.push({k, c});
-  }
-  out.sort((a,b)=> b.c - a.c);
-  return out.slice(0, limit);
-}
-
-/* --- dynamic height for Top keywords --- */
-function adjustKeywordsHeight(labelsCount=0){
-  const n = labelsCount || (charts.chartKeywords?.data?.labels?.length || 0);
-  const h = Math.min(1200, Math.max(220, 22*n + 40));
-  els.kwCanvas.style.height = h+"px";
-}
-
-/* --- render --- */
-function render(){
-  const rows = getFiltered();
-  document.getElementById('metaCount').textContent = `${rows.length} articles in current filters`;
-
-  // 1) Top keywords (horizontal, dynamic height)
-  const topK = topKeywords(rows, parseInt(els.topN.value,10), els.kwSearch.value.trim());
-  adjustKeywordsHeight(topK.length);
-  const kwChart = makeOrUpdate('chartKeywords','bar',{
-    labels: topK.map(([k])=>k),
-    datasets:[{label:'count', data: topK.map(([,v])=>v), backgroundColor: palette(topK.length)}]
-  },{
-    responsive:true, indexAxis:'y',
-    plugins:{legend:{display:false}},
-    scales:{x:{beginAtZero:true}}
-  });
-  charts.chartKeywords = kwChart;
-  kwChart.options.onClick = (e)=>{
-    const p = kwChart.getElementsAtEventForMode(e,'nearest',{intersect:true},true);
-    if(!p.length) return;
-    const idx = p[0].index;
-    selectedKw = kwChart.data.labels[idx];
-    renderKwDetails(rows);
+(async function () {
+  // ─────────────────────────────────────────────────────────────
+  // 1) CONFIG — point to your CSV and column names
+  // ─────────────────────────────────────────────────────────────
+  const CSV_URL = 'data/signals.csv'; // ← change to your path
+  const COLS = {
+    keyword:  'keyword',      // string
+    volume:   'volume',       // numeric
+    growth:   'growth_rate',  // numeric (% WoW/MoM). Negatives allowed; we clip to 0 for score.
+    lastSeen: 'last_seen',    // date string (ISO best)
+    tags:     'tags'          // optional: comma-separated list, e.g. "beauty, packaging, retail"
   };
 
-  // Auto-select the first keyword if none selected
-  if(!selectedKw && topK.length){
-    selectedKw = topK[0][0];
+  // ─────────────────────────────────────────────────────────────
+  // 2) Helpers
+  // ─────────────────────────────────────────────────────────────
+  const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
+  function minmaxNormalize(values) {
+    const arr = values.map(v => (isFinite(+v) ? +v : 0));
+    const min = Math.min(...arr), max = Math.max(...arr);
+    if (!isFinite(min) || !isFinite(max) || max === min) return arr.map(_ => 0);
+    return arr.map(v => ((v - min) / (max - min)) * 100);
   }
-  if(selectedKw) renderKwDetails(rows); else resetKwDetails();
+  function recencyScoreFromDateStr(dateStr) {
+    const now = new Date();
+    const d = new Date(dateStr);
+    if (isNaN(d)) return 0;
+    const days = (now - d) / (1000*60*60*24);
+    const score = 100 - (days / 90) * 100; // 0d → 100, 90d+ → 0
+    return clamp(score, 0, 100);
+  }
+  function makeBar(el, labels, data, label) {
+    const ctx = document.getElementById(el).getContext('2d');
+    if (window[el]) window[el].destroy?.();
+    window[el] = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ label, data, borderWidth: 1 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
 
-  // 3) Fastest-rising
-  const {curFrom, curTo, prevFrom, prevTo} = getWindowBounds();
-  const curRows  = rowsInRange(rowsAll, curFrom, curTo);
-  const prevRows = rowsInRange(rowsAll, prevFrom, prevTo);
-  const risers = fastestRisers(curRows, prevRows, 12);
-  makeOrUpdate('chartRisers','bar',{
-    labels: risers.map(r=>r.k),
-    datasets:[{label:'Δ vs previous window', data: risers.map(r=>r.delta), backgroundColor: palette(risers.length)}]
-  },{
-    plugins:{legend:{display:false}},
-    scales:{y:{beginAtZero:true}}
+  // ─────────────────────────────────────────────────────────────
+  // 3) Load CSV
+  // ─────────────────────────────────────────────────────────────
+  const parsed = await new Promise((res, rej) => {
+    Papa.parse(CSV_URL, { download:true, header:true, dynamicTyping:true, complete:res, error:rej });
   });
+  const rows = (parsed?.data || []).filter(r => r && Object.keys(r).length);
+  document.getElementById('dataset-meta').textContent = `${rows.length} rows • ${new Date().toISOString().slice(0,10)}`;
 
-  // 4) Newcomers
-  const newbies = newcomerKeywords(curRows, prevRows, 20);
-  document.getElementById('newcomersList').innerHTML =
-    newbies.map(n => `<li><span>${n.k}</span><span class="muted">+${n.c}</span></li>`).join('') ||
-    `<li class="muted">No newcomers in this window.</li>`;
+  // ─────────────────────────────────────────────────────────────
+  // 4) Trend Score calculation
+  // ─────────────────────────────────────────────────────────────
+  const keywords = rows.map(r => String(r[COLS.keyword] ?? '').trim() || '(untitled)');
+  const volumes  = rows.map(r => Number.isFinite(+r[COLS.volume]) ? +r[COLS.volume] : 0);
+  const growths  = rows.map(r => Math.max(0, Number.isFinite(+r[COLS.growth]) ? +r[COLS.growth] : 0)); // clip <0 to 0
+  const recency  = rows.map(r => recencyScoreFromDateStr(r[COLS.lastSeen]));
 
-  // 5) Status mix by category
-  const ok = cssVar('--ok'), warn = cssVar('--warn'), soft = cssVar('--soft');
-  const mix = statusMixByCategory(rows);
-  makeOrUpdate('chartMix','bar',{
-    labels: mix.cats,
-    datasets: [
-      {label:'emerging',  data: mix.perc.map(r=>r[0]), backgroundColor:ok},
-      {label:'bubbling',  data: mix.perc.map(r=>r[1]), backgroundColor:warn},
-      {label:'mainstream',data: mix.perc.map(r=>r[2]), backgroundColor:soft},
-    ]
-  },{
-    responsive:true, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,max:100}},
-    plugins:{tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%`}}, legend:{position:'bottom'}}
+  const volN = minmaxNormalize(volumes);
+  const groN = minmaxNormalize(growths);
+  const recN = recency;
+
+  const scores = volN.map((_, i) => Math.round(0.40*volN[i] + 0.40*groN[i] + 0.20*recN[i]));
+
+  let indexed = keywords.map((k,i) => ({
+    keyword:k, score:scores[i],
+    volN:Math.round(volN[i]), groN:Math.round(groN[i]), recN:Math.round(recN[i])
+  })).sort((a,b) => b.score - a.score);
+
+  const top = indexed.slice(0, 15);
+  makeBar('trendScoreChart', top.map(d => d.keyword), top.map(d => d.score), 'Trend Score (0–100)');
+  document.getElementById('trend-sample-meta').textContent = `(Top 15 of ${rows.length} signals)`;
+
+  // Table
+  const tbl = document.createElement('table');
+  tbl.innerHTML = `
+    <thead><tr>
+      <th>#</th><th>Signal</th><th>Score</th>
+      <th>Volumeₙ</th><th>Growthₙ</th><th>Recencyₙ</th>
+    </tr></thead><tbody></tbody>`;
+  top.forEach((d,i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td>${d.keyword}</td>
+      <td style="font-weight:600">${d.score}</td>
+      <td class="muted">${d.volN}</td>
+      <td class="muted">${d.groN}</td>
+      <td class="muted">${d.recN}</td>`;
+    tbl.querySelector('tbody').appendChild(tr);
   });
+  document.getElementById('trend-table').appendChild(tbl);
 
-  // 6) Top sources — SAME chart type (100% stacked bar, single bar)
-  const srcShare = topSourcesShare(rows); // [{label, pct}]
-  const srcColors = palette(srcShare.length);
-  makeOrUpdate('chartSourcesStack','bar',{
-    labels:['share'],
-    datasets: srcShare.map((s, i)=>({
-      label: s.label, data:[s.pct], backgroundColor: srcColors[i]
-    }))
-  },{
-    indexAxis:'y',
-    responsive:true,
-    scales:{x:{stacked:true,beginAtZero:true,max:100}, y:{stacked:true}},
-    plugins:{
-      legend:{position:'bottom'},
-      tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.x.toFixed(0)}%`}}
-    }
+  // ─────────────────────────────────────────────────────────────
+  // 5) Tags overview (optional)
+  // ─────────────────────────────────────────────────────────────
+  const tagCounts = new Map();
+  rows.forEach(r => {
+    const raw = r[COLS.tags];
+    if (!raw) return;
+    String(raw).split(',').map(s => s.trim()).filter(Boolean).forEach(t => {
+      tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
+    });
   });
-}
+  const tagsSorted = Array.from(tagCounts.entries()).sort((a,b) => b[1]-a[1]).slice(0,25);
+  document.getElementById('tags-meta').textContent = tagsSorted.length ? `(Top ${tagsSorted.length})` : '(no tags found)';
 
-/* keyword inspector */
-function resetKwDetails(){
-  els.kwTitle.textContent = '(select a keyword)';
-  els.kpis.style.display='none';
-  els.kwList.innerHTML = '';
-  makeOrUpdate('chartKwStatus','bar',{labels:[],datasets:[]},{});
-}
-function renderKwDetails(){
-  if(!selectedKw){ resetKwDetails(); return; }
-  els.kwTitle.textContent = selectedKw;
-
-  const rows = getFiltered();
-  const rkw = rowsForKeyword(rows, selectedKw);
-
-  // KPIs
-  els.kpiTotal.textContent = `Total: ${rkw.length}`;
-  els.kpiAvg.textContent   = `Avg score: ${avgScore(rkw)}`;
-  els.kpiCat.textContent   = `Top category: ${topCat(rkw)}`;
-  const p = new URLSearchParams();
-  p.set('q', selectedKw);
-  if(els.cat.value)  p.set('cat', els.cat.value);
-  if(els.stat.value) p.set('stat', els.stat.value);
-  if(els.from.value) p.set('from', els.from.value);
-  if(els.to.value)   p.set('to', els.to.value);
-  p.set('view','table');
-  els.openList.href = './?'+p.toString();
-  els.kpis.style.display='flex';
-
-  // status stacked bar for this keyword
-  const ok = cssVar('--ok'), warn = cssVar('--warn'), soft = cssVar('--soft');
-  const stats = ['emerging','bubbling','mainstream'];
-  const counts = stats.map(s=>rkw.filter(r=>(r.status||'').toLowerCase()===s).length);
-  makeOrUpdate('chartKwStatus','bar',{
-    labels:['status mix'],
-    datasets:[
-      {label:'emerging',  data:[counts[0]], backgroundColor:ok},
-      {label:'bubbling',  data:[counts[1]], backgroundColor:warn},
-      {label:'mainstream',data:[counts[2]], backgroundColor:soft},
-    ]
-  },{
-    indexAxis:'y', scales:{x:{stacked:true,beginAtZero:true}, y:{stacked:true}},
-    plugins:{legend:{position:'bottom'}}
-  });
-
-  // latest 8 articles list
-  const latest = rkw.slice().sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0)).slice(0,8);
-  els.kwList.innerHTML = latest.map(r=>{
-    const d = (r.published||"").slice(0,10);
-    const t = r.title||"(untitled)";
-    return `<li><a href="${r.link}" target="_blank" rel="noopener">${t}</a><span class="muted">${d}</span></li>`;
-  }).join("") || `<li class="muted">No recent articles.</li>`;
-}
-
-/* --- load CSV --- */
-function load(){
-  const bust = new Date().toISOString().slice(0,10);
-  fetch('signals_simple.csv?ts='+bust)
-    .then(r=>r.text())
-    .then(csv=>Papa.parse(csv,{header:true,skipEmptyLines:true}))
-    .then(res=>{ rowsAll=res.data; render(); })
-    .catch(()=> alert('Failed to load signals_simple.csv'));
-}
-load();
+  if (tagsSorted.length){
+    makeBar('tagsBarChart', tagsSorted.map(([t])=>t), tagsSorted.map(([,c])=>c), 'Count');
+    const cloud = document.getElementById('tags-cloud');
+    tagsSorted.forEach(([t,c]) => {
+      const span = document.createElement('span');
+      span.className = 'pill';
+      span.textContent = `${t} • ${c}`;
+      cloud.appendChild(span);
+    });
+  }
+})();
 </script>
