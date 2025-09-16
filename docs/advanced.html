@@ -74,6 +74,7 @@
   .legend-chips .sw{width:14px;height:10px;border-radius:3px;border:1px solid var(--border);display:inline-block}
 </style>
 
+<!-- HEADER (updated: category, status, All time dropdown; from/to kept but hidden) -->
 <div class="bar">
   <div class="bar-inner">
     <a class="btn" href="./">← Signals list</a>
@@ -87,14 +88,20 @@
       <option value="">All status</option>
       <option>emerging</option><option>bubbling</option><option>mainstream</option>
     </select>
-    <input id="from" type="date" class="input" aria-label="From date">
-    <input id="to"   type="date" class="input" aria-label="To date">
+
+    <!-- keep existing date inputs for JS, just hide them -->
+    <input id="from" type="date" class="input" aria-label="From date" style="display:none">
+    <input id="to"   type="date" class="input" aria-label="To date"   style="display:none">
+
+    <!-- single range dropdown, values used by existing quick.onchange code -->
     <select id="quick" class="select">
       <option value="">All time</option>
+      <option value="7">Last 7 days</option>
       <option value="30">Last 30 days</option>
       <option value="90">Last 90 days</option>
-      <option value="180">Last 180 days</option>
+      <option value="365">Last year</option>
     </select>
+
     <button id="clear" class="btn">Clear</button>
     <span class="spacer"></span>
     <label class="small">Filter signals…
