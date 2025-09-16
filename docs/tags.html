@@ -40,7 +40,10 @@
   .feasibility{display:flex;align-items:center;gap:8px;margin-top:6px}
   .feasibility input{width:160px}
   .kit{border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:12px;background:#fcfcfc}
-  .kit pre{white-space:pre-wrap}
+  .kit h4{margin:0 0 6px 0}
+  .kit pre{white-space:pre-wrap;margin:0 0 8px 0}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+  .controls label{font-size:12px;color:var(--muted)}
 </style>
 
 <header>
@@ -125,19 +128,61 @@ Trend = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
 
       <div class="divider"></div>
       <h3>Content Kit</h3>
+      <div class="controls">
+        <div>
+          <label for="kit-aud">Audience</label><br/>
+          <select id="kit-aud" class="select">
+            <option value="cmo" selected>CMO / VP Brand</option>
+            <option value="brand">Brand Lead / PMM</option>
+            <option value="founder">Founder</option>
+            <option value="creator">Creator / Comms</option>
+          </select>
+        </div>
+        <div>
+          <label for="kit-tone">Tone</label><br/>
+          <select id="kit-tone" class="select">
+            <option value="analytical" selected>Analytical</option>
+            <option value="punchy">Punchy</option>
+            <option value="inspirational">Inspirational</option>
+          </select>
+        </div>
+        <div>
+          <label for="kit-cta">CTA</label><br/>
+          <select id="kit-cta" class="select">
+            <option value="consult" selected>Book a consult</option>
+            <option value="subscribe">Subscribe</option>
+            <option value="report">Download report</option>
+          </select>
+        </div>
+      </div>
       <div class="row">
         <button id="gen-kit" class="btn">Generate kit</button>
         <button id="copy-kit" class="btn">Copy all</button>
       </div>
+
       <div id="kit-out" class="kit" style="display:none;">
-        <h4 style="margin:0 0 6px 0;">Newsletter blurb</h4>
+        <h4>Executive takeaway</h4>
+        <pre id="kit-takeaway"></pre>
+        <h4>Newsletter blurb</h4>
         <pre id="kit-news"></pre>
-        <h4 style="margin:10px 0 6px 0;">LinkedIn post</h4>
+        <h4>LinkedIn long post</h4>
         <pre id="kit-li"></pre>
-        <h4 style="margin:10px 0 6px 0;">Medium outline</h4>
+        <h4>Carousel outline (6 slides)</h4>
+        <pre id="kit-carousel"></pre>
+        <h4>Medium outline</h4>
         <pre id="kit-med"></pre>
-        <h4 style="margin:10px 0 6px 0;">Social hooks</h4>
+        <h4>Social hooks (6)</h4>
         <pre id="kit-hooks"></pre>
+        <h4>SEO keywords & hashtags</h4>
+        <pre id="kit-seo"></pre>
+        <h4>KPIs to track</h4>
+        <pre id="kit-kpis"></pre>
+        <h4>Risks & watchouts</h4>
+        <pre id="kit-risks"></pre>
+        <h4>Next steps (90-day plan)</h4>
+        <pre id="kit-next"></pre>
+        <h4>Client pitch paragraph</h4>
+        <pre id="kit-pitch"></pre>
       </div>
     </aside>
   </section>
@@ -317,7 +362,7 @@ let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
   // Insights select
   function selectSignal(d){
     if(!d) return;
-    document.getElementById('signal-title').textContent=d.keyword;
+    document.getElementById('signal-title').textContent=d.keyword + ' ' + stageLabel(d);
     const tagsEl=document.getElementById('signal-tags'); tagsEl.innerHTML='';
     (d.tags||[]).forEach(t=>{ const s=document.createElement('span'); s.className='tag-pill'; s.textContent=t; tagsEl.appendChild(s); });
     document.getElementById('kpi-score').textContent=isFinite(d.score)?d.score:'–';
@@ -357,10 +402,8 @@ let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
     }
 
     // Content Kit generation & copy
-    const btnGen = document.getElementById('gen-kit');
-    const btnCopy= document.getElementById('copy-kit');
-    btnGen.onclick = ()=> generateKit(d, (ARTICLES_MAP.get(String(key.toLowerCase()))||[]));
-    btnCopy.onclick = copyKitAll;
+    document.getElementById('gen-kit').onclick = ()=> generateKit(d, (ARTICLES_MAP.get(String(key.toLowerCase()))||[]));
+    document.getElementById('copy-kit').onclick = copyKitAll;
   }
   function makeSummary(d){
     const heat=v=>v>=75?'very high':v>=50?'high':v>=25?'moderate':'low';
@@ -463,91 +506,242 @@ let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
     const cloud=document.getElementById('tags-cloud'); tagsSorted.forEach(([t,c])=>{ const s=document.createElement('span'); s.className='tag-pill'; s.textContent=`${t} • ${c}`; cloud.appendChild(s); });
   }
 
-  /* ===== Content Kit Generator ===== */
+  /* ===== Content Kit Generator (upgraded) ===== */
+  function stageLabel(d){
+    const m=d.momentum||0, t=d.score||0;
+    if (m>=70 && t<60) return '· [Breakout]';
+    if (m>=60 && t>=60) return '· [Emerging]';
+    if (t>=75 && m<55) return '· [Established]';
+    if (t<50 && m<45)  return '· [Cooling]';
+    return '· [Developing]';
+  }
   function pickAngle(tags, momentum, trend){
     const t = (tags||[]).map(x=>x.toLowerCase());
-    if (t.includes('sustainability')) return 'Sustainability as retention + brand moat';
+    if (t.includes('sustainability')) return 'Sustainability as retention & brand moat';
     if (t.includes('tech')) return 'UX upgrade via beauty/fashion-tech';
     if (t.includes('skincare')) return 'Science-backed self-care ritual';
     if (t.includes('fragrance')) return 'Scent as memory & merchandising';
     if (t.includes('packaging')) return 'Experience-led refill & retail';
-    if (momentum >= 70 && trend < 60) return 'Early breakout to watch';
-    if (trend >= 75) return 'Mainstream heat with room to play';
-    return 'Niche signal with upside';
-    }
+    if (momentum >= 70 && trend < 60) return 'Early breakout to test before it peaks';
+    if (trend >= 75) return 'Mainstream heat with whitespace for differentiation';
+    return 'Niche signal with asymmetric upside';
+  }
   function bulletImplications(tags){
-    const out=[];
-    if (tags.includes('sustainability')) out.push('Shift capex to refill & repair pilots');
-    if (tags.includes('tech')) out.push('Test AR try-on or AI-assisted sizing');
-    if (tags.includes('skincare')) out.push('Bundle routine steps into a ritual SKU');
-    if (tags.includes('fragrance')) out.push('Use scent zoning in-store');
-    if (tags.includes('packaging')) out.push('Swap to mono-material packs');
-    if (!out.length) out.push('Pilot with 1 hero product + content storyline');
+    const t=(tags||[]).map(x=>x.toLowerCase()); const out=[];
+    if (t.includes('tech')) out.push('Prototype AR try-on or AI sizing in 1 category');
+    if (t.includes('skincare')) out.push('Bundle ritual steps; tie benefits to routines');
+    if (t.includes('fragrance')) out.push('Deploy scent zoning & sampling to basket-build');
+    if (t.includes('packaging')) out.push('Shift to mono-material/refill pilots');
+    if (t.includes('sustainability')) out.push('Communicate measurable impact, not claims');
+    if (!out.length) out.push('Pilot with 1 hero SKU + creator narrative');
     return out.slice(0,3);
   }
-  function sentenceJoin(arr){ return arr.filter(Boolean).join(' • '); }
+  function kpisForTags(tags){
+    const t=(tags||[]).map(x=>x.toLowerCase()); const k=[];
+    if (t.includes('tech')) k.push('Try-on adoption rate (%)','Conversion lift vs control (%)','Return-rate reduction (pp)');
+    if (t.includes('skincare')) k.push('Repeat purchase rate','Regimen attachment rate','AOV change (€)');
+    if (t.includes('fragrance')) k.push('Sampling → purchase conversion','Dwell time in-store (min)','Basket size uplift');
+    if (t.includes('packaging')) k.push('Refill return rate','Material cost delta','Net sentiment on packaging');
+    if (t.includes('sustainability')) k.push('CO₂/pack reduction','Post-purchase satisfaction','PR/earned media mentions');
+    if (!k.length) k.push('CTR to PDP','Add-to-cart rate','Share of voice vs peers');
+    return k.slice(0,4);
+  }
+  function risksForTags(tags){
+    const t=(tags||[]).map(x=>x.toLowerCase()); const r=[];
+    if (t.includes('tech')) r.push('3D asset quality & device compatibility','Privacy/face data guardrails');
+    if (t.includes('skincare')) r.push('Claims compliance & dermatology proof');
+    if (t.includes('fragrance')) r.push('Sampling logistics & waste');
+    if (t.includes('packaging')) r.push('Refill ops complexity & leakage');
+    if (t.includes('sustainability')) r.push('Greenwashing risk without measurement');
+    if (!r.length) r.push('Operational complexity vs team bandwidth','Channel fit misalignment');
+    return r.slice(0,4);
+  }
+  function nextStepsPlan(tags){
+    const t=(tags||[]).map(x=>x.toLowerCase());
+    const step1 = 'Weeks 0-2: Insight sprint — audit current CX, brief pilot, define KPIs';
+    const step2 = t.includes('tech')
+      ? 'Weeks 3-6: Build — MVP with vendor; A/B in one category & one channel'
+      : 'Weeks 3-6: Build — pilot content & merchandising in 1 category';
+    const step3 = 'Weeks 7-12: Scale — analyze, iterate, expand to 2nd category + playbook';
+    return [step1, step2, step3];
+  }
+  function evidenceBullets(articles){
+    return (articles||[]).slice(0,3).map(a=>{
+      const src = a.source || (new URL(a.url).hostname.replace(/^www\./,''));
+      const dt  = a.date || '';
+      return `• ${src}${dt?` (${dt})`:''}`;
+    });
+  }
+  function hashtags(tags){
+    const base = ['#trend','#brandstrategy','#fashion','#beauty','#wellness'];
+    const t=(tags||[]).map(x=>x.toLowerCase());
+    if (t.includes('tech')) base.push('#retailtech','#AR','#AI');
+    if (t.includes('sustainability')) base.push('#circulardesign','#sustainable');
+    if (t.includes('skincare')) base.push('#skincare','#skintech');
+    if (t.includes('fragrance')) base.push('#fragrance','#scent');
+    if (t.includes('packaging')) base.push('#packaging','#refillable');
+    return [...new Set(base)].slice(0,10).join(' ');
+  }
+  function seoKeywords(title,tags){
+    const t=(tags||[]).map(x=>x.toLowerCase());
+    const kws=[title,'trend 2025','brand strategy','consumer signals'];
+    if (t.includes('tech')) kws.push('AR try on','AI sizing','ecomm UX');
+    if (t.includes('sustainability')) kws.push('refill packaging','circular fashion');
+    if (t.includes('skincare')) kws.push('skin cycling','beauty routine');
+    if (t.includes('fragrance')) kws.push('olfactory branding','perfume retail');
+    return [...new Set(kws)].slice(0,8).join(', ');
+  }
+  function audienceTone(aud,tone,txt){
+    if (tone==='punchy'){
+      txt = txt.replaceAll(' — ',' — ').replace(/\.\s/g,'. ');
+      txt = txt.replace(/(\d+)%/g,'$1%');
+    }
+    if (aud==='creator'){
+      txt = txt.replaceAll('brand','brand/creator').replaceAll('retail','retail/social');
+    }
+    return txt;
+  }
+  function titleOptions(title, stage, angle){
+    return [
+      `${title}: ${angle}`,
+      `${stage.replace(/[.\[\]]/g,'').toUpperCase()} — ${title} for 2025`,
+      `${title} → from hype to impact`
+    ];
+  }
+
   function generateKit(d, articles){
     const title = d.keyword;
     const tags = d.tags || [];
-    const momentum = d.momentum||0, trend = d.score||0, vol = d.volume||0, growth = d.growth||0, rec = d.recN||0;
-    const angle = pickAngle(tags, momentum, trend);
-    const sources = (articles||[]).slice(0,3).map(a => `${a.source || (new URL(a.url).hostname.replace(/^www\./,''))} (${a.date||''})`).join(', ');
-    const evidence = sources ? `Evidence: ${sources}.` : '';
-    const intro = `${title}: ${angle}. Momentum ${momentum}, Trend ${trend}, volume ${vol}, growth ${growth}%, recency ${rec}.`;
-    // Newsletter (120–160 words approx)
-    const nl = [
-      intro,
-      `Why it matters: ${sentenceJoin(bulletImplications(tags))}.`,
-      evidence,
-      `What we’re watching: brand trials, creator adoption, and retail signals.`,
-      `Reply for the deck or to scope a brand-specific playbook.`
-    ].join(' ');
-    // LinkedIn
-    const li = [
-      `⚡ ${title}: ${angle}`,
-      ``,
-      `• Momentum ${momentum} / Trend ${trend} / Growth ${growth}%`,
-      `• Tags: ${tags.join(', ') || '—'}`,
-      sources ? `• ${evidence}` : '',
-      ``,
-      `👉 We’re mapping brand opportunities in fashion, beauty & wellness.`,
-      `DM for the 1-pager or a working session.`
-    ].filter(Boolean).join('\n');
+    const stage = stageLabel(d);
+    const angle = pickAngle(tags, d.momentum||0, d.score||0);
+    const facts = `Momentum ${d.momentum||0}, Trend ${d.score||0}, volume ${d.volume||0}, growth ${d.growth||0}%, recency ${d.recN||0}`;
+    const aud = document.getElementById('kit-aud').value;
+    const tone = document.getElementById('kit-tone').value;
+    const ctaType = document.getElementById('kit-cta').value;
+
+    const evidence = evidenceBullets(articles);
+    const implications = bulletImplications(tags);
+    const kpis = kpisForTags(tags);
+    const risks = risksForTags(tags);
+    const steps = nextStepsPlan(tags);
+    const ht = hashtags(tags);
+    const seo = seoKeywords(title,tags);
+    const titles = titleOptions(title, stage, angle);
+
+    // Executive takeaway (2 sentences)
+    let takeaway = `${title} ${stage.replace('· ','')} — ${angle}. ${facts}.`;
+    takeaway = audienceTone(aud,tone,takeaway);
+
+    // Newsletter blurb (~150–200 words)
+    const nl = audienceTone(aud,tone,
+`**${title}** ${stage} — ${angle}.
+What’s happening: ${implications[0]}.
+Why it matters: momentum and recency are high (${facts}); brands that pilot now can convert attention into measurable outcomes.
+How to act: ${implications.join('; ')}. ${evidence.length?`\nSources: ${evidence.join(' ')}`:''}
+Reply for a one-pager or to scope a brand-specific playbook.`);
+
+    // LinkedIn long post
+    const li = audienceTone(aud,tone,
+`⚡ ${title}: ${angle}
+${stage}
+
+${facts}
+Tags: ${tags.join(', ') || '—'}
+${evidence.length?evidence.join('\n'):''}
+
+What to do next:
+• ${implications[0]}
+• ${implications[1] || 'Run a 2-week pilot in one category'}
+• ${implications[2] || 'Define 2–3 KPIs and A/B test'}
+
+KPIs: ${kpis.join(' • ')}
+
+${ctaType==='consult' ? '👉 DM to book a 30-min consult and get the pilot checklist.' :
+  ctaType==='subscribe' ? '👉 Follow & subscribe for weekly brand-ready playbooks.' :
+  '👉 Comment “REPORT” for the summary.'}
+
+${ht}`);
+
+    // Carousel outline (6 slides)
+    const carousel =
+`1) Title — ${title}: ${angle}
+2) Why now — ${facts}
+3) Evidence — ${evidence.slice(0,2).join(' ')}
+4) Who should act — ${aud==='cmo'?'mid-to-premium brands; omnichannel':''}${aud==='brand'?'category owners; DTC leads':''}${aud==='founder'?'emerging brands w/ agile ops':''}${aud==='creator'?'brands & creators co-creating':''}
+5) How to activate — ${implications.join(' • ')}
+6) KPIs + CTA — ${kpis.join(' • ')} / ${ctaType==='consult'?'Book a consult':'Subscribe'}`;
+
     // Medium outline
-    const med = [
-      `# ${title}: ${angle}`,
-      `## What it is`,
-      `Short definition + examples.`,
-      `## Why now`,
-      `Momentum ${momentum}, Trend ${trend}, growth ${growth}% — ${evidence || 'add 2–3 sources.'}`,
-      `## Who it serves`,
-      `Segments, price tiers, aesthetics.`,
-      `## How brands can act`,
-      ...bulletImplications(tags).map(b => `- ${b}`),
-      `## Watchouts`,
-      `Supply, CX, or brand stretch risks.`
-    ].join('\n');
-    // Hooks
+    const med =
+`# ${titles[0]}
+## What it is
+Short definition + examples from your category.
+## Why now
+${facts}. ${evidence.length?`Sources: ${evidence.join(' ')}`:''}
+## Who it serves
+Segments, price tiers, aesthetics.
+## How brands can act
+- ${implications[0]}
+- ${implications[1] || 'A/B test against current flow'}
+- ${implications[2] || 'Creator collab to tell the story'}
+## KPIs
+- ${kpis.join('\n- ')}
+## Risks & watchouts
+- ${risks.join('\n- ')}
+## Next steps (90-day plan)
+- ${steps.join('\n- ')}`;
+
+    // Social hooks (6)
     const hooks = [
       `${title}: the micro-trend brands keep missing`,
       `${title} → from hype to business impact`,
       `Why ${title} is peaking now`,
-      `3 ways to activate ${title}`
+      `3 ways to activate ${title}`,
+      `${title}: KPIs that actually move the needle`,
+      `${title}: what we’re telling clients this week`
     ].join('\n');
 
+    // SEO + hashtags
+    const seoBlock = `SEO: ${seo}\nHashtags: ${ht}`;
+
+    // KPIs, Risks, Next, Pitch
+    const kpisBlock = `Track: ${kpis.join(' • ')}. Benchmark against pre-pilot baselines.`;
+    const risksBlock = `Watch: ${risks.join(' • ')}. Mitigate with tight scope & QA.`;
+    const nextBlock = steps.join('\n');
+    const pitch = audienceTone(aud,tone,
+`We’re helping fashion/beauty/wellness brands turn signals like **${title}** into results. We’ll map fit, design a low-risk pilot, define KPIs, and ship a playbook in 4–6 weeks. ${ctaType==='consult'?'Reply to book a working session.':ctaType==='report'?'Reply “REPORT” for the summary.':'Subscribe for weekly playbooks.'}`);
+
+    // Write to UI
+    const out = (id, text) => document.getElementById(id).textContent = text;
     document.getElementById('kit-out').style.display='block';
-    document.getElementById('kit-news').textContent = nl;
-    document.getElementById('kit-li').textContent   = li;
-    document.getElementById('kit-med').textContent  = med;
-    document.getElementById('kit-hooks').textContent= hooks;
+    out('kit-takeaway', takeaway);
+    out('kit-news', nl);
+    out('kit-li', li);
+    out('kit-carousel', carousel);
+    out('kit-med', med);
+    out('kit-hooks', hooks);
+    out('kit-seo', seoBlock);
+    out('kit-kpis', kpisBlock);
+    out('kit-risks', risksBlock);
+    out('kit-next', nextBlock);
+    out('kit-pitch', pitch);
   }
+
   async function copyKitAll(){
-    const news = document.getElementById('kit-news').textContent || '';
-    const li   = document.getElementById('kit-li').textContent   || '';
-    const med  = document.getElementById('kit-med').textContent  || '';
-    const hk   = document.getElementById('kit-hooks').textContent|| '';
-    const blob = `NEWSLETTER\n\n${news}\n\nLINKEDIN\n\n${li}\n\nMEDIUM OUTLINE\n\n${med}\n\nHOOKS\n\n${hk}`;
-    try{ await navigator.clipboard.writeText(blob); }catch{}
+    const blocks = [
+      ['EXECUTIVE TAKEAWAY','kit-takeaway'],
+      ['NEWSLETTER','kit-news'],
+      ['LINKEDIN','kit-li'],
+      ['CAROUSEL','kit-carousel'],
+      ['MEDIUM OUTLINE','kit-med'],
+      ['HOOKS','kit-hooks'],
+      ['SEO & HASHTAGS','kit-seo'],
+      ['KPIs','kit-kpis'],
+      ['RISKS','kit-risks'],
+      ['NEXT STEPS','kit-next'],
+      ['CLIENT PITCH','kit-pitch'],
+    ].map(([label,id]) => `## ${label}\n\n${document.getElementById(id).textContent||''}`).join('\n\n');
+    try{ await navigator.clipboard.writeText(blocks); }catch{}
   }
 })();
 </script>
