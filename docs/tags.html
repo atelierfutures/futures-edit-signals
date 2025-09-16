@@ -1,7 +1,9 @@
 <!doctype html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>The Futures Edit — Tags & Graphs</title>
+<title>The Futures Edit — Tags & Trend Score</title>
+
+<!-- Libraries -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
@@ -11,29 +13,30 @@
     --bg:#ffffff; --fg:#141414; --muted:#6b7280;
     --card:#ffffff; --border:#e5e7eb; --pill:#f3f4f6; --accent:#111827;
     --shadow:0 8px 24px rgba(0,0,0,.06);
-    --bar-h: 80px;
+    --bar-h:84px;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif}
-  header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--border);height:var(--bar-h);display:flex;align-items:center;gap:16px;padding:0 20px;z-index:10}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif}
+  header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--border);
+         height:var(--bar-h);display:flex;align-items:center;gap:12px;padding:0 18px;z-index:10}
   h1{margin:0;font-weight:700;font-size:18px}
-  main{max-width:1100px;margin:24px auto;padding:0 16px}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:.3rem .55rem;border-radius:999px;
+        background:var(--pill);border:1px solid var(--border);font-size:12px;color:#111827}
+  main{max-width:1100px;margin:22px auto;padding:0 16px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:16px}
-  .row{display:grid;grid-template-columns:1fr;gap:16px}
-  @media (min-width: 980px){ .row{grid-template-columns:1fr 1fr} }
   h2{margin:0 0 8px 0;font:600 18px/1.2 inherit}
-  small, .muted{color:var(--muted)}
-  .pill{display:inline-block;padding:.25rem .5rem;border-radius:999px;background:var(--pill);border:1px solid var(--border);font-size:12px;color:#111827}
+  small,.muted{color:var(--muted)}
+  .chart-wrap{height:340px}
   table{width:100%;border-collapse:collapse}
   th,td{padding:8px;border-bottom:1px solid #f3f4f6;text-align:left}
   thead th{background:#f9fafb;border-bottom:1px solid var(--border)}
   details summary{cursor:pointer}
-  .chart-wrap{height:320px}
 </style>
 
 <header>
-  <h1>The Futures Edit — Signals: Tags & Graphs</h1>
-  <span class="pill" id="dataset-meta"></span>
+  <h1>The Futures Edit — Tags & Trend Score</h1>
+  <span class="pill" id="dataset-meta">loading…</span>
 </header>
 
 <main>
@@ -62,9 +65,10 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
     </details>
 
     <div id="trend-table" style="margin-top:14px;overflow:auto;"></div>
+    <div id="trend-errors" style="margin-top:10px;color:#b91c1c;"></div>
   </section>
 
-  <!-- Tags Overview (optional – tweak to your schema) -->
+  <!-- Tags Overview -->
   <section class="card" style="margin-top:16px;">
     <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
       <h2>Top Tags</h2>
@@ -75,83 +79,125 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
   </section>
 </main>
 
+<!-- Embedded fallback data (used only if data/signals.csv is missing) -->
+<script type="text/csv" id="embedded-signals">
+keyword,volume,growth_rate,last_seen,tags
+"glazed blush",78,22,"2025-09-12","beauty, makeup"
+"vanilla girl",40,5,"2025-08-28","fashion, lifestyle"
+"quiet luxury",95,-8,"2025-07-05","fashion"
+"skin cycling",60,18,"2025-09-10","beauty, skincare"
+"blue beauty",30,35,"2025-08-31","beauty, sustainability"
+"olfactory branding",22,41,"2025-09-09","retail, experience"
+"biodegradable glitter",18,55,"2025-09-13","beauty, materials"
+"spa water 2.0",15,8,"2025-08-22","wellness, drinks"
+"augmented try-on",55,27,"2025-09-11","beauty, tech"
+"fermented skincare",28,12,"2025-08-30","beauty, skincare"
+"regenerative cotton",20,33,"2025-09-01","fashion, sustainability"
+"scalp care",42,9,"2025-09-07","beauty, hair"
+"refillable packaging",36,14,"2025-09-06","beauty, packaging"
+"circadian lighting",25,31,"2025-09-02","home, wellness"
+"athleisure tailoring",32,6,"2025-08-29","fashion"
+</script>
+
 <script>
-(async function () {
-  // ─────────────────────────────────────────────────────────────
-  // 1) CONFIG — point to your CSV and column names
-  // ─────────────────────────────────────────────────────────────
-  const CSV_URL = 'data/signals.csv'; // ← change to your path
-  const COLS = {
-    keyword:  'keyword',      // string
-    volume:   'volume',       // numeric
-    growth:   'growth_rate',  // numeric (% WoW/MoM). Negatives allowed; we clip to 0 for score.
-    lastSeen: 'last_seen',    // date string (ISO best)
-    tags:     'tags'          // optional: comma-separated list, e.g. "beauty, packaging, retail"
-  };
+/* ===========================
+   BASIC CONFIG (no coding needed)
+   ===========================
+   - If you have a real CSV, put it at: data/signals.csv
+     Columns expected: keyword, volume, growth_rate, last_seen, tags
+   - This page will try to load it. If it can't, it will use the embedded sample above.
+*/
+const CSV_URL = 'data/signals.csv'; // keep as is unless your path is different
 
-  // ─────────────────────────────────────────────────────────────
-  // 2) Helpers
-  // ─────────────────────────────────────────────────────────────
-  const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
-  function minmaxNormalize(values) {
-    const arr = values.map(v => (isFinite(+v) ? +v : 0));
-    const min = Math.min(...arr), max = Math.max(...arr);
-    if (!isFinite(min) || !isFinite(max) || max === min) return arr.map(_ => 0);
-    return arr.map(v => ((v - min) / (max - min)) * 100);
-  }
-  function recencyScoreFromDateStr(dateStr) {
-    const now = new Date();
-    const d = new Date(dateStr);
-    if (isNaN(d)) return 0;
-    const days = (now - d) / (1000*60*60*24);
-    const score = 100 - (days / 90) * 100; // 0d → 100, 90d+ → 0
-    return clamp(score, 0, 100);
-  }
-  function makeBar(el, labels, data, label) {
-    const ctx = document.getElementById(el).getContext('2d');
-    if (window[el]) window[el].destroy?.();
-    window[el] = new Chart(ctx, {
-      type: 'bar',
-      data: { labels, datasets: [{ label, data, borderWidth: 1 }] },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true } },
-        plugins: { legend: { display: false } }
-      }
-    });
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // 3) Load CSV
-  // ─────────────────────────────────────────────────────────────
-  const parsed = await new Promise((res, rej) => {
-    Papa.parse(CSV_URL, { download:true, header:true, dynamicTyping:true, complete:res, error:rej });
+// ---------- Utils ----------
+const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
+function minmaxNormalize(values) {
+  const arr = values.map(v => (isFinite(+v) ? +v : 0));
+  const min = Math.min(...arr), max = Math.max(...arr);
+  if (!isFinite(min) || !isFinite(max) || max === min) return arr.map(_ => 0);
+  return arr.map(v => ((v - min) / (max - min)) * 100);
+}
+function recencyScoreFromDateStr(dateStr) {
+  const now = new Date();
+  const d = new Date(dateStr);
+  if (isNaN(d)) return 0;
+  const days = (now - d) / (1000*60*60*24);
+  const score = 100 - (days / 90) * 100; // 0d → 100, ≥90d → 0
+  return clamp(score, 0, 100);
+}
+function showError(msg){
+  const e = document.getElementById('trend-errors');
+  if (e) e.textContent = msg;
+  console.error('[tags.html]', msg);
+}
+function makeBar(canvasId, labels, data, label) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  if (window[canvasId]) window[canvasId].destroy?.();
+  window[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label, data, borderWidth: 1 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true } },
+      plugins: { legend: { display: false } }
+    }
   });
-  const rows = (parsed?.data || []).filter(r => r && Object.keys(r).length);
-  document.getElementById('dataset-meta').textContent = `${rows.length} rows • ${new Date().toISOString().slice(0,10)}`;
+}
 
-  // ─────────────────────────────────────────────────────────────
-  // 4) Trend Score calculation
-  // ─────────────────────────────────────────────────────────────
-  const keywords = rows.map(r => String(r[COLS.keyword] ?? '').trim() || '(untitled)');
-  const volumes  = rows.map(r => Number.isFinite(+r[COLS.volume]) ? +r[COLS.volume] : 0);
-  const growths  = rows.map(r => Math.max(0, Number.isFinite(+r[COLS.growth]) ? +r[COLS.growth] : 0)); // clip <0 to 0
-  const recency  = rows.map(r => recencyScoreFromDateStr(r[COLS.lastSeen]));
+// ---------- Data loading with graceful fallback ----------
+async function loadSignals() {
+  // Try external CSV first
+  try {
+    const parsed = await new Promise((res, rej) => {
+      Papa.parse(CSV_URL, { download:true, header:true, dynamicTyping:true, complete:res, error:rej });
+    });
+    const rows = (parsed?.data || []).filter(r => r && Object.keys(r).length);
+    if (rows.length) return { rows, source: 'csv' };
+  } catch (err) {
+    // ignore, we'll fallback
+  }
+  // Fallback to embedded CSV
+  const embedded = document.getElementById('embedded-signals')?.textContent?.trim();
+  if (!embedded) { showError('No data available (CSV missing and no embedded sample).'); return { rows: [], source: 'none' }; }
+  const parsed2 = Papa.parse(embedded, { header:true, dynamicTyping:true });
+  const rows = (parsed2?.data || []).filter(r => r && Object.keys(r).length);
+  return { rows, source: 'embedded' };
+}
 
+// ---------- Main render ----------
+(async function () {
+  const { rows, source } = await loadSignals();
+
+  const datasetMeta = document.getElementById('dataset-meta');
+  datasetMeta.textContent = rows.length
+    ? `${rows.length} rows • ${new Date().toISOString().slice(0,10)} • ${source === 'csv' ? 'CSV' : 'sample'}`
+    : '0 rows';
+
+  if (!rows.length) return;
+
+  // Map columns
+  const get = (r, k) => r[k] ?? r[k?.toLowerCase?.()] ?? r[k?.toUpperCase?.()];
+  const keywords = rows.map(r => String(get(r,'keyword') ?? '').trim() || '(untitled)');
+  const volumes  = rows.map(r => Number.isFinite(+get(r,'volume')) ? +get(r,'volume') : 0);
+  const growths0 = rows.map(r => Number.isFinite(+get(r,'growth_rate')) ? +get(r,'growth_rate') : 0);
+  const growths  = growths0.map(v => Math.max(0, v)); // negatives clipped at 0 for score
+  const recency  = rows.map(r => recencyScoreFromDateStr(get(r,'last_seen')));
+
+  // Normalize & score
   const volN = minmaxNormalize(volumes);
   const groN = minmaxNormalize(growths);
   const recN = recency;
-
   const scores = volN.map((_, i) => Math.round(0.40*volN[i] + 0.40*groN[i] + 0.20*recN[i]));
 
-  let indexed = keywords.map((k,i) => ({
+  // Rank Top 15
+  const ranked = keywords.map((k,i) => ({
     keyword:k, score:scores[i],
     volN:Math.round(volN[i]), groN:Math.round(groN[i]), recN:Math.round(recN[i])
   })).sort((a,b) => b.score - a.score);
 
-  const top = indexed.slice(0, 15);
+  const top = ranked.slice(0, 15);
   makeBar('trendScoreChart', top.map(d => d.keyword), top.map(d => d.score), 'Trend Score (0–100)');
-  document.getElementById('trend-sample-meta').textContent = `(Top 15 of ${rows.length} signals)`;
+  document.getElementById('trend-sample-meta').textContent = `(Top ${top.length} of ${rows.length} signals)`;
 
   // Table
   const tbl = document.createElement('table');
@@ -173,12 +219,10 @@ TrendScore = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
   });
   document.getElementById('trend-table').appendChild(tbl);
 
-  // ─────────────────────────────────────────────────────────────
-  // 5) Tags overview (optional)
-  // ─────────────────────────────────────────────────────────────
+  // Tags overview
   const tagCounts = new Map();
   rows.forEach(r => {
-    const raw = r[COLS.tags];
+    const raw = get(r,'tags');
     if (!raw) return;
     String(raw).split(',').map(s => s.trim()).filter(Boolean).forEach(t => {
       tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
