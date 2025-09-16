@@ -37,13 +37,8 @@
   .select{border:1px solid var(--border);border-radius:8px;padding:6px 8px;background:#fff}
   .divider{height:1px;background:var(--border);margin:12px 0}
   .why{font-size:12px;color:#4b5563}
-  .feasibility{display:flex;align-items:center;gap:8px;margin-top:6px}
-  .feasibility input{width:160px}
-  .kit{border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:12px;background:#fcfcfc}
-  .kit h4{margin:0 0 6px 0}
-  .kit pre{white-space:pre-wrap;margin:0 0 8px 0}
-  .controls{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
-  .controls label{font-size:12px;color:var(--muted)}
+  .linkline a{font-weight:600;text-decoration:none;color:#111827}
+  .linkline small{color:var(--muted)}
 </style>
 
 <header>
@@ -71,7 +66,7 @@ Noveltyₙ = 100 − Volumeₙ
     </details>
   </section>
 
-  <!-- 2) SIGNALS — Top 25 + insights + Content Kit -->
+  <!-- 2) SIGNALS — Top 25 + insights -->
   <section class="grid grid-2 card" style="display:grid;gap:16px;">
     <div>
       <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -116,73 +111,37 @@ Trend = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
         <div class="box"><div class="muted">Last seen</div><b id="kpi-lastseen">–</b></div>
       </div>
 
-      <div class="feasibility">
-        <label class="muted" for="feasibility-slider">Feasibility (you)</label>
-        <input id="feasibility-slider" type="range" min="0" max="100" value="60">
-        <span id="feasibility-val" class="pill">60</span>
-      </div>
-
       <div class="divider"></div>
       <h3>Related Articles</h3>
+      <div class="row" style="gap:8px;margin-bottom:6px;">
+        <button id="open-top5" class="btn">Open top 5</button>
+        <button id="copy-citations" class="btn">Copy citations</button>
+      </div>
+      <div id="articles-count" class="muted" style="margin-bottom:4px;"></div>
       <div id="articles-list" class="muted">No signal selected.</div>
+      <div id="articles-more" style="margin-top:6px;display:none;">
+        <button id="btn-show-more" class="btn">Show more</button>
+        <button id="btn-show-less" class="btn" style="display:none;">Show less</button>
+      </div>
 
       <div class="divider"></div>
-      <h3>Content Kit</h3>
-      <div class="controls">
-        <div>
-          <label for="kit-aud">Audience</label><br/>
-          <select id="kit-aud" class="select">
-            <option value="cmo" selected>CMO / VP Brand</option>
-            <option value="brand">Brand Lead / PMM</option>
-            <option value="founder">Founder</option>
-            <option value="creator">Creator / Comms</option>
-          </select>
-        </div>
-        <div>
-          <label for="kit-tone">Tone</label><br/>
-          <select id="kit-tone" class="select">
-            <option value="analytical" selected>Analytical</option>
-            <option value="punchy">Punchy</option>
-            <option value="inspirational">Inspirational</option>
-          </select>
-        </div>
-        <div>
-          <label for="kit-cta">CTA</label><br/>
-          <select id="kit-cta" class="select">
-            <option value="consult" selected>Book a consult</option>
-            <option value="subscribe">Subscribe</option>
-            <option value="report">Download report</option>
-          </select>
-        </div>
-      </div>
+      <h3>Content Kit (simple)</h3>
       <div class="row">
         <button id="gen-kit" class="btn">Generate kit</button>
         <button id="copy-kit" class="btn">Copy all</button>
       </div>
 
-      <div id="kit-out" class="kit" style="display:none;">
-        <h4>Executive takeaway</h4>
-        <pre id="kit-takeaway"></pre>
-        <h4>Newsletter blurb</h4>
-        <pre id="kit-news"></pre>
-        <h4>LinkedIn long post</h4>
-        <pre id="kit-li"></pre>
-        <h4>Carousel outline (6 slides)</h4>
-        <pre id="kit-carousel"></pre>
-        <h4>Medium outline</h4>
-        <pre id="kit-med"></pre>
-        <h4>Social hooks (6)</h4>
-        <pre id="kit-hooks"></pre>
-        <h4>SEO keywords & hashtags</h4>
-        <pre id="kit-seo"></pre>
-        <h4>KPIs to track</h4>
-        <pre id="kit-kpis"></pre>
-        <h4>Risks & watchouts</h4>
-        <pre id="kit-risks"></pre>
-        <h4>Next steps (90-day plan)</h4>
-        <pre id="kit-next"></pre>
-        <h4>Client pitch paragraph</h4>
-        <pre id="kit-pitch"></pre>
+      <div id="kit-out" class="card" style="display:none;margin-top:10px;padding:12px;">
+        <h4 style="margin:0 0 6px 0;">Executive takeaway</h4>
+        <pre id="kit-takeaway" style="white-space:pre-wrap;margin:0 0 8px 0;"></pre>
+        <h4 style="margin:10px 0 6px 0;">Newsletter blurb</h4>
+        <pre id="kit-news" style="white-space:pre-wrap;margin:0 0 8px 0;"></pre>
+        <h4 style="margin:10px 0 6px 0;">LinkedIn post</h4>
+        <pre id="kit-li" style="white-space:pre-wrap;margin:0 0 8px 0;"></pre>
+        <h4 style="margin:10px 0 6px 0;">Social hooks (3)</h4>
+        <pre id="kit-hooks" style="white-space:pre-wrap;margin:0 0 8px 0;"></pre>
+        <h4 style="margin:10px 0 6px 0;">KPIs to track (3)</h4>
+        <pre id="kit-kpis" style="white-space:pre-wrap;margin:0;"></pre>
       </div>
     </aside>
   </section>
@@ -199,10 +158,9 @@ Trend = 0.40 × Volumeₙ + 0.40 × Growthₙ + 0.20 × Recencyₙ
       <summary><strong>How we calculate Opportunity</strong></summary>
       <div class="muted" style="margin-top:8px;">
         <pre style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:10px;overflow:auto;margin:0 0 10px 0;font-size:13px;">
-Opp = 0.45 × Momentum + 0.25 × (100 − Saturationₙ) + 0.20 × CrossIndustryₙ + 0.10 × Feasibility
+Opp = 0.55 × Momentum + 0.30 × (100 − Saturationₙ) + 0.15 × CrossIndustryₙ
 Saturationₙ = min–max normalized article_count per signal (more coverage = higher saturation)
 CrossIndustryₙ = (# of verticals among {Fashion, Beauty, Wellness} / 3) × 100
-Feasibility = your slider (per-signal; default 60, saved locally)
         </pre>
       </div>
     </details>
@@ -253,7 +211,7 @@ keyword,title,url,source,date
 </script>
 
 <script>
-/* ===== CONFIG (optional CSVs) ===== */
+/* ===== Optional CSV paths (use if you have real files locally) ===== */
 const SIGNALS_CSV_URL  = 'data/signals.csv';
 const ARTICLES_CSV_URL = 'data/articles.csv';
 
@@ -295,15 +253,43 @@ function makeBar(el, labels, data, label, onClickIndex){
 let SIGNAL_ROWS=[], ARTICLE_ROWS=[], ARTICLES_MAP = new Map();
 let trendScores=[], momentumScores=[], volN=[], groN=[], recN=[];
 let RANKED_SIGNALS=[], SIGNALS_CHART=null, OPP_CHART=null;
-let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
 
 /* ===== Boot ===== */
 (async function(){
-  try{ const stored = JSON.parse(localStorage.getItem('af_feasibility_overrides')||'{}'); FEASIBILITY_OVERRIDES = stored; }catch{}
+  // 1) Load signals & articles (CSV or embedded)
   const {rows:sRows, source:sSrc}=await loadCSVMaybe(SIGNALS_CSV_URL,'embedded-signals');
   const {rows:aRows}=await loadCSVMaybe(ARTICLES_CSV_URL,'embedded-articles');
   SIGNAL_ROWS=sRows; ARTICLE_ROWS=aRows;
 
+  // 2) Merge with any articles cached by index.html in localStorage
+  const LS_KEYS = ['futures_articles','futures_edit_articles','futures_articles_by_keyword'];
+  LS_KEYS.forEach(k=>{
+    try{
+      const raw = localStorage.getItem(k);
+      if(!raw) return;
+      const data = JSON.parse(raw);
+      const arr = Array.isArray(data) ? data : (typeof data==='object' ? Object.values(data).flat() : []);
+      arr.forEach(o=>{
+        const keyword = String(o.keyword||o.signal||o.topic||'').trim();
+        const title   = o.title || o.headline || '';
+        const url     = o.url || o.link || '';
+        const source  = o.source || o.publisher || (url? new URL(url).hostname.replace(/^www\./,''):'');
+        const date    = o.date || o.published_at || o.pubDate || '';
+        if(keyword && title && url){
+          ARTICLE_ROWS.push({keyword,title,url,source,date});
+        }
+      });
+    }catch{}
+  });
+
+  // 3) Deduplicate articles
+  const seen = new Set();
+  ARTICLE_ROWS = ARTICLE_ROWS.filter(a=>{
+    const key = (String(a.keyword).toLowerCase() || '') + '|' + (a.url||'').split('#')[0].split('?')[0];
+    if(seen.has(key)) return false; seen.add(key); return true;
+  });
+
+  // 4) Index articles by keyword
   ARTICLES_MAP = new Map();
   ARTICLE_ROWS.forEach(a=>{
     const k = String((a.keyword||'')).toLowerCase();
@@ -311,7 +297,7 @@ let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
     ARTICLES_MAP.get(k).push(a);
   });
 
-  document.getElementById('dataset-meta').textContent=`${SIGNAL_ROWS.length} signals • ${new Date().toISOString().slice(0,10)} • ${sSrc}`;
+  document.getElementById('dataset-meta').textContent=`${SIGNAL_ROWS.length} signals • ${ARTICLE_ROWS.length} articles • ${new Date().toISOString().slice(0,10)} • ${sSrc}`;
   if(!SIGNAL_ROWS.length) return;
 
   const get=(r,k)=>r[k] ?? r[k?.toLowerCase?.()] ?? r[k?.toUpperCase?.()];
@@ -323,8 +309,8 @@ let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
   const tagsRaw =SIGNAL_ROWS.map(r=>String(get(r,'tags')||'').split(',').map(s=>s.trim()).filter(Boolean));
 
   volN=minmaxNormalize(volumes); groN=minmaxNormalize(growths); recN=recency;
-  trendScores = volN.map((_,i)=>Math.round(0.40*volN[i] + 0.40*groN[i] + 0.20*recN[i]));
   const noveltyN = volN.map(v=>100 - v);
+  trendScores = volN.map((_,i)=>Math.round(0.40*volN[i] + 0.40*groN[i] + 0.20*recN[i]));
   momentumScores = volN.map((_,i)=>Math.round(0.55*groN[i] + 0.35*recN[i] + 0.10*noveltyN[i]));
 
   /* ===== 1) Momentum — Breakouts Top 15 ===== */
@@ -351,7 +337,7 @@ let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
   function renderSignals(mode='trend'){
     const top=buildRank(mode);
     document.getElementById('signals-meta').textContent=`(Top ${top.length} by ${mode==='volume'?'Volume':mode==='growth'?'Growth %':mode==='momentum'?'Momentum':'Trend Score'})`;
-    SIGNALS_CHART = makeBar('signalsChart', top.map(d=>d.keyword),
+    makeBar('signalsChart', top.map(d=>d.keyword),
       top.map(d=> mode==='volume'?d.volume : mode==='growth'?d.growth : mode==='momentum'?d.momentum : d.score),
       mode==='volume'?'Volume':mode==='growth'?'Growth %':mode==='momentum'?'Momentum (0–100)':'Trend Score (0–100)',
       (i)=>selectSignal(top[i]));
@@ -359,7 +345,15 @@ let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
   renderSignals('trend');
   document.getElementById('rank-by').addEventListener('change', e=>renderSignals(e.target.value));
 
-  // Insights select
+  function stageLabel(d){
+    const m=d.momentum||0, t=d.score||0;
+    if (m>=70 && t<60) return '· [Breakout]';
+    if (m>=60 && t>=60) return '· [Emerging]';
+    if (t>=75 && m<55) return '· [Established]';
+    if (t<50 && m<45)  return '· [Cooling]';
+    return '· [Developing]';
+  }
+
   function selectSignal(d){
     if(!d) return;
     document.getElementById('signal-title').textContent=d.keyword + ' ' + stageLabel(d);
@@ -371,40 +365,61 @@ let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
     document.getElementById('kpi-growth').textContent=isFinite(d.growth)?d.growth:'–';
     document.getElementById('kpi-lastseen').textContent=d.lastSeen||'–';
 
-    // Feasibility slider for this signal
-    const key = d.keyword;
-    const slider = document.getElementById('feasibility-slider');
-    const label  = document.getElementById('feasibility-val');
-    const current = (FEASIBILITY_OVERRIDES[key] ?? FEASIBILITY_BASELINE);
-    slider.value = current; label.textContent = current;
-    slider.oninput = (ev)=>{ const v = +ev.target.value; label.textContent = v; };
-    slider.onchange = (ev)=>{
-      const v = +ev.target.value;
-      FEASIBILITY_OVERRIDES[key] = v;
-      localStorage.setItem('af_feasibility_overrides', JSON.stringify(FEASIBILITY_OVERRIDES));
-      renderOpportunity(); // recompute with override
+    // Related articles — real links, show more/less, actions
+    const key = String(d.keyword).toLowerCase();
+    const arts=(ARTICLES_MAP.get(key)||[]);
+    const countEl = document.getElementById('articles-count');
+    countEl.textContent = `${arts.length} article${arts.length===1?'':'s'} found`;
+    renderArticlesList(arts, 8); // default show 8
+
+    // Actions
+    document.getElementById('open-top5').onclick = ()=> {
+      arts.slice(0,5).forEach(a=>{ if(a.url) window.open(a.url, '_blank', 'noopener'); });
+    };
+    document.getElementById('copy-citations').onclick = async ()=>{
+      const blob = arts.slice(0,20).map(a=>{
+        const src = a.source || (a.url? new URL(a.url).hostname.replace(/^www\./,''):'');
+        return `- ${a.title} (${src}${a.date?`, ${a.date}`:''}): ${a.url}`;
+      }).join('\n');
+      try{ await navigator.clipboard.writeText(blob); }catch{}
     };
 
-    // Articles list
-    const list=document.getElementById('articles-list');
-    const arts=(ARTICLES_MAP.get(String(key.toLowerCase()))||[]);
-    if(!arts.length){ list.innerHTML=`<span class="muted">No related articles yet for “${d.keyword}”.</span>`; }
-    else{
-      const frag=document.createElement('div');
-      arts.slice(0,6).forEach(a=>{
-        const it=document.createElement('div'); it.style.marginBottom='10px';
-        const date=a.date ? new Date(a.date).toISOString().slice(0,10) : '';
-        it.innerHTML=`<div><a href="${a.url}" target="_blank" rel="noopener" style="font-weight:600;text-decoration:none;color:#111827;">${a.title||a.url}</a></div>
-                      <div class="muted" style="font-size:12px;">${a.source||''} ${date ? '• '+date : ''}</div>`;
-        frag.appendChild(it);
-      });
-      list.innerHTML=''; list.appendChild(frag);
-    }
-
-    // Content Kit generation & copy
-    document.getElementById('gen-kit').onclick = ()=> generateKit(d, (ARTICLES_MAP.get(String(key.toLowerCase()))||[]));
+    // Content kit hooks
+    document.getElementById('gen-kit').onclick = ()=> generateKit(d, arts);
     document.getElementById('copy-kit').onclick = copyKitAll;
   }
+
+  function renderArticlesList(arts, initial=8){
+    const list=document.getElementById('articles-list');
+    const moreWrap=document.getElementById('articles-more');
+    const btnMore=document.getElementById('btn-show-more');
+    const btnLess=document.getElementById('btn-show-less');
+    let expanded=false;
+
+    function draw(){
+      const shown = expanded ? arts : arts.slice(0, initial);
+      const frag=document.createElement('div');
+      shown.forEach(a=>{
+        const date=a.date ? new Date(a.date).toISOString().slice(0,10) : '';
+        const host = a.source || (a.url? new URL(a.url).hostname.replace(/^www\./,''):'');
+        const div=document.createElement('div'); div.className='linkline'; div.style.marginBottom='8px';
+        div.innerHTML = `<a href="${a.url}" target="_blank" rel="noopener">${a.title||a.url}</a><br><small>${host}${date?` • ${date}`:''}</small>`;
+        frag.appendChild(div);
+      });
+      list.innerHTML=''; list.appendChild(frag);
+      if(arts.length > initial){
+        moreWrap.style.display='block';
+        btnMore.style.display = expanded ? 'none' : 'inline-flex';
+        btnLess.style.display = expanded ? 'inline-flex' : 'none';
+      } else {
+        moreWrap.style.display='none';
+      }
+    }
+    btnMore.onclick = ()=>{ expanded=true; draw(); };
+    btnLess .onclick = ()=>{ expanded=false; draw(); };
+    draw();
+  }
+
   function makeSummary(d){
     const heat=v=>v>=75?'very high':v>=50?'high':v>=25?'moderate':'low';
     const volNote=`Volume ${isFinite(d.volume)?d.volume:'–'} (${heat(d.volN)})`;
@@ -419,7 +434,7 @@ let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
   };
   selectSignal(buildRank('trend')[0]);
 
-  /* ===== 3) Opportunity — What to cover now ===== */
+  /* ===== 3) Opportunity — What to cover now (no Feasibility) ===== */
   function verticalsFromTags(tags){
     const t = (tags||[]).map(x=>x.toLowerCase());
     const hasFashion = t.some(x=> /fashion|style|apparel|tailor|couture|athleisure/.test(x));
@@ -445,12 +460,9 @@ let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
     });
     const saturationN = minmaxNormalize(articleCounts);
     const crossN = SIGNAL_ROWS.map((_,i)=> Math.round((verticalsFromTags(tagsRaw[i]).count/3)*100));
-
-    const opp = SIGNAL_ROWS.map((_,i)=>{
-      const key = keywords[i]; const feas = FEASIBILITY_OVERRIDES[key] ?? FEASIBILITY_BASELINE;
-      const val = 0.45*(momentumScores[i]||0) + 0.25*(100 - (saturationN[i]||0)) + 0.20*(crossN[i]||0) + 0.10*(feas||0);
-      return Math.round(val);
-    });
+    const opp = SIGNAL_ROWS.map((_,i)=> Math.round(
+      0.55*(momentumScores[i]||0) + 0.30*(100 - (saturationN[i]||0)) + 0.15*(crossN[i]||0)
+    ));
 
     const rows = SIGNAL_ROWS.map((_,i)=>({
       keyword: keywords[i],
@@ -464,7 +476,7 @@ let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
       cross: verticalsFromTags(tagsRaw[i])
     })).sort((a,b)=> b.opportunity - a.opportunity);
 
-    return { rows, saturationN, crossN, articleCounts };
+    return { rows };
   }
   function renderOpportunity(){
     const { rows } = computeOpportunity();
@@ -499,217 +511,85 @@ let FEASIBILITY_OVERRIDES = {}; const FEASIBILITY_BASELINE = 60;
   /* ===== 4) Top Tags ===== */
   const tagCounts=new Map();
   tagsRaw.forEach(list=>list.forEach(t=>tagCounts.set(t,(tagCounts.get(t)||0)+1)));
-  const tagsSorted=Array.from(tagCounts.entries()).sort((a,b) => b[1]-a[1]).slice(0,25);
+  const tagsSorted=Array.from(tagCounts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,25);
   document.getElementById('tags-meta').textContent=tagsSorted.length?`(Top ${tagsSorted.length})`:'(no tags found)';
   if(tagsSorted.length){
     makeBar('tagsBarChart', tagsSorted.map(([t])=>t), tagsSorted.map(([,c])=>c), 'Count');
     const cloud=document.getElementById('tags-cloud'); tagsSorted.forEach(([t,c])=>{ const s=document.createElement('span'); s.className='tag-pill'; s.textContent=`${t} • ${c}`; cloud.appendChild(s); });
   }
 
-  /* ===== Content Kit Generator (upgraded) ===== */
-  function stageLabel(d){
-    const m=d.momentum||0, t=d.score||0;
-    if (m>=70 && t<60) return '· [Breakout]';
-    if (m>=60 && t>=60) return '· [Emerging]';
-    if (t>=75 && m<55) return '· [Established]';
-    if (t<50 && m<45)  return '· [Cooling]';
-    return '· [Developing]';
-  }
-  function pickAngle(tags, momentum, trend){
-    const t = (tags||[]).map(x=>x.toLowerCase());
-    if (t.includes('sustainability')) return 'Sustainability as retention & brand moat';
-    if (t.includes('tech')) return 'UX upgrade via beauty/fashion-tech';
-    if (t.includes('skincare')) return 'Science-backed self-care ritual';
-    if (t.includes('fragrance')) return 'Scent as memory & merchandising';
-    if (t.includes('packaging')) return 'Experience-led refill & retail';
-    if (momentum >= 70 && trend < 60) return 'Early breakout to test before it peaks';
-    if (trend >= 75) return 'Mainstream heat with whitespace for differentiation';
-    return 'Niche signal with asymmetric upside';
-  }
+  /* ===== Simple Content Kit ===== */
   function bulletImplications(tags){
     const t=(tags||[]).map(x=>x.toLowerCase()); const out=[];
-    if (t.includes('tech')) out.push('Prototype AR try-on or AI sizing in 1 category');
-    if (t.includes('skincare')) out.push('Bundle ritual steps; tie benefits to routines');
-    if (t.includes('fragrance')) out.push('Deploy scent zoning & sampling to basket-build');
-    if (t.includes('packaging')) out.push('Shift to mono-material/refill pilots');
-    if (t.includes('sustainability')) out.push('Communicate measurable impact, not claims');
+    if (t.includes('tech')) out.push('Test AR try-on or AI sizing in 1 category');
+    if (t.includes('skincare')) out.push('Bundle ritual steps; tie claims to routines');
+    if (t.includes('fragrance')) out.push('Use scent zoning & sampling to basket-build');
+    if (t.includes('packaging')) out.push('Pilot mono-material or refill format');
+    if (t.includes('sustainability')) out.push('Publish measured impact, not claims');
     if (!out.length) out.push('Pilot with 1 hero SKU + creator narrative');
     return out.slice(0,3);
   }
   function kpisForTags(tags){
     const t=(tags||[]).map(x=>x.toLowerCase()); const k=[];
-    if (t.includes('tech')) k.push('Try-on adoption rate (%)','Conversion lift vs control (%)','Return-rate reduction (pp)');
-    if (t.includes('skincare')) k.push('Repeat purchase rate','Regimen attachment rate','AOV change (€)');
-    if (t.includes('fragrance')) k.push('Sampling → purchase conversion','Dwell time in-store (min)','Basket size uplift');
-    if (t.includes('packaging')) k.push('Refill return rate','Material cost delta','Net sentiment on packaging');
-    if (t.includes('sustainability')) k.push('CO₂/pack reduction','Post-purchase satisfaction','PR/earned media mentions');
-    if (!k.length) k.push('CTR to PDP','Add-to-cart rate','Share of voice vs peers');
-    return k.slice(0,4);
-  }
-  function risksForTags(tags){
-    const t=(tags||[]).map(x=>x.toLowerCase()); const r=[];
-    if (t.includes('tech')) r.push('3D asset quality & device compatibility','Privacy/face data guardrails');
-    if (t.includes('skincare')) r.push('Claims compliance & dermatology proof');
-    if (t.includes('fragrance')) r.push('Sampling logistics & waste');
-    if (t.includes('packaging')) r.push('Refill ops complexity & leakage');
-    if (t.includes('sustainability')) r.push('Greenwashing risk without measurement');
-    if (!r.length) r.push('Operational complexity vs team bandwidth','Channel fit misalignment');
-    return r.slice(0,4);
-  }
-  function nextStepsPlan(tags){
-    const t=(tags||[]).map(x=>x.toLowerCase());
-    const step1 = 'Weeks 0-2: Insight sprint — audit current CX, brief pilot, define KPIs';
-    const step2 = t.includes('tech')
-      ? 'Weeks 3-6: Build — MVP with vendor; A/B in one category & one channel'
-      : 'Weeks 3-6: Build — pilot content & merchandising in 1 category';
-    const step3 = 'Weeks 7-12: Scale — analyze, iterate, expand to 2nd category + playbook';
-    return [step1, step2, step3];
+    if (t.includes('tech')) k.push('Try-on adoption %','Conversion lift vs control','Return-rate change');
+    if (t.includes('skincare')) k.push('Regimen attach rate','Repeat purchase','AOV change');
+    if (t.includes('fragrance')) k.push('Sample→purchase %','Dwell time','Basket size');
+    if (t.includes('packaging')) k.push('Refill return %','Material cost delta','NPS on packaging');
+    if (!k.length) k.push('CTR to PDP','Add-to-cart rate','Share of voice');
+    return k.slice(0,3);
   }
   function evidenceBullets(articles){
     return (articles||[]).slice(0,3).map(a=>{
-      const src = a.source || (new URL(a.url).hostname.replace(/^www\./,''));
+      const src = a.source || (a.url? new URL(a.url).hostname.replace(/^www\./,''):'');
       const dt  = a.date || '';
-      return `• ${src}${dt?` (${dt})`:''}`;
+      return `${src}${dt?` (${dt})`:''}`;
     });
   }
-  function hashtags(tags){
-    const base = ['#trend','#brandstrategy','#fashion','#beauty','#wellness'];
-    const t=(tags||[]).map(x=>x.toLowerCase());
-    if (t.includes('tech')) base.push('#retailtech','#AR','#AI');
-    if (t.includes('sustainability')) base.push('#circulardesign','#sustainable');
-    if (t.includes('skincare')) base.push('#skincare','#skintech');
-    if (t.includes('fragrance')) base.push('#fragrance','#scent');
-    if (t.includes('packaging')) base.push('#packaging','#refillable');
-    return [...new Set(base)].slice(0,10).join(' ');
-  }
-  function seoKeywords(title,tags){
-    const t=(tags||[]).map(x=>x.toLowerCase());
-    const kws=[title,'trend 2025','brand strategy','consumer signals'];
-    if (t.includes('tech')) kws.push('AR try on','AI sizing','ecomm UX');
-    if (t.includes('sustainability')) kws.push('refill packaging','circular fashion');
-    if (t.includes('skincare')) kws.push('skin cycling','beauty routine');
-    if (t.includes('fragrance')) kws.push('olfactory branding','perfume retail');
-    return [...new Set(kws)].slice(0,8).join(', ');
-  }
-  function audienceTone(aud,tone,txt){
-    if (tone==='punchy'){
-      txt = txt.replaceAll(' — ',' — ').replace(/\.\s/g,'. ');
-      txt = txt.replace(/(\d+)%/g,'$1%');
-    }
-    if (aud==='creator'){
-      txt = txt.replaceAll('brand','brand/creator').replaceAll('retail','retail/social');
-    }
-    return txt;
-  }
-  function titleOptions(title, stage, angle){
-    return [
-      `${title}: ${angle}`,
-      `${stage.replace(/[.\[\]]/g,'').toUpperCase()} — ${title} for 2025`,
-      `${title} → from hype to impact`
-    ];
-  }
-
   function generateKit(d, articles){
     const title = d.keyword;
     const tags = d.tags || [];
-    const stage = stageLabel(d);
-    const angle = pickAngle(tags, d.momentum||0, d.score||0);
     const facts = `Momentum ${d.momentum||0}, Trend ${d.score||0}, volume ${d.volume||0}, growth ${d.growth||0}%, recency ${d.recN||0}`;
-    const aud = document.getElementById('kit-aud').value;
-    const tone = document.getElementById('kit-tone').value;
-    const ctaType = document.getElementById('kit-cta').value;
-
-    const evidence = evidenceBullets(articles);
     const implications = bulletImplications(tags);
     const kpis = kpisForTags(tags);
-    const risks = risksForTags(tags);
-    const steps = nextStepsPlan(tags);
-    const ht = hashtags(tags);
-    const seo = seoKeywords(title,tags);
-    const titles = titleOptions(title, stage, angle);
+    const sources = evidenceBullets(articles);
+    const evidence = sources.length ? `Evidence: ${sources.join(', ')}.` : '';
 
-    // Executive takeaway (2 sentences)
-    let takeaway = `${title} ${stage.replace('· ','')} — ${angle}. ${facts}.`;
-    takeaway = audienceTone(aud,tone,takeaway);
+    // Executive takeaway (1-liner)
+    const takeaway = `${title} — ${implications[0]}. ${facts}.`;
 
-    // Newsletter blurb (~150–200 words)
-    const nl = audienceTone(aud,tone,
-`**${title}** ${stage} — ${angle}.
-What’s happening: ${implications[0]}.
-Why it matters: momentum and recency are high (${facts}); brands that pilot now can convert attention into measurable outcomes.
-How to act: ${implications.join('; ')}. ${evidence.length?`\nSources: ${evidence.join(' ')}`:''}
-Reply for a one-pager or to scope a brand-specific playbook.`);
+    // Newsletter (~150 words)
+    const nl = [
+      `**${title}** — ${implications[0]}.`,
+      `Why it matters: ${implications.join('; ')}.`,
+      `${facts}.`,
+      evidence,
+      `What we’re watching: creator adoption, retail UX, and conversion lift.`,
+      `Reply for the one-pager or to scope a brand-specific pilot.`
+    ].join(' ');
 
-    // LinkedIn long post
-    const li = audienceTone(aud,tone,
-`⚡ ${title}: ${angle}
-${stage}
+    // LinkedIn post
+    const li = [
+      `⚡ ${title}`,
+      ``,
+      `• ${implications[0]}`,
+      `• ${implications[1]||'Run a 2-week A/B in one category'}`,
+      `• ${implications[2]||'Define 2–3 KPIs and measure'}`,
+      ``,
+      `Stats: ${facts}`,
+      sources.length ? `Sources: ${sources.join(' · ')}` : '',
+      ``,
+      `👉 DM for the checklist or a working session.`
+    ].filter(Boolean).join('\n');
 
-${facts}
-Tags: ${tags.join(', ') || '—'}
-${evidence.length?evidence.join('\n'):''}
-
-What to do next:
-• ${implications[0]}
-• ${implications[1] || 'Run a 2-week pilot in one category'}
-• ${implications[2] || 'Define 2–3 KPIs and A/B test'}
-
-KPIs: ${kpis.join(' • ')}
-
-${ctaType==='consult' ? '👉 DM to book a 30-min consult and get the pilot checklist.' :
-  ctaType==='subscribe' ? '👉 Follow & subscribe for weekly brand-ready playbooks.' :
-  '👉 Comment “REPORT” for the summary.'}
-
-${ht}`);
-
-    // Carousel outline (6 slides)
-    const carousel =
-`1) Title — ${title}: ${angle}
-2) Why now — ${facts}
-3) Evidence — ${evidence.slice(0,2).join(' ')}
-4) Who should act — ${aud==='cmo'?'mid-to-premium brands; omnichannel':''}${aud==='brand'?'category owners; DTC leads':''}${aud==='founder'?'emerging brands w/ agile ops':''}${aud==='creator'?'brands & creators co-creating':''}
-5) How to activate — ${implications.join(' • ')}
-6) KPIs + CTA — ${kpis.join(' • ')} / ${ctaType==='consult'?'Book a consult':'Subscribe'}`;
-
-    // Medium outline
-    const med =
-`# ${titles[0]}
-## What it is
-Short definition + examples from your category.
-## Why now
-${facts}. ${evidence.length?`Sources: ${evidence.join(' ')}`:''}
-## Who it serves
-Segments, price tiers, aesthetics.
-## How brands can act
-- ${implications[0]}
-- ${implications[1] || 'A/B test against current flow'}
-- ${implications[2] || 'Creator collab to tell the story'}
-## KPIs
-- ${kpis.join('\n- ')}
-## Risks & watchouts
-- ${risks.join('\n- ')}
-## Next steps (90-day plan)
-- ${steps.join('\n- ')}`;
-
-    // Social hooks (6)
+    // Social hooks (3)
     const hooks = [
       `${title}: the micro-trend brands keep missing`,
-      `${title} → from hype to business impact`,
-      `Why ${title} is peaking now`,
-      `3 ways to activate ${title}`,
-      `${title}: KPIs that actually move the needle`,
-      `${title}: what we’re telling clients this week`
+      `${title} → from hype to impact`,
+      `3 ways to activate ${title}`
     ].join('\n');
 
-    // SEO + hashtags
-    const seoBlock = `SEO: ${seo}\nHashtags: ${ht}`;
-
-    // KPIs, Risks, Next, Pitch
-    const kpisBlock = `Track: ${kpis.join(' • ')}. Benchmark against pre-pilot baselines.`;
-    const risksBlock = `Watch: ${risks.join(' • ')}. Mitigate with tight scope & QA.`;
-    const nextBlock = steps.join('\n');
-    const pitch = audienceTone(aud,tone,
-`We’re helping fashion/beauty/wellness brands turn signals like **${title}** into results. We’ll map fit, design a low-risk pilot, define KPIs, and ship a playbook in 4–6 weeks. ${ctaType==='consult'?'Reply to book a working session.':ctaType==='report'?'Reply “REPORT” for the summary.':'Subscribe for weekly playbooks.'}`);
+    // KPIs (3)
+    const kpisTxt = kpis.join(' • ');
 
     // Write to UI
     const out = (id, text) => document.getElementById(id).textContent = text;
@@ -717,29 +597,16 @@ Segments, price tiers, aesthetics.
     out('kit-takeaway', takeaway);
     out('kit-news', nl);
     out('kit-li', li);
-    out('kit-carousel', carousel);
-    out('kit-med', med);
     out('kit-hooks', hooks);
-    out('kit-seo', seoBlock);
-    out('kit-kpis', kpisBlock);
-    out('kit-risks', risksBlock);
-    out('kit-next', nextBlock);
-    out('kit-pitch', pitch);
+    out('kit-kpis', kpisTxt);
   }
-
   async function copyKitAll(){
     const blocks = [
       ['EXECUTIVE TAKEAWAY','kit-takeaway'],
       ['NEWSLETTER','kit-news'],
       ['LINKEDIN','kit-li'],
-      ['CAROUSEL','kit-carousel'],
-      ['MEDIUM OUTLINE','kit-med'],
       ['HOOKS','kit-hooks'],
-      ['SEO & HASHTAGS','kit-seo'],
       ['KPIs','kit-kpis'],
-      ['RISKS','kit-risks'],
-      ['NEXT STEPS','kit-next'],
-      ['CLIENT PITCH','kit-pitch'],
     ].map(([label,id]) => `## ${label}\n\n${document.getElementById(id).textContent||''}`).join('\n\n');
     try{ await navigator.clipboard.writeText(blocks); }catch{}
   }
