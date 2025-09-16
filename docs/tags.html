@@ -1,417 +1,824 @@
 <!doctype html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>The Futures Edit — Tags, Trends & Signals</title>
-
+<title>Signals — Graphs & Insights</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
 <style>
   :root{
-    --bg:#fff; --fg:#0f172a; --muted:#6b7280;
-    --card:#fff; --border:#e5e7eb; --pill:#f7f7fb; --shadow:0 12px 30px rgba(15,23,42,.06);
-    --bar-h:84px;
-    /* designy palette */
-    --ink:#1c1c29; --peri:#7ea5e3; --mauve:#d4a5c3;
-    --hdr-bg:linear-gradient(180deg, rgba(250,250,255,.92), rgba(250,250,255,.70));
-    --hdr-ring:rgba(2,6,23,.06);
+    --bg:#ffffff; --fg:#0f172a; --muted:#6b7280;
+    --card:#ffffff; --border:#e5e7eb; --pill:#f7f7fb;
+    --shadow:0 12px 30px rgba(15,23,42,.06);
+
+    /* Status colors (designy, no orange) */
+    --emerging:#7ea5e3;   /* periwinkle */
+    --bubbling:#d4a5c3;   /* mauve */
+    --mainstream:#1c1c29; /* ink */
+
+    /* header */
+    --hdr-bg: linear-gradient(180deg, rgba(250,250,255,.9), rgba(250,250,255,.7));
+    --hdr-ring: rgba(2,6,23,.06);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Inter,Segoe UI,Roboto,Arial}
-  header{position:sticky;top:0;background:var(--hdr-bg);border-bottom:1px solid var(--border);height:var(--bar-h);display:flex;align-items:center;gap:12px;padding:0 18px;z-index:10;backdrop-filter:saturate(180%) blur(10px)}
-  h1{margin:0;font-weight:800;font-size:18px;letter-spacing:.2px}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:.45rem .7rem;border-radius:999px;background:var(--pill);border:1px solid var(--border);font-size:12px;color:#111827;box-shadow: inset 0 0 0 2px var(--hdr-ring);}
-  main{max-width:1120px;margin:22px auto;padding:0 16px}
-  .grid{display:grid;grid-template-columns:1fr;gap:16px}
-  @media (min-width:1100px){ .grid-2{grid-template-columns:1.4fr .9fr} .grid-2-even{grid-template-columns:1fr 1fr} }
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Inter,Segoe UI,Roboto,Helvetica,Arial}
+  a{color:#1f6feb;text-decoration:none}
+
+  /* Sticky header */
+  .bar{position:sticky;top:0;z-index:20;background:var(--hdr-bg);
+    backdrop-filter:saturate(180%) blur(10px); border-bottom:1px solid var(--border)}
+  .bar-inner{max-width:1120px;margin:0 auto;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .title{font-weight:800; font-size:16px; letter-spacing:.2px}
+
+  /* Controls */
+  .btn, .select, .input{
+    background:var(--card); color:var(--fg); border:1px solid var(--border);
+    border-radius:14px; padding:10px 12px; box-shadow:var(--shadow);
+  }
+  .btn{font-weight:600}
+  .btn:active{transform:translateY(1px)}
+  .select{width:180px}
+  .spacer{flex:1}
+
+  /* Layout */
+  .wrap{max-width:1120px;margin:0 auto;padding:16px 16px}
+  .grid{display:grid;gap:16px}
+  @media(min-width:1024px){ .grid.two{grid-template-columns:1fr 1fr} }
   .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:14px}
-  h2{margin:0 0 8px 0;font:800 18px/1.2 inherit}
-  h3{margin:0 0 6px 0;font:700 15px/1.2 inherit}
-  small,.muted{color:var(--muted)}
-  .chart-wrap{height:340px}
-  .chart-wrap-sm{height:180px}
+
+  .legend{color:var(--muted);font-size:12px;margin-top:6px}
   .mini{max-width:100%}
   .mini.thin{height:86px !important}
   .mini.short{height:180px !important}
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:8px;border-bottom:1px solid #f3f4f6;text-align:left;vertical-align:top}
-  thead th{background:#f9fafb;border-bottom:1px solid var(--border)}
-  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-  .select,.input{border:1px solid var(--border);border-radius:12px;padding:9px 12px;background:#fff;box-shadow:var(--shadow)}
-  .btn{display:inline-flex;align-items:center;gap:8px;padding:.55rem .8rem;border-radius:12px;border:1px solid var(--border);background:#fff;cursor:pointer;box-shadow:var(--shadow);font-weight:600}
-  .btn:active{transform:translateY(1px)}
-  .legend{color:var(--muted);font-size:12px;margin-top:6px}
-  .tags-cloud{display:flex;flex-wrap:wrap;gap:8px}
-  .tag-pill{display:inline-block;padding:.25rem .5rem;border-radius:999px;background:var(--pill);border:1px solid var(--border);font-size:12px;color:#111827}
-  .divider{height:1px;background:var(--border);margin:12px 0}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
+  .small{font-size:12px;color:var(--muted)}
+
+  /* KPI bubbles */
+  .pill{
+    padding:8px 12px; font-size:12px; line-height:1;
+    border:1px solid var(--border); border-radius:999px;
+    background: radial-gradient(120% 120% at 10% 10%, #fff, var(--pill));
+    box-shadow: inset 0 0 0 2px var(--hdr-ring);
+  }
+  ul.list{list-style:none; padding:0; margin:8px 0 0; max-height:260px; overflow:auto}
+  ul.list li{display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed var(--border)}
+  .muted{color:var(--muted)}
+
+  /* Guardrails + Kit */
   .notes{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fcfcfd;margin-top:10px}
   .flag{display:flex;align-items:flex-start;gap:8px;margin:6px 0}
   .dot{width:10px;height:10px;border-radius:999px;margin-top:5px}
   .warn{background:#f59e0b} .ok{background:#22c55e} .infoDot{background:#3b82f6}
+  details.kit summary{cursor:pointer;font-weight:700}
+  details.kit > div{margin-top:8px}
+  .kit pre{white-space:pre-wrap;margin:0}
 </style>
 
-<header>
-  <h1>The Futures Edit — Tags, Trends & Signals</h1>
-  <span class="pill" id="dataset-meta">loading…</span>
-  <span style="flex:1"></span>
-  <a href="https://github.com/atelierfutures/futures-edit-signals" target="_blank" rel="noopener" class="btn">Repository</a>
-  <a href="tags.html" target="_blank" rel="noopener" class="btn">Tags graph</a>
-  <a href="https://atelierfutures.github.io/futures-edit-signals/advanced.html" target="_blank" rel="noopener" class="btn">Advanced Analytics</a>
-</header>
+<div class="bar">
+  <div class="bar-inner">
+    <a class="btn" href="./">← Signals list</a>
+    <div class="title">Graphs & Insights</div>
 
-<main class="grid">
-  <section class="card">
-    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px;">
-      <h2>Momentum Score — Breakouts (Top 15)</h2>
-      <small id="momentum-meta" class="muted"></small>
+    <select id="cat" class="select">
+      <option value="">All categories</option>
+      <option>fashion</option><option>beauty</option><option>wellness</option>
+    </select>
+    <select id="stat" class="select">
+      <option value="">All status</option>
+      <option>emerging</option><option>bubbling</option><option>mainstream</option>
+    </select>
+
+    <input id="from" type="date" class="input" aria-label="From date">
+    <input id="to"   type="date" class="input" aria-label="To date">
+    <select id="quick" class="select">
+      <option value="">All time</option>
+      <option value="30">Last 30 days</option>
+      <option value="90">Last 90 days</option>
+      <option value="180">Last 180 days</option>
+    </select>
+    <button id="clear" class="btn">Clear</button>
+    <span class="spacer"></span>
+
+    <label class="small">Filter signals…
+      <input id="kwSearch" type="search" class="input" placeholder="type to filter bar" style="width:240px">
+    </label>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- Row 1: Top signals + details -->
+  <div class="grid two">
+    <div class="card">
+      <h3 style="margin:4px 0 8px 0">Top signals (Top 30)</h3>
+      <canvas id="chartKeywords" class="mini" aria-describedby="kwHelp"></canvas>
+      <div id="kwHelp" class="legend">Click a bar to inspect that signal.</div>
     </div>
-    <div class="chart-wrap"><canvas id="momentumChart"></canvas></div>
-  </section>
 
-  <section class="grid grid-2 card" style="gap:16px;">
-    <div>
-      <div class="row" style="justify-content:space-between;margin-bottom:8px;">
-        <h2 style="margin:0">Top signals (Top 30)</h2>
-        <label class="muted">Filter… <input id="kwSearch" type="search" class="input" placeholder="type to filter bar" style="width:220px"></label>
-      </div>
-      <div id="signals-meta" class="muted" style="margin-bottom:6px;"></div>
-      <div class="chart-wrap"><canvas id="signalsChart"></canvas></div>
-      <small class="muted" style="display:block;margin-top:6px;">Click a bar to analyze the signal on the right.</small>
-    </div>
-
-    <aside>
-      <div class="row" style="justify-content:space-between;margin-bottom:8px;">
-        <h2 style="margin:0">Signal Insights</h2>
+    <div class="card" id="kwPanel">
+      <h3 style="margin:4px 0 8px 0">Signal details <span id="kwTitle" class="small" style="margin-left:8px;color:var(--muted)"></span></h3>
+      <div class="row" id="kwKpis" style="display:none">
+        <span class="pill" id="kpiTotal">Total: 0</span>
+        <span class="pill" id="kpiAvg">Avg score: 0</span>
+        <span class="pill" id="kpiCat">Top category: –</span>
         <a class="btn" id="openList" target="_blank" rel="noopener">Open in list</a>
       </div>
-      <div id="signal-title" style="font:800 18px/1.2 ui-sans-serif,system-ui;">Select a signal →</div>
-      <div class="row" id="kpis" style="display:none;margin-top:8px;">
-        <span class="pill" id="kpi-score">Trend: –</span>
-        <span class="pill" id="kpi-momentum">Momentum: –</span>
-        <span class="pill" id="kpi-volume">Volume: –</span>
-        <span class="pill" id="kpi-growth">Growth: –</span>
-        <span class="pill" id="kpi-lastseen">Last: –</span>
-      </div>
 
-      <canvas id="chartKwStatus" class="mini thin" aria-label="Status mix"></canvas>
+      <canvas id="chartKwStatus" class="mini thin" aria-label="Status mix bar"></canvas>
       <div class="legend">Status mix for the selected signal.</div>
 
-      <h3 style="margin-top:8px">Search intent (GSC)</h3>
-      <canvas id="chartIntent" class="mini short"></canvas>
-      <div id="intentMeta" class="legend"></div>
+      <h4 class="small" style="margin-top:6px">Latest articles</h4>
+      <ul id="kwList" class="list"></ul>
 
-      <h3 style="margin-top:8px">Top questions & Answer Gap</h3>
-      <div class="row"><span class="pill" id="gapBadge">Answer Gap: –</span></div>
-      <ul id="qList" class="tags-cloud" style="gap:6px; margin-top:8px;"></ul>
-
-      <div class="divider"></div>
-      <h3>Latest articles</h3>
-      <div id="articles-list" class="muted">No signal selected.</div>
-
-      <div class="notes" id="guardrailsBox" style="display:none;margin-top:12px;">
-        <h3 style="margin:0 0 6px 0">Guardrails & context</h3>
+      <div class="notes" id="guardrailsBox" style="display:none">
+        <h4 style="margin:0 0 4px 0;">Guardrails & context</h4>
         <div id="guards"></div>
       </div>
 
-      <details class="notes" style="margin-top:12px;">
-        <summary><strong>Content Kit</strong></summary>
-        <div class="muted" style="margin-top:8px;">
-          <div><b>Executive takeaway</b><pre id="kit-takeaway"></pre></div>
-          <div><b>Newsletter blurb</b><pre id="kit-news"></pre></div>
-          <div><b>LinkedIn long post</b><pre id="kit-li"></pre></div>
-          <div><b>Social hooks (6)</b><pre id="kit-hooks"></pre></div>
-          <div><b>KPIs to track</b><pre id="kit-kpis"></pre></div>
+      <details class="notes kit" id="kitBox">
+        <summary>Content Kit</summary>
+        <div>
+          <div class="small muted" style="margin-bottom:6px;">Auto-generated from the selected signal + sources.</div>
+          <div style="display:grid;gap:8px">
+            <div><b>Executive takeaway</b><pre id="kitTake"></pre></div>
+            <div><b>Newsletter blurb</b><pre id="kitNews"></pre></div>
+            <div><b>LinkedIn post</b><pre id="kitLi"></pre></div>
+            <div><b>Social hooks (3)</b><pre id="kitHooks"></pre></div>
+            <div><b>KPIs (3)</b><pre id="kitKpis"></pre></div>
+          </div>
         </div>
       </details>
-    </aside>
-  </section>
 
-  <section class="grid grid-2-even card">
-    <div>
-      <h2>Fastest-rising signals (current vs previous)</h2>
-      <div class="chart-wrap-sm"><canvas id="risersChart"></canvas></div>
+      <h4 class="small" style="margin-top:10px">Search intent (GSC)</h4>
+      <canvas id="chartIntent" class="mini short"></canvas>
+      <div id="intentMeta" class="legend"></div>
+      <div class="row" style="margin-top:6px;">
+        <span class="pill" id="gapBadge">Answer Gap: –</span>
+      </div>
+      <ul id="qList" class="list" style="max-height:200px"></ul>
     </div>
-    <div>
-      <h2>Newcomer signals (first appearances)</h2>
-      <ul id="newcomersList" class="tags-cloud" style="margin-top:6px;"></ul>
-    </div>
-  </section>
+  </div>
 
-  <section class="grid grid-2-even card">
-    <div>
-      <h2>Status mix by category</h2>
-      <div class="chart-wrap-sm"><canvas id="mixChart"></canvas></div>
-      <div class="legend">100% stacked bars: emerging / bubbling / mainstream (design palette).</div>
+  <!-- Row 2: Fastest-rising + Newcomers -->
+  <div class="grid two" style="margin-top:16px">
+    <div class="card">
+      <h3 style="margin:4px 0 8px 0">Fastest-rising signals (current vs previous)</h3>
+      <canvas id="chartRisers" class="mini short"></canvas>
+      <div class="legend">Change in mentions between the current filters and a same-length previous window.</div>
     </div>
-    <div>
-      <div class="row" style="justify-content:space-between;margin-bottom:6px;">
-        <h2>Category insight</h2>
-        <select id="insightMode" class="select" style="width:220px">
+
+    <div class="card">
+      <h3 style="margin:4px 0 8px 0">Newcomer signals (first appearances)</h3>
+      <ul id="newcomersList" class="list"></ul>
+      <div class="legend">Signals that didn’t appear in the previous window but do appear now.</div>
+    </div>
+  </div>
+
+  <!-- Row 3: Status mix + Category insight -->
+  <div class="grid two" style="margin-top:16px">
+    <div class="card">
+      <h3 style="margin:4px 0 8px 0">Status mix by category</h3>
+      <canvas id="chartMix" class="mini short"></canvas>
+      <div class="legend">100% stacked bars: emerging / bubbling / mainstream share by category.</div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center;margin:0 0 6px 0;">
+        <h3 style="margin:0">Category insight</h3>
+        <select id="insightMode" class="select" style="width:200px">
           <option value="concentration" selected>Signal concentration</option>
           <option value="newcomers">Newcomer share</option>
           <option value="gainers">Gainer share</option>
           <option value="cross">Cross-vertical</option>
         </select>
       </div>
-      <div class="chart-wrap-sm"><canvas id="insightChart"></canvas></div>
+      <canvas id="chartInsight" class="mini short"></canvas>
       <div id="insightLegend" class="legend"></div>
     </div>
-  </section>
-</main>
-
-<!-- Safe fallbacks so the page never renders blank -->
-<script type="text/plain" id="embedded-signals">
-primary_keyword,category,status,published,title,link,growth_rate,trend_score
-"longevity","wellness","mainstream","2025-09-12","How microdosing GLP-1 drugs became a longevity ‘craze’ - The Washington Post","https://www.washingtonpost.com/health/2025/09/03/weight-loss-drugs-longevity/",27,58
-"augmented try-on","beauty","bubbling","2025-09-11","AR Try-On Boosts Conversion","https://example.com/ar-try-on-stats",27,65
-"blue beauty","beauty","emerging","2025-08-30","Blue Beauty: Beyond Green","https://example.com/blue-beauty-future",35,60
-"quiet luxury","fashion","mainstream","2025-07-05","Quiet Luxury Is Still Here","https://example.com/quiet-luxury",5,52
-</script>
-
-<script type="text/plain" id="embedded-gsc">
-signal,query,impressions,clicks,date
-"longevity","what is glp-1 longevity",1200,60,"2025-09-01"
-"longevity","how to start longevity routine",900,45,"2025-09-03"
-"longevity","longevity supplements review",650,30,"2025-08-28"
-"longevity","best longevity diet",520,22,"2025-09-04"
-"longevity","longevity vs biohacking",300,10,"2025-08-31"
-"longevity","longevity near me",120,8,"2025-09-05"
-"augmented try-on","what is ar try on",800,40,"2025-09-02"
-"augmented try-on","how to integrate ar try on shopify",420,18,"2025-09-06"
-</script>
+  </div>
+</div>
 
 <script>
-/* ---------- Palette ---------- */
-const PALETTE=['#1c1c29','#58506b','#7a7281','#a78fb3','#d4a5c3','#f2b5a8','#f0c38e','#c2d39b','#86c5a6','#6bb7b6','#5aa3c2','#7ea5e3','#b4c2f2','#d7d3f2'];
-const STATUS_COLORS={ emerging:getCSS('--peri','#7ea5e3'), bubbling:getCSS('--mauve','#d4a5c3'), mainstream:getCSS('--ink','#1c1c29') };
-function getCSS(name,fallback){ const v=getComputedStyle(document.documentElement).getPropertyValue(name).trim(); return v||fallback; }
-function palette(n){ const out=[]; for(let i=0;i<n;i++) out.push(PALETTE[i%PALETTE.length]); return out; }
+/* ----- palette: muted fashion set ----- */
+const FASHION_PALETTE = [
+  '#1c1c29','#58506b','#7a7281','#a78fb3','#d4a5c3',
+  '#f2b5a8','#f0c38e','#c2d39b','#86c5a6','#6bb7b6',
+  '#5aa3c2','#7ea5e3','#b4c2f2','#d7d3f2','#e8e4f8',
+  '#efcfe3','#f6d6c3','#e6e2da'
+];
 
-/* ---------- Helpers ---------- */
-const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-const escRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
-function parseCSV(text){ return Papa.parse(text,{header:true,skipEmptyLines:true}).data; }
-async function loadCSVChecked(url, fallbackId){
-  try{
-    const r=await fetch(url,{cache:'no-store'});
-    if(!r.ok) throw new Error('http '+r.status);
-    const t=await r.text();
-    const rows=parseCSV(t);
-    const hasCols = rows.some(x=> x.primary_keyword || x.keyword); // sanity
-    if(!hasCols) throw new Error('bad-columns');
-    return {rows, source:'csv'};
-  }catch(e){
-    const emb=(document.getElementById(fallbackId)?.textContent||'').trim();
-    const rows=parseCSV(emb);
-    return {rows, source:'sample'};
-  }
-}
-async function loadMaybe(url, fallbackId){
-  try{
-    const r=await fetch(url,{cache:'no-store'});
-    if(!r.ok) throw new Error('http '+r.status);
-    const t=await r.text(); const rows=parseCSV(t);
-    return rows.length ? rows : parseCSV((document.getElementById(fallbackId)?.textContent||'').trim());
-  }catch(e){
-    return parseCSV((document.getElementById(fallbackId)?.textContent||'').trim());
-  }
-}
-function recencyScoreFromDateStr(s){ const now=new Date(); const d=new Date(s); if(isNaN(d))return 0; const days=(now-d)/(1000*60*60*24); return clamp(100 - (days/90)*100, 0, 100); }
-function minmaxNormalize(values){ const a=values.map(v => (isFinite(+v)?+v:0)); const mn=Math.min(...a), mx=Math.max(...a); if(!isFinite(mn)||!isFinite(mx)||mx===mn) return a.map(_=>0); return a.map(v => ((v-mn)/(mx-mn))*100); }
+/* --- helpers --- */
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function hostOf(u){ try{ return new URL(u).host.replace(/^www\./,''); }catch{return ""; } }
-function inRange(iso, from, to){ const t=Date.parse(iso||""); if(isNaN(t)) return false; if(from && t < new Date(from).setUTCHours(0,0,0,0)) return false; if(to && t > new Date(to).setUTCHours(23,59,59,999)) return false; return true; }
+function inRange(iso, from, to){
+  const t = Date.parse(iso||""); if(isNaN(t)) return false;
+  if(from && t < new Date(from).setUTCHours(0,0,0,0)) return false;
+  if(to   && t > new Date(to).setUTCHours(23,59,59,999)) return false;
+  return true;
+}
+function palette(n){ const base=FASHION_PALETTE, out=[]; for(let i=0;i<n;i++) out.push(base[i%base.length]); return out; }
 
-/* ---------- Normalization ---------- */
-const KW_MAP=new Map([['anti aging','longevity'],['anti-ageing','longevity'],['retinol routine','retinoid routines'],['skin cycling','retinoid routines'],['lip oils','lip oil'],['biohacking','longevity'],['sleep tech','sleep optimization'],['old money','quiet luxury'],['stealth wealth','quiet luxury'],['westernwear','western'],['cowboy core','western'],['gen ai','ai'],['generative ai','ai']]);
-const KW_STOP=new Set(['trend','trends','report','collection','editorial','new','drop','style','styled','look','looks','runway','season','fall','winter','spring','summer','2024','2025','brand','product','products','line','launch','limited','best','top','dress','dresses','shirt','shirts','pants','jeans','skirt','skirts','bag','bags','shoes']);
-function normalizeKw(raw){ if(!raw) return ''; let s=String(raw).toLowerCase().trim().replace(/[–—]/g,'-').replace(/\s+/g,' ').replace(/\s-\s/g,'-'); if(s.endsWith('s')&&s.length>4)s=s.slice(0,-1); if(KW_MAP.has(s)) s=KW_MAP.get(s); s=s.replace(/^[-_.,:;]+|[-_.,:;]+$/g,''); if(s.length<3||KW_STOP.has(s)) return ''; return s; }
-function getKw(r){ return normalizeKw(r.primary_keyword || r.keyword || ''); }
+/* --- normalization (signals) --- */
+const KW_MAP = new Map([
+  ['anti aging','longevity'], ['anti-ageing','longevity'], ['anti ageing','longevity'],
+  ['retinol routine','retinoid routines'], ['skin cycling','retinoid routines'],
+  ['lip-oil','lip oil'], ['lip oils','lip oil'], ['lip oil','lip oil'],
+  ['biohacking','longevity'], ['sleep tech','sleep optimization'],
+  ['old money','quiet luxury'], ['stealth wealth','quiet luxury'],
+  ['westernwear','western'], ['cowboy core','western'],
+  ['gen ai','ai'], ['gen-ai','ai'], ['generative ai','ai']
+]);
+const KW_STOP = new Set([
+  'trend','trends','report','collection','editorial','new','drop','style','styled',
+  'look','looks','runway','season','fall','winter','spring','summer','2024','2025',
+  'brand','product','products','line','launch','limited','best','top',
+  'dress','dresses','shirt','shirts','pants','jeans','skirt','skirts','bag','bags','shoes'
+]);
+function normalizeKw(raw){
+  if(!raw) return '';
+  let s = String(raw).toLowerCase().trim();
+  s = s.replace(/[–—]/g,'-').replace(/\s+/g,' ').replace(/\s-\s/g,'-');
+  if (s.endsWith('s') && s.length > 4) s = s.slice(0,-1);
+  if (KW_MAP.has(s)) s = KW_MAP.get(s);
+  s = s.replace(/^[-_.,:;]+|[-_.,:;]+$/g,'');
+  if (s.length < 3) return '';
+  if (KW_STOP.has(s)) return '';
+  return s;
+}
+function getKw(r){ return normalizeKw(r.primary_keyword || ''); }
 
-/* ---------- GSC (intent) ---------- */
-const INTENTS=[{key:'what_is',re:/\bwhat(\s+is|’s|'s)\b/i,label:'what is'},{key:'how_to',re:/\bhow\s+to\b/i,label:'how to'},{key:'best',re:/\bbest\b/i,label:'best'},{key:'vs',re:/\bvs\b|\bversus\b/i,label:'vs'},{key:'review',re:/\breview|reviews|rating|ratings\b/i,label:'review'},{key:'near_me',re:/\bnear\s+me\b/i,label:'near me'}];
-function classifyIntent(q){ for(const t of INTENTS){ if(t.re.test(q)) return t.key; } return 'other'; }
-function gscForSignal(rows, signal){ const s=normalizeKw(signal); return rows.filter(r => normalizeKw(r.signal||r.keyword||'')===s); }
-function intentStack(rows){ const buckets={what_is:0,how_to:0,best:0,vs:0,review:0,near_me:0,other:0}; let tot=0; rows.forEach(r=>{ const imp=+r.impressions||0; const q=String(r.query||''); const k=classifyIntent(q); buckets[k]+=imp; tot+=imp; }); const pct={}; Object.keys(buckets).forEach(k=> pct[k]= tot? Math.round(buckets[k]/tot*100):0 ); return {buckets,pct,total:tot}; }
-function topQuestions(rows,limit=10){ return rows.filter(r=>/\b(what|how|why|can|should|does|is|are)\b/i.test(r.query||'')).sort((a,b)=>(+b.impressions||0)-(+a.impressions||0)).slice(0,limit).map(r=>({q:r.query,imp:+r.impressions||0})); }
-function answerGapPct(signalRows,gscRows){ const totImp=gscRows.reduce((s,r)=>s+(+r.impressions||0),0)||0; const qImp=gscRows.filter(r=>/\b(what|how|why|can|should|does|is|are)\b/i.test(r.query||'')).reduce((s,r)=>s+(+r.impressions||0),0); const qShare=totImp?(qImp/totImp*100):0; const ex=/(how|why|what|guide|explained|faq|q&a)/i; const titles=signalRows.map(r=>String(r.title||'')); const answered=titles.filter(t=>ex.test(t)).length; const aShare=titles.length?(answered/titles.length*100):0; return Math.max(0,Math.round(qShare-aShare)); }
+/* --- state --- */
+const TOP_LIMIT = 30;
+let rowsAll = [];
+let gscRows = []; /* optional */
+let charts = {};
+let selectedKw = "";
+const els = {
+  cat:document.getElementById('cat'),
+  stat:document.getElementById('stat'),
+  from:document.getElementById('from'),
+  to:document.getElementById('to'),
+  quick:document.getElementById('quick'),
+  clear:document.getElementById('clear'),
+  kwSearch:document.getElementById('kwSearch'),
+  kwTitle:document.getElementById('kwTitle'),
+  kpiTotal:document.getElementById('kpiTotal'),
+  kpiAvg:document.getElementById('kpiAvg'),
+  kpiCat:document.getElementById('kpiCat'),
+  kpis:document.getElementById('kwKpis'),
+  openList:document.getElementById('openList'),
+  kwList:document.getElementById('kwList'),
+  kwCanvas:document.getElementById('chartKeywords'),
+  guardrailsBox:document.getElementById('guardrailsBox'),
+  guards:document.getElementById('guards'),
+  kitTake:document.getElementById('kitTake'),
+  kitNews:document.getElementById('kitNews'),
+  kitLi:document.getElementById('kitLi'),
+  kitHooks:document.getElementById('kitHooks'),
+  kitKpis:document.getElementById('kitKpis'),
+  insightMode:document.getElementById('insightMode'),
+  insightLegend:document.getElementById('insightLegend'),
+};
 
-/* ---------- App state ---------- */
-const TOP=30;
-let SIGNAL_ROWS=[], GSC_ROWS=[];
-let trendScores=[], momentumScores=[], volN=[], groN=[], recN=[];
-let COUNTS=null, listTop=[], charts={}, selected=null;
+/* filters + window */
+function getFiltered(){
+  const c = els.cat.value, s = els.stat.value, f=els.from.value, t=els.to.value;
+  return rowsAll.filter(r=>{
+    if(c && r.category!==c) return false;
+    if(s && (r.status||'').toLowerCase()!==s) return false;
+    if(f || t){ if(!inRange(r.published, f, t)) return false; }
+    return true;
+  });
+}
+function getWindowBounds(){
+  const today=new Date();
+  const curTo=(els.to.value?new Date(els.to.value):today);
+  const curFrom=(els.from.value?new Date(els.from.value):new Date(today.getTime()-90*86400000));
+  const lenMs=curTo-curFrom;
+  const prevTo=new Date(curFrom.getTime()-1);
+  const prevFrom=new Date(prevTo.getTime()-lenMs+1);
+  return {curFrom,curTo,prevFrom,prevTo};
+}
+function rowsInRange(rows, from, to){
+  const isoFrom=from.toISOString().slice(0,10);
+  const isoTo=to.toISOString().slice(0,10);
+  return rows.filter(r=>inRange(r.published,isoFrom,isoTo));
+}
+els.quick.onchange = ()=>{
+  const d = parseInt(els.quick.value)||0;
+  if(!d){ els.from.value=""; els.to.value=""; render(); return; }
+  const today = new Date();
+  const start = new Date(today.getTime()-d*86400000);
+  els.from.value = start.toISOString().slice(0,10);
+  els.to.value = today.toISOString().slice(0,10);
+  render();
+};
+els.clear.onclick = ()=>{ els.cat.value=""; els.stat.value=""; els.from.value=""; els.to.value=""; els.quick.value=""; els.kwSearch.value=""; selectedKw=""; render(); };
+['cat','stat','from','to'].forEach(id => els[id].onchange=render);
+els.kwSearch.oninput = ()=> render();
+els.insightMode.onchange = ()=> render();
+window.addEventListener('resize', ()=> adjustKeywordsHeight());
 
-/* ---------- Boot ---------- */
-(async function(){
-  const bust=new Date().toISOString().slice(0,10);
-  const {rows:signals, source:sSrc}=await loadCSVChecked('signals_simple.csv?ts='+bust,'embedded-signals');
-  const gsc = await loadMaybe('gsc_queries.csv','embedded-gsc');
-  SIGNAL_ROWS=signals; GSC_ROWS=gsc;
+/* chart helper */
+function makeOrUpdate(id, type, data, opt){
+  const ctx = document.getElementById(id);
+  if(charts[id]){ charts[id].data = data; charts[id].options = opt; charts[id].update(); return charts[id]; }
+  charts[id] = new Chart(ctx, {type, data, options:opt});
+  return charts[id];
+}
 
-  document.getElementById('dataset-meta').textContent=`${SIGNAL_ROWS.length} rows • ${new Date().toISOString().slice(0,10)} • ${sSrc}`;
+/* computations */
+function topSignals(rows, limit, filterTxt){
+  const m = new Map();
+  for(const r of rows){ const k=getKw(r); if(!k) continue; m.set(k,(m.get(k)||0)+1); }
+  let arr = [...m.entries()];
+  if(filterTxt){ const re = new RegExp(escRe(filterTxt.trim()),'i'); arr = arr.filter(([k])=>re.test(k)); }
+  arr.sort((a,b)=>b[1]-a[1]);
+  return arr.slice(0,limit);
+}
+function statusMixByCategory(rows){
+  const cats = ['fashion','beauty','wellness'];
+  const stats = ['emerging','bubbling','mainstream'];
+  const table = cats.map(c=>{
+    const sub = rows.filter(r=>r.category===c);
+    const counts = stats.map(s=>sub.filter(r=>(r.status||'').toLowerCase()===s).length);
+    const tot = counts.reduce((a,b)=>a+b,0)||1;
+    return counts.map(v=>v/tot*100);
+  });
+  return {cats, stats, perc: table};
+}
+function rowsForKeyword(rows, kw){
+  const target = normalizeKw(kw);
+  return rows.filter(r => getKw(r) === target);
+}
+function avgScore(rows){
+  const nums = rows.map(r=>parseFloat(r.trend_score||0)).filter(n=>!isNaN(n));
+  if(!nums.length) return 0;
+  return Math.round((nums.reduce((a,b)=>a+b,0)/nums.length)*100)/100;
+}
+function topCat(rows){
+  const m=new Map(); for(const r of rows){ if(r.category) m.set(r.category,(m.get(r.category)||0)+1); }
+  let best="",cnt=-1; m.forEach((v,k)=>{ if(v>cnt){cnt=v;best=k;} });
+  return best||"–";
+}
 
-  const get=(r,k)=>r[k] ?? r[k?.toLowerCase?.()] ?? r[k?.toUpperCase?.()];
-  const volumes =SIGNAL_ROWS.map(r=>isFinite(+get(r,'volume'))?+get(r,'volume'):0);
-  const growths0=SIGNAL_ROWS.map(r=>isFinite(+get(r,'growth_rate'))?+get(r,'growth_rate'):0);
-  const growths =growths0.map(v=>Math.max(0,v));
-  const recency =SIGNAL_ROWS.map(r=>recencyScoreFromDateStr(get(r,'last_seen')||get(r,'published')||''));
-  volN=minmaxNormalize(volumes); groN=minmaxNormalize(growths); recN=recency;
-  trendScores = volN.map((_,i)=>Math.round(0.40*volN[i] + 0.40*groN[i] + 0.20*recN[i]));
-  const noveltyN = volN.map(v=>100 - v);
-  momentumScores = volN.map((_,i)=>Math.round(0.55*groN[i] + 0.35*recN[i] + 0.10*noveltyN[i]));
+/* momentum/newcomers utils */
+function countBy(rows, fnKey){
+  const m=new Map(); for(const r of rows){ const k=fnKey(r); if(!k) continue; m.set(k,(m.get(k)||0)+1); } return m;
+}
+function countKeywords(rows){ return countBy(rows, r=>getKw(r)); }
+function fastestRisers(curRows, prevRows, top=12){
+  const cur = countKeywords(curRows);
+  const prev = countKeywords(prevRows);
+  const set = new Set([...cur.keys(), ...prev.keys()]);
+  const arr = [];
+  for(const k of set){
+    const c = cur.get(k)||0, p = prev.get(k)||0;
+    const delta = c - p;
+    if(c===0) continue;
+    arr.push({k, delta, c, p});
+  }
+  arr.sort((a,b)=> b.delta - a.delta || b.c - a.c);
+  return arr.slice(0, top);
+}
+function newcomerKeywords(curRows, prevRows, limit=20){
+  const cur = countKeywords(curRows), prev = countKeywords(prevRows);
+  const out = [];
+  for(const [k,c] of cur.entries()){
+    if(c>0 && !prev.has(k)) out.push({k, c});
+  }
+  out.sort((a,b)=> b.c - a.c);
+  return out.slice(0, limit);
+}
 
-  /* Momentum top 15 */
-  const keywords=SIGNAL_ROWS.map(r=>String(get(r,'primary_keyword')||get(r,'keyword')||'').trim());
-  const rankedMomentum = keywords.map((k,i)=>({k:normalizeKw(k), m:momentumScores[i]})).filter(d=>d.k).sort((a,b)=>b.m-a.m).slice(0,15);
-  makeBar('momentumChart', rankedMomentum.map(d=>d.k), rankedMomentum.map(d=>d.m), 'Momentum (0–100)');
-  document.getElementById('momentum-meta').textContent=`(Top ${rankedMomentum.length})`;
+/* dynamic height for Top signals */
+function adjustKeywordsHeight(labelsCount=0){
+  const n = labelsCount || (charts.chartKeywords?.data?.labels?.length || 0);
+  const h = Math.min(1400, Math.max(240, 22*n + 40));
+  els.kwCanvas.style.height = h+"px";
+}
 
-  /* Signals — counts */
-  COUNTS=new Map();
-  SIGNAL_ROWS.forEach(r=>{ const k=getKw(r); if(!k) return; COUNTS.set(k,(COUNTS.get(k)||0)+1); });
-  listTop=[...COUNTS.entries()].sort((a,b)=>b[1]-a[1]).slice(0,TOP);
-  document.getElementById('signals-meta').textContent=`(${listTop.length} signals)`;
-  const sigChart=makeBar('signalsChart', listTop.map(d=>d[0]), listTop.map(d=>d[1]), 'Count', (i)=>selectSignal(listTop[i][0]));
-  if(listTop.length){ selectSignal(listTop[0][0]); }
+/* ---------- Guardrails ---------- */
+const SEASONAL_HINTS = [
+  /coat|puffer|parka|boot|knit|sweater|cashmere|tights|beanie|scarf|thermal/i,
+  /linen|bikini|swim|sandal|shorts|sundress|beach|resort|straw|raffia/i,
+  /prom|graduation|wedding|bridal|festival|halloween|christmas|holiday/i
+];
+function isSeasonalKeyword(k){ return SEASONAL_HINTS.some(re => re.test(k||'')); }
+function guard_seasonality(keyword){ if(isSeasonalKeyword(keyword)) return {type:'warn', text:'Seasonality: likely in-season spike — prefer YoY context over short windows.'}; return null; }
+function guard_lowBase(curCount, prevCount){ if(curCount <= 3 && (curCount - prevCount) >= 2) return {type:'warn', text:'Low base effect: big % change off tiny count — not enough to call a real trend yet.'}; return null; }
+function guard_variantConflict(keyword, curRows, prevRows){
+  const stop=new Set(['the','a','an','and','or','of','to','for','with','trend','trends','style','outfit','looks','aesthetic']);
+  const tok=(s)=>String(s||'').toLowerCase().split(/\W+/).filter(w=>w && !stop.has(w));
+  const t0=new Set(tok(keyword));
+  const all = [...countKeywords(curRows).keys()];
+  let conflicts = 0, cousins = 0;
+  all.forEach(k=>{
+    if(k===keyword) return;
+    const t1=new Set(tok(k));
+    const overlap=[...t1].filter(w=>t0.has(w)).length;
+    if(overlap>=1){
+      cousins++;
+      const cCur = rowsForKeyword(curRows, k).length;
+      const cPrev= rowsForKeyword(prevRows, k).length;
+      const dirC = Math.sign(cCur - cPrev);
+      const cCurMain = rowsForKeyword(curRows, keyword).length;
+      const cPrevMain= rowsForKeyword(prevRows, keyword).length;
+      const dirMain = Math.sign(cCurMain - cPrevMain);
+      if(dirC !== 0 && dirMain !== 0 && dirC !== dirMain) conflicts++;
+    }
+  });
+  if(cousins>=2 && conflicts>=1) return {type:'warn', text:'Variant mismatch: close terms point in different directions — beware cherry-picking.'};
+  return null;
+}
+function guard_sourceSkew(rows){
+  const total = rows.length || 1;
+  const counts = {tiktok:0, pinterest:0, youtube:0};
+  rows.forEach(r=>{
+    const h = (hostOf(r.link)||'').toLowerCase();
+    if(h.includes('tiktok')) counts.tiktok++;
+    if(h.includes('pinterest')) counts.pinterest++;
+    if(h.includes('youtube')) counts.youtube++;
+  });
+  if(counts.tiktok/total >= 0.6) return {type:'info', text:'Source skew: TikTok-heavy (entertainment). Look for styling/intent sources to confirm wearability.'};
+  if(counts.pinterest/total >= 0.6) return {type:'info', text:'Source skew: Pinterest-heavy (styling intent).'};
+  if(counts.youtube/total >= 0.6) return {type:'info', text:'Source skew: YouTube-heavy (deep dives).'};
+  return null;
+}
+function guard_mainstream(statusCounts){
+  const tot = statusCounts.reduce((a,b)=>a+b,0)||1;
+  const mainstreamShare = statusCounts[2]/tot;
+  if(mainstreamShare >= 0.7) return {type:'info', text:'Established: already mainstream — good for “what’s happening now”, not early prediction.'};
+  return null;
+}
 
-  /* Search box */
-  document.getElementById('kwSearch').oninput=(e)=>{
-    const q=e.target.value.trim(); let arr=[...COUNTS.entries()];
-    if(q){ const re=new RegExp(escRe(q),'i'); arr=arr.filter(([k])=>re.test(k)); }
-    arr.sort((a,b)=>b[1]-a[1]); arr=arr.slice(0,TOP);
-    sigChart.data.labels=arr.map(d=>d[0]); sigChart.data.datasets[0].data=arr.map(d=>d[1]); sigChart.update();
+/* Content kit helpers */
+function implicationsFromCat(cat){
+  switch((cat||'').toLowerCase()){
+    case 'fashion': return ['Test capsule or merchandising angle','Map creator narratives','Pilot in one channel then scale'];
+    case 'beauty':  return ['Bundle regimen or usage routine','A/B claims & education in PDP/UGC','Seed creators for proof'];
+    case 'wellness':return ['Package as habit/ritual','Prove outcome with simple KPIs','Partner with credible experts'];
+    default:        return ['Pilot with one hero SKU','Tell the story through creators','Measure 2–3 KPIs and iterate'];
+  }
+}
+function kpisFromCat(cat){
+  switch((cat||'').toLowerCase()){
+    case 'fashion': return ['CTR to PDP','Add-to-cart rate','Return-rate change'];
+    case 'beauty':  return ['Repeat purchase','Regimen attach rate','AOV change'];
+    case 'wellness':return ['Completion/adherence','Retention at 30/60/90','Referral rate'];
+    default:        return ['CTR','CVR','Share of voice'];
+  }
+}
+function buildContentKit(keyword, rkw, statsText, firstGuardText){
+  const cat = topCat(rkw);
+  const imps = implicationsFromCat(cat);
+  const kpis = kpisFromCat(cat);
+  const sources = rkw.slice(0,3).map(r=>{
+    const host = hostOf(r.link)||'';
+    const d = (r.published||'').slice(0,10);
+    return `${host}${d?` (${d})`:''}`;
+  }).filter(Boolean).join(', ');
+
+  const takeaway = `${keyword} — ${imps[0]}. ${statsText}. ${firstGuardText||''}`.trim();
+  const nl = [
+    `**${keyword}** — ${imps[0]}.`,
+    `Why it matters: ${imps.join('; ')}.`,
+    `${statsText}.`,
+    sources ? `Sources: ${sources}.` : '',
+    `Reply for the one-pager or to scope a brand-specific pilot.`
+  ].filter(Boolean).join(' ');
+
+  const li = [
+    `⚡ ${keyword}`,
+    ``,
+    `• ${imps[0]}`,
+    `• ${imps[1]}`,
+    `• ${imps[2]}`,
+    ``,
+    `Stats: ${statsText}`,
+    firstGuardText ? `Note: ${firstGuardText}` : '',
+    sources ? `Sources: ${sources}` : '',
+    ``,
+    `👉 DM for the checklist or a working session.`
+  ].filter(Boolean).join('\n');
+
+  const hooks = [
+    `${keyword}: the micro-trend brands keep missing`,
+    `${keyword} → from hype to impact`,
+    `3 ways to activate ${keyword}`
+  ].join('\n');
+
+  return {takeaway, nl, li, hooks, kpis:kpis.join(' • ')};
+}
+
+/* ---------- Category insight computations ---------- */
+function concentrationByCategory(rows){
+  const cats = ['fashion','beauty','wellness'];
+  const tooltip = {};
+  const values = cats.map(cat=>{
+    const sub = rows.filter(r=>r.category===cat);
+    const m = new Map();
+    sub.forEach(r=>{ const k=getKw(r); if(!k) return; m.set(k,(m.get(k)||0)+1); });
+    const total=[...m.values()].reduce((a,b)=>a+b,0)||1;
+    const top = [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
+    tooltip[cat] = top.map(([k,v])=>`${k} (${v})`).join(', ');
+    const head = top.reduce((s,[,v])=>s+v,0);
+    return Math.round(head/total*100);
+  });
+  concentrationByCategory._last = {tooltip};
+  return {cats, values, tooltip};
+}
+function newcomerShareByCategory(curRows, prevRows){
+  const cats=['fashion','beauty','wellness'];
+  return {
+    cats,
+    values: cats.map(c=>{
+      const curK = new Set(curRows.filter(r=>r.category===c).map(getKw));
+      const prevK= new Set(prevRows.filter(r=>r.category===c).map(getKw));
+      let newcomers=0, tot=0;
+      curK.forEach(k=>{ if(!k) return; tot++; if(!prevK.has(k)) newcomers++; });
+      return tot? Math.round(newcomers/tot*100) : 0;
+    })
   };
+}
+function gainerShareByCategory(curRows, prevRows){
+  const cats=['fashion','beauty','wellness'];
+  function countMap(rows, cat){
+    const m=new Map(); rows.filter(r=>r.category===cat).forEach(r=>{ const k=getKw(r); if(!k) return; m.set(k,(m.get(k)||0)+1); }); return m;
+  }
+  return {
+    cats,
+    values: cats.map(c=>{
+      const cur=countMap(curRows,c), prev=countMap(prevRows,c);
+      const keys=new Set([...cur.keys(),...prev.keys()]);
+      let gain=0, tot=0;
+      keys.forEach(k=>{ const a=cur.get(k)||0, b=prev.get(k)||0; if(a===0&&b===0)return; tot++; if(a>b) gain++; });
+      return tot? Math.round(gain/tot*100) : 0;
+    })
+  };
+}
+function crossVerticalShare(rows){
+  const cats=['fashion','beauty','wellness'];
+  const byKw = new Map();
+  rows.forEach(r=>{ const k=getKw(r); if(!k) return; const set=byKw.get(k)||new Set(); set.add(r.category); byKw.set(k,set); });
+  return {
+    cats,
+    values: cats.map(c=>{
+      const kwInCat = new Set(rows.filter(r=>r.category===c).map(getKw).filter(Boolean));
+      let cross=0, tot=0;
+      kwInCat.forEach(k=>{ tot++; if((byKw.get(k)||new Set()).size>=2) cross++; });
+      return tot? Math.round(cross/tot*100) : 0;
+    })
+  };
+}
 
-  /* Risers/Newcomers */
-  const {curFrom,curTo,prevFrom,prevTo}=windowBounds();
-  const curRows=rowsInRange(SIGNAL_ROWS,curFrom,curTo);
-  const prevRows=rowsInRange(SIGNAL_ROWS,prevFrom,prevTo);
-  const risers=fastestRisers(curRows,prevRows,12);
-  makeBar('risersChart', risers.map(r=>r.k), risers.map(r=>r.delta), 'Δ vs previous');
-  const newbies=newcomerKeywords(curRows,prevRows,20);
+/* -------- render -------- */
+function render(){
+  const rows = getFiltered();
+
+  // Top signals (Top 30)
+  const topK = topSignals(rows, TOP_LIMIT, els.kwSearch.value.trim());
+  adjustKeywordsHeight(topK.length);
+  const colors = palette(topK.length);
+  const kwChart = makeOrUpdate('chartKeywords','bar',{
+    labels: topK.map(([k])=>k),
+    datasets:[{label:'count', data: topK.map(([,v])=>v), backgroundColor: colors, borderRadius:8, barThickness:16 }]
+  },{
+    responsive:true, indexAxis:'y',
+    plugins:{legend:{display:false}},
+    scales:{x:{beginAtZero:true}, y:{ticks:{mirror:false}}}
+  });
+  charts.chartKeywords = kwChart;
+  kwChart.options.onClick = (e)=>{
+    const p = kwChart.getElementsAtEventForMode(e,'nearest',{intersect:true},true);
+    if(!p.length) return;
+    const idx = p[0].index;
+    selectedKw = kwChart.data.labels[idx];
+    renderKwDetails();
+  };
+  if(!selectedKw && topK.length){ selectedKw = topK[0][0]; }
+  if(selectedKw) renderKwDetails(); else resetKwDetails();
+
+  // Fastest-rising & Newcomers
+  const {curFrom, curTo, prevFrom, prevTo} = getWindowBounds();
+  const curRows  = rowsInRange(rowsAll, curFrom, curTo);
+  const prevRows = rowsInRange(rowsAll, prevFrom, prevTo);
+  const risers = fastestRisers(curRows, prevRows, 12);
+  makeOrUpdate('chartRisers','bar',{
+    labels: risers.map(r=>r.k),
+    datasets:[{label:'Δ vs previous', data: risers.map(r=>r.delta), backgroundColor: palette(risers.length), borderRadius:8 }]
+  },{
+    plugins:{legend:{display:false}},
+    scales:{y:{beginAtZero:true}}
+  });
+
+  const newbies = newcomerKeywords(curRows, prevRows, 20);
   document.getElementById('newcomersList').innerHTML =
-    newbies.map(n=>`<span class="tag-pill">${n.k} • +${n.c}</span>`).join('') || `<span class="muted">No newcomers.</span>`;
+    newbies.map(n => `<li><span>${n.k}</span><span class="muted">+${n.c}</span></li>`).join('') ||
+    `<li class="muted">No newcomers in this window.</li>`;
 
-  /* Status mix by category */
-  const mix=statusMixByCategory(SIGNAL_ROWS);
-  new Chart(document.getElementById('mixChart'),{
-    type:'bar',
-    data:{labels:mix.cats,datasets:[
-      {label:'emerging',data:mix.perc.map(r=>r[0]),backgroundColor:STATUS_COLORS.emerging,borderRadius:6},
-      {label:'bubbling',data:mix.perc.map(r=>r[1]),backgroundColor:STATUS_COLORS.bubbling,borderRadius:6},
-      {label:'mainstream',data:mix.perc.map(r=>r[2]),backgroundColor:STATUS_COLORS.mainstream,borderRadius:6}
-    ]},
-    options:{responsive:true,scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,max:100}},plugins:{legend:{position:'bottom'}}}
+  // Status mix by category (new colors)
+  const mix = statusMixByCategory(rows);
+  const cEmer = getComputedStyle(document.documentElement).getPropertyValue('--emerging').trim();
+  const cBubb = getComputedStyle(document.documentElement).getPropertyValue('--bubbling').trim();
+  const cMain = getComputedStyle(document.documentElement).getPropertyValue('--mainstream').trim();
+  makeOrUpdate('chartMix','bar',{
+    labels: mix.cats,
+    datasets: [
+      {label:'emerging',  data: mix.perc.map(r=>r[0]), backgroundColor:cEmer, borderRadius:6},
+      {label:'bubbling',  data: mix.perc.map(r=>r[1]), backgroundColor:cBubb, borderRadius:6},
+      {label:'mainstream',data: mix.perc.map(r=>r[2]), backgroundColor:cMain, borderRadius:6},
+    ]
+  },{
+    responsive:true,
+    scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,max:100}},
+    plugins:{tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${ctx.parsed.y.toFixed(0)}%`}}, legend:{position:'bottom'}}
   });
 
-  /* Category insight switcher */
-  const insightSel=document.getElementById('insightMode');
-  const insightLegend=document.getElementById('insightLegend');
-  const insightCtx=document.getElementById('insightChart').getContext('2d');
-  let insightChart=null;
-  function renderInsight(mode){
-    let data, legend;
-    if(mode==='concentration'){ data=concentrationByCategory(SIGNAL_ROWS); legend='Head share = % of mentions captured by top 5 signals (lower = more fragmented / whitespace).'; }
-    else if(mode==='newcomers'){ data=newcomerShareByCategory(curRows,prevRows); legend='Share of signals present now but not in previous window.'; }
-    else if(mode==='gainers'){ data=gainerShareByCategory(curRows,prevRows); legend='Share of signals with positive Δ vs previous window.'; }
-    else{ data=crossVerticalShare(SIGNAL_ROWS); legend='Share of signals that also appear in ≥1 other category.'; }
-    if(insightChart) insightChart.destroy();
-    insightChart=new Chart(insightCtx,{type:'bar',data:{labels:data.cats,datasets:[{label:'%',data:data.values,backgroundColor:palette(data.cats.length),borderRadius:8}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100}}});
-    insightLegend.textContent=legend;
-  }
-  renderInsight('concentration');
-  insightSel.onchange=e=>renderInsight(e.target.value);
+  // Category insight
+  const mode = els.insightMode.value;
+  let insight, legend;
+  if(mode==='concentration'){ insight = concentrationByCategory(rows); legend = 'Head share = % of mentions captured by top 5 signals in each category (lower = more fragmented / diverse).'; }
+  else if(mode==='newcomers'){ const wb=getWindowBounds(); insight = newcomerShareByCategory(rowsInRange(rowsAll,wb.curFrom,wb.curTo), rowsInRange(rowsAll,wb.prevFrom,wb.prevTo)); legend='Share of signals that appear in the current window but not in the previous.'; }
+  else if(mode==='gainers'){ const wb=getWindowBounds(); insight = gainerShareByCategory(rowsInRange(rowsAll,wb.curFrom,wb.curTo), rowsInRange(rowsAll,wb.prevFrom,wb.prevTo)); legend='Share of signals with positive growth vs previous window.'; }
+  else { insight = crossVerticalShare(rows); legend = 'Share of signals in each category that also appear in ≥1 other category (cross-vertical).'; }
 
-  /* helpers inside */
-  function makeBar(id, labels, data, lab, onClickIndex){
-    const ctx=document.getElementById(id).getContext('2d'); if(charts[id]) charts[id].destroy?.();
-    const ch=new Chart(ctx,{ type:'bar', data:{labels,datasets:[{label:lab, data, backgroundColor:palette(labels.length), borderRadius:8, barThickness:16}]},
-      options:{responsive:true, maintainAspectRatio:false, indexAxis:'y', scales:{x:{beginAtZero:true}}, plugins:{legend:{display:false}},
-      onClick(_,els){ if(els?.length){ onClickIndex?.(els[0].index); } }} });
-    charts[id]=ch; return ch;
-  }
-})();
+  const insColors = palette(insight.cats.length);
+  makeOrUpdate('chartInsight','bar',{
+    labels: insight.cats,
+    datasets:[{label:'%', data: insight.values, backgroundColor: insColors, borderRadius:8}]
+  },{
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{
+        title:(ctx)=>`${ctx[0].label}`,
+        label:(ctx)=>{
+          if(mode==='concentration' && concentrationByCategory._last){
+            const tip = concentrationByCategory._last.tooltip[ctx[0].label]||'';
+            return tip? [`${ctx[0].parsed.y}% head share`,`Top: ${tip}`] : `${ctx[0].parsed.y}%`;
+          }
+          return `${ctx[0].parsed.y}%`;
+        }
+      }}
+    },
+    scales:{y:{beginAtZero:true,max:100}}
+  });
+  els.insightLegend.textContent = legend;
+}
 
-/* ---------- Detail panel ---------- */
-function selectSignal(name){
-  selected=name;
-  document.getElementById('signal-title').textContent=name;
+/* details panel */
+function resetKwDetails(){
+  els.kwTitle.textContent = '(select a signal)';
+  els.kpis.style.display='none';
+  els.kwList.innerHTML = '';
+  els.guardrailsBox.style.display='none';
+  makeOrUpdate('chartKwStatus','bar',{labels:[],datasets:[]},{});
+  makeOrUpdate('chartIntent','bar',{labels:[],datasets:[]},{});
+  document.getElementById('intentMeta').textContent='';
+  document.getElementById('qList').innerHTML='';
+  document.getElementById('gapBadge').textContent='Answer Gap: –';
+}
+function renderKwDetails(){
+  if(!selectedKw){ resetKwDetails(); return; }
+  els.kwTitle.textContent = selectedKw;
 
-  const rows=SIGNAL_ROWS.filter(r=>getKw(r)===name);
+  const rows = getFiltered();
+  const rkw = rowsForKeyword(rows, selectedKw);
+
   // KPIs
-  const score = mean(rows.map(r=>+r.trend_score||0));
-  const vol = rows.length;
-  const growth = mean(rows.map(r=> +r.growth_rate || 0));
-  const last = rows.map(r=>r.last_seen||r.published||'').sort().slice(-1)[0] || '–';
+  els.kpiTotal.textContent = `Total: ${rkw.length}`;
+  els.kpiAvg.textContent   = `Avg score: ${avgScore(rkw)}`;
+  els.kpiCat.textContent   = `Top category: ${topCat(rkw)}`;
+  const p = new URLSearchParams();
+  p.set('q', selectedKw);
+  if(els.cat.value)  p.set('cat', els.cat.value);
+  if(els.stat.value) p.set('stat', els.stat.value);
+  if(els.from.value) p.set('from', els.from.value);
+  if(els.to.value)   p.set('to', els.to.value);
+  p.set('view','table');
+  els.openList.href = './?'+p.toString();
+  els.kpis.style.display='flex';
 
-  show('kpis', true);
-  text('kpi-score', `Trend: ${isFinite(score)?Math.round(score):'–'}`);
-  text('kpi-momentum', `Momentum: ${estimateMomentum(rows)}`);
-  text('kpi-volume', `Volume: ${vol}`);
-  text('kpi-growth', `Growth: ${isFinite(growth)?growth+'%':'–'}`);
-  text('kpi-lastseen', `Last: ${last}`);
-
-  const p=new URLSearchParams(); p.set('q',name); p.set('view','table');
-  document.getElementById('openList').href='./?'+p.toString();
-
-  // status thin bar
-  const stats=['emerging','bubbling','mainstream'];
-  const counts=stats.map(s=> rows.filter(r=>String(r.status||'').toLowerCase()===s).length);
-  new Chart(document.getElementById('chartKwStatus').getContext('2d'),{
-    type:'bar',
-    data:{labels:['mix'],datasets:[
-      {label:'emerging',data:[counts[0]],backgroundColor:STATUS_COLORS.emerging,borderRadius:6},
-      {label:'bubbling',data:[counts[1]],backgroundColor:STATUS_COLORS.bubbling,borderRadius:6},
-      {label:'mainstream',data:[counts[2]],backgroundColor:STATUS_COLORS.mainstream,borderRadius:6}
-    ]},
-    options:{indexAxis:'y',scales:{x:{stacked:true,beginAtZero:true}, y:{stacked:true,ticks:{display:false},grid:{display:false}}},plugins:{legend:{position:'bottom'}}}
+  // status stacked bar (thin)
+  const cEmer = getComputedStyle(document.documentElement).getPropertyValue('--emerging').trim();
+  const cBubb = getComputedStyle(document.documentElement).getPropertyValue('--bubbling').trim();
+  const cMain = getComputedStyle(document.documentElement).getPropertyValue('--mainstream').trim();
+  const stats = ['emerging','bubbling','mainstream'];
+  const counts = stats.map(s=>rkw.filter(r=>(r.status||'').toLowerCase()===s).length);
+  makeOrUpdate('chartKwStatus','bar',{
+    labels:['mix'],
+    datasets:[
+      {label:'emerging',  data:[counts[0]], backgroundColor:cEmer, borderRadius:6},
+      {label:'bubbling',  data:[counts[1]], backgroundColor:cBubb, borderRadius:6},
+      {label:'mainstream',data:[counts[2]], backgroundColor:cMain, borderRadius:6},
+    ]
+  },{
+    indexAxis:'y',
+    scales:{x:{stacked:true,beginAtZero:true}, y:{stacked:true, ticks:{display:false}, grid:{display:false}}},
+    plugins:{legend:{position:'bottom'}}
   });
 
-  // GSC: intent + questions + gap
-  const gsc=gscForSignal(GSC_ROWS,name);
-  const stack=intentStack(gsc);
-  const order=['what_is','how_to','best','vs','review','near_me','other'];
-  new Chart(document.getElementById('chartIntent').getContext('2d'),{
-    type:'bar',
-    data:{labels:['intent'],datasets:order.map((k,i)=>({label:(INTENTS.find(t=>t.key===k)?.label || (k==='other'?'other':k)),data:[stack.pct[k]||0],backgroundColor:PALETTE[i%PALETTE.length],borderRadius:6}))},
-    options:{indexAxis:'y',scales:{x:{stacked:true,beginAtZero:true,max:100}, y:{stacked:true,ticks:{display:false},grid:{display:false}}},plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.x}%`}}}}
-  });
-  document.getElementById('intentMeta').textContent = stack.total ? `${stack.total.toLocaleString()} impressions across queries` : 'No GSC rows for this signal (sample used or none).';
-  const qs=topQuestions(gsc,8);
-  document.getElementById('qList').innerHTML = qs.length
-    ? qs.map(r=>`<span class="tag-pill"><a href="https://www.google.com/search?q=${encodeURIComponent(r.q)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">${r.q}</a> • ${r.imp.toLocaleString()}</span>`).join('')
-    : `<span class="muted">No question-type queries.</span>`;
-  const gap=answerGapPct(rows,gsc); text('gapBadge',`Answer Gap: ${gap}%`);
+  // latest 12 articles
+  const latest = rkw.slice().sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0)).slice(0,12);
+  els.kwList.innerHTML = latest.map(r=>{
+    const d = (r.published||"").slice(0,10);
+    const t = r.title||"(untitled)";
+    const safeUrl = r.link || '#';
+    return `<li><a href="${safeUrl}" target="_blank" rel="noopener">${t}</a><span class="muted">${d}</span></li>`;
+  }).join("") || `<li class="muted">No recent articles.</li>`;
 
-  // Articles (latest 12)
-  const list=document.getElementById('articles-list');
-  const latest=rows.slice().sort((a,b)=>(Date.parse(b.published||b.last_seen||0)||0)-(Date.parse(a.published||a.last_seen||0)||0)).slice(0,12);
-  list.innerHTML = latest.map(r=>{
-    const d=(r.published||r.last_seen||"").slice(0,10); const t=r.title||"(untitled)"; const u=r.link||'#';
-    return `<div style="padding:10px 0;border-bottom:1px dashed var(--border)"><a href="${u}" target="_blank" rel="noopener" style="font-weight:600;text-decoration:none;color:#111827;">${t}</a><div class="muted" style="font-size:12px;">${hostOf(u)} ${d? '• '+d : ''}</div></div>`;
-  }).join('') || `<span class="muted">No recent articles.</span>`;
+  // guardrails
+  const {curFrom, curTo, prevFrom, prevTo} = getWindowBounds();
+  const curRows  = rowsInRange(rowsAll, curFrom, curTo);
+  const prevRows = rowsInRange(rowsAll, prevFrom, prevTo);
+  const curCount = rowsForKeyword(curRows, selectedKw).length;
+  const prevCount= rowsForKeyword(prevRows, selectedKw).length;
 
-  // Guardrails
-  renderGuardrails(name, rows);
+  const guards = [];
+  const s1 = guard_seasonality(selectedKw); if(s1) guards.push(s1);
+  const s2 = guard_lowBase(curCount, prevCount); if(s2) guards.push(s2);
+  const s3 = guard_variantConflict(selectedKw, curRows, prevRows); if(s3) guards.push(s3);
+  const s4 = guard_sourceSkew(rkw); if(s4) guards.push(s4);
+  const s5 = guard_mainstream(counts); if(s5) guards.push(s5);
+
+  els.guards.innerHTML = '';
+  els.guardrailsBox.style.display='block';
+  if(guards.length){
+    guards.forEach(g=>{
+      const dotClass = g.type==='warn' ? 'warn' : (g.type==='info' ? 'infoDot' : 'ok');
+      const div=document.createElement('div');
+      div.className='flag';
+      div.innerHTML = `<span class="dot ${dotClass}"></span><div>${g.text}</div>`;
+      els.guards.appendChild(div);
+    });
+  }else{
+    const div=document.createElement('div');
+    div.className='flag';
+    div.innerHTML = `<span class="dot ok"></span><div>No major flags from seasonality, base effects, variant mismatch or source skew.</div>`;
+    els.guards.appendChild(div);
+  }
 
   // Content Kit (concise)
-  const cat=topCat(rows); const imps=implicationsFromCat(cat); const kpis=kpisFromCat(cat);
-  text('kit-takeaway', `${name} — ${imps[0]}. Total ${rows.length}, avg trend ${mean(rows.map(r=>+r.trend_score||0))}, top category ${cat}.`);
-  text('kit-news', `**${name}** — ${imps[0]}. Why it matters: ${imps.join('; ')}. Sources: ${latest.slice(0,3).map(r=>hostOf(r.link||'')).filter(Boolean).join(', ')}. Reply for a one-pager or pilot brief.`);
-  text('kit-li', `⚡ ${name}\n• ${imps.join('\n• ')}\n\nKPIs: ${kpis.join(' • ')}\n👉 DM for the pilot checklist.`);
-  text('kit-hooks', [`${name}: the micro-trend brands keep missing`, `${name} → from hype to impact`, `3 ways to activate ${name}`].join('\n'));
-  text('kit-kpis', kpis.join(' • '));
+  const statsText = `Total ${rkw.length}, avg score ${avgScore(rkw)}, top category ${topCat(rkw)}`;
+  const firstGuardText = guards[0]?.text || '';
+  const kit = buildContentKit(selectedKw, rkw, statsText, firstGuardText);
+  els.kitTake.textContent  = kit.takeaway;
+  els.kitNews.textContent  = kit.nl;
+  els.kitLi.textContent    = kit.li;
+  els.kitHooks.textContent = kit.hooks;
+  els.kitKpis.textContent  = kit.kpis;
+
+  // ---- Search Intent (optional gscRows) ----
+  const gsc = gscRows.filter(r => normalizeKw(r.signal||r.keyword||'') === selectedKw);
+  const INTENTS=[{key:'what is',re:/\bwhat(\s+is|’s|'s)\b/i},{key:'how to',re:/\bhow\s+to\b/i},{key:'best',re:/\bbest\b/i},{key:'vs',re:/\bvs\b|\bversus\b/i},{key:'review',re:/\breview|reviews|rating|ratings\b/i},{key:'near me',re:/\bnear\s+me\b/i},{key:'other'}];
+  const buckets={}; INTENTS.forEach(t=>buckets[t.key]=0);
+  let tot=0;
+  gsc.forEach(r=>{
+    const imp=+r.impressions||0; const q=String(r.query||'');
+    const hit=INTENTS.find(t=>t.re && t.re.test(q))?.key || 'other';
+    buckets[hit]+=imp; tot+=imp;
+  });
+  const order=['what is','how to','best','vs','review','near me','other'];
+  makeOrUpdate('chartIntent','bar',{
+    labels:['intent'],
+    datasets: order.map((k,i)=>({label:k, data:[tot?Math.round(buckets[k]/tot*100):0], backgroundColor:FASHION_PALETTE[i%FASHION_PALETTE.length], borderRadius:6}))
+  },{
+    indexAxis:'y',
+    scales:{x:{stacked:true,beginAtZero:true,max:100}, y:{stacked:true, ticks:{display:false}, grid:{display:false}}},
+    plugins:{legend:{position:'bottom'}, tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.x}%`}}}
+  });
+  document.getElementById('intentMeta').textContent = tot ? `${tot.toLocaleString()} impressions across queries` : 'No GSC rows for this signal.';
+
+  // Top questions & Answer Gap
+  const qRows = gsc.filter(r=>/\b(what|how|why|can|should|does|is|are)\b/i.test(String(r.query||''))).sort((a,b)=>(+b.impressions||0)-(+a.impressions||0)).slice(0,8);
+  document.getElementById('qList').innerHTML = qRows.length
+    ? qRows.map(r=>`<li style="display:flex;justify-content:space-between;gap:10px"><a href="https://www.google.com/search?q=${encodeURIComponent(r.query)}" target="_blank" rel="noopener">${r.query}</a><span class="muted">${(+r.impressions||0).toLocaleString()}</span></li>`).join('')
+    : `<li class="muted">No question-type queries.</li>`;
+
+  const totImp = gsc.reduce((s,r)=>s+(+r.impressions||0),0)||0;
+  const qImp   = qRows.reduce((s,r)=>s+(+r.impressions||0),0);
+  const qShare = totImp? (qImp/totImp*100) : 0;
+  const answeredTitles = rkw.map(r=>String(r.title||'')).filter(t=>/(how|why|what|guide|explained|faq|q&a)/i.test(t)).length;
+  const aShare = rkw.length ? (answeredTitles/rkw.length*100) : 0;
+  const gap = Math.max(0, Math.round(qShare - aShare));
+  document.getElementById('gapBadge').textContent = `Answer Gap: ${gap}%`;
 }
 
-/* ---------- Small utils ---------- */
-function text(id,s){ const el=document.getElementById(id); if(el) el.textContent=s; }
-function show(id,vis){ const el=document.getElementById(id); if(el) el.style.display = vis ? '' : 'none'; }
-function mean(a){ const b=a.filter(n=>isFinite(n)); if(!b.length) return 0; return Math.round((b.reduce((x,y)=>x+y,0)/b.length)*100)/100; }
-function topCat(rows){ const m=new Map(); rows.forEach(r=>{ const c=r.category||''; if(c) m.set(c,(m.get(c)||0)+1); }); let best='–',cnt=-1; m.forEach((v,k)=>{if(v>cnt){cnt=v;best=k;}}); return best; }
-function rowsInRange(all,from,to){ const A=from.toISOString().slice(0,10), B=to.toISOString().slice(0,10); return all.filter(r=>inRange(r.published||r.last_seen,A,B)); }
-function windowBounds(){ const today=new Date(); const curTo=today; const curFrom=new Date(today.getTime()-90*86400000); const lenMs=curTo-curFrom; const prevTo=new Date(curFrom.getTime()-1); const prevFrom=new Date(prevTo.getTime()-lenMs+1); return {curFrom,curTo,prevFrom,prevTo}; }
-function mapCounts(rows){ const m=new Map(); rows.forEach(r=>{ const k=getKw(r); if(!k) return; m.set(k,(m.get(k)||0)+1); }); return m; }
-function fastestRisers(curRows,prevRows,top=12){ const cur=mapCounts(curRows), prev=mapCounts(prevRows); const set=new Set([...cur.keys(),...prev.keys()]); const arr=[]; set.forEach(k=>{ const c=cur.get(k)||0, p=prev.get(k)||0; const d=c-p; if(c===0) return; arr.push({k,delta:d,c,p}); }); arr.sort((a,b)=> b.delta - a.delta || b.c - a.c); return arr.slice(0,top); }
-function newcomerKeywords(curRows,prevRows,limit=20){ const cur=mapCounts(curRows), prev=mapCounts(prevRows), out=[]; cur.forEach((c,k)=>{ if(c>0 && !prev.has(k)) out.push({k,c}); }); out.sort((a,b)=> b.c - a.c); return out.slice(0,limit); }
-function statusMixByCategory(rows){ c
+/* -------- load CSVs -------- */
+function load(){
+  const bust = new Date().toISOString().slice(0,10);
+  // signals (required)
+  fetch('signals_simple.csv?ts='+bust)
+    .then(r=>r.text())
+    .then(csv=>Papa.parse(csv,{header:true,skipEmptyLines:true}))
+    .then(res=>{ rowsAll=res.data; render(); })
+    .catch(()=> alert('Failed to load signals_simple.csv'));
+  // GSC (optional)
+  fetch('gsc_queries.csv?ts='+bust)
+    .then(r=> r.ok ? r.text() : '')
+    .then(txt => txt ? Papa.parse(txt,{header:true,skipEmptyLines:true}).data : [])
+    .then(rows => { gscRows = rows; if(selectedKw) renderKwDetails(); })
+    .catch(()=>{ gscRows=[]; });
+}
+load();
+</script>
