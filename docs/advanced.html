@@ -74,7 +74,7 @@
   .legend-chips .sw{width:14px;height:10px;border-radius:3px;border:1px solid var(--border);display:inline-block}
 </style>
 
-<!-- HEADER (updated: category, status, All time dropdown; from/to kept but hidden) -->
+<!-- HEADER (search removed; hidden kwSearch kept for JS) -->
 <div class="bar">
   <div class="bar-inner">
     <a class="btn" href="./">← Signals list</a>
@@ -89,11 +89,11 @@
       <option>emerging</option><option>bubbling</option><option>mainstream</option>
     </select>
 
-    <!-- keep existing date inputs for JS, just hide them -->
+    <!-- keep date inputs for JS, just hidden -->
     <input id="from" type="date" class="input" aria-label="From date" style="display:none">
     <input id="to"   type="date" class="input" aria-label="To date"   style="display:none">
 
-    <!-- single range dropdown, values used by existing quick.onchange code -->
+    <!-- single range dropdown; wired to existing quick.onchange -->
     <select id="quick" class="select">
       <option value="">All time</option>
       <option value="7">Last 7 days</option>
@@ -104,9 +104,9 @@
 
     <button id="clear" class="btn">Clear</button>
     <span class="spacer"></span>
-    <label class="small">Filter signals…
-      <input id="kwSearch" type="search" class="input" placeholder="type to filter bar" style="width:240px">
-    </label>
+
+    <!-- hidden input so existing JS (els.kwSearch) still works -->
+    <input id="kwSearch" type="hidden" value="">
   </div>
 </div>
 
@@ -603,7 +603,7 @@ function renderDetails(){
 
   // latest 12 articles (scrollable list)
   const latest = rkw.slice().sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0)).slice(0,12);
-  els.kwList.innerHTML = latest.map(r=>{
+  els.kwList.innerHTML = latest map(r=>{
     const d = (r.published||"").slice(0,10);
     const t = r.title||"(untitled)";
     const safeUrl = r.link || '#';
