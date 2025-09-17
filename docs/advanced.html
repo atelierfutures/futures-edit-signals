@@ -603,7 +603,7 @@ function renderDetails(){
 
   // latest 12 articles (scrollable list)
   const latest = rkw.slice().sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0)).slice(0,12);
-  els.kwList.innerHTML = latest map(r=>{
+  els.kwList.innerHTML = latest.map(r=>{
     const d = (r.published||"").slice(0,10);
     const t = r.title||"(untitled)";
     const safeUrl = r.link || '#';
