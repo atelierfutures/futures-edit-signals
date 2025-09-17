@@ -74,7 +74,7 @@
   .legend-chips .sw{width:14px;height:10px;border-radius:3px;border:1px solid var(--border);display:inline-block}
 </style>
 
-<!-- HEADER (search removed; hidden kwSearch kept for JS) -->
+<!-- HEADER (no visible search bar; hidden input to keep code paths intact) -->
 <div class="bar">
   <div class="bar-inner">
     <a class="btn" href="./">← Signals list</a>
@@ -89,11 +89,10 @@
       <option>emerging</option><option>bubbling</option><option>mainstream</option>
     </select>
 
-    <!-- keep date inputs for JS, just hidden -->
+    <!-- keep date inputs (hidden) so existing range/windowing works -->
     <input id="from" type="date" class="input" aria-label="From date" style="display:none">
     <input id="to"   type="date" class="input" aria-label="To date"   style="display:none">
 
-    <!-- single range dropdown; wired to existing quick.onchange -->
     <select id="quick" class="select">
       <option value="">All time</option>
       <option value="7">Last 7 days</option>
@@ -105,8 +104,8 @@
     <button id="clear" class="btn">Clear</button>
     <span class="spacer"></span>
 
-    <!-- hidden input so existing JS (els.kwSearch) still works -->
-    <input id="kwSearch" type="hidden" value="">
+    <!-- hidden search box to satisfy code paths (no UI shown) -->
+    <input id="kwSearch" type="search" class="input" style="display:none" aria-hidden="true">
   </div>
 </div>
 
@@ -128,20 +127,17 @@
         <a class="btn" id="openList" target="_blank" rel="noopener">Open in list</a>
       </div>
 
-      <!-- Search intent only (uses space from removed status mix) -->
       <h4 class="small" style="margin-top:6px">Search intent (GSC)</h4>
       <canvas id="chartIntent" class="mini"></canvas>
       <div id="intentLegend" class="legend-chips"></div>
       <div id="intentMeta" class="legend"></div>
 
-      <!-- Questions + Answer gap -->
       <h4 class="small" style="margin-top:6px">Top questions & Answer Gap</h4>
       <div class="row">
         <span class="pill" id="gapBadge">Answer Gap: –</span>
       </div>
       <ul id="qList" class="list"></ul>
 
-      <!-- Articles (scrollable) -->
       <h4 class="small" style="margin-top:6px">Latest articles</h4>
       <ul id="kwList" class="list"></ul>
     </div>
@@ -162,7 +158,7 @@
     </div>
   </div>
 
-  <!-- Row 3: Keep the category-level analytics -->
+  <!-- Row 3 -->
   <div class="grid two" style="margin-top:16px">
     <div class="card">
       <h3 style="margin:4px 0 8px 0">Status mix by category</h3>
@@ -329,30 +325,18 @@ function topSignals(rows, limit, filterTxt){
   arr.sort((a,b)=>b[1]-a[1]);
   return arr.slice(0,limit);
 }
-// Replace your current rowsForKeyword with this version
-function rowsForKeyword(rows, kw){
-  const t = normalizeKw(kw);
-  if(!t) return [];
-
-  // if the selected label is a combo ("k-beauty skin"), require all tokens to be present
-  const tokens = t.split(/\s+/).filter(Boolean);
-
-  return rows.filter(r=>{
-    const raw = String(r.primary_keyword || r.keyword || '');
-    // split multi-keyword cells and normalize each piece
-    const parts = raw.split(',')
-      .map(s => normalizeKw(s))
-      .filter(Boolean); // e.g. ["k-beauty","skin"]
-
-    if(!parts.length) return false;
-
-    // 1) exact match still works
-    if (parts.includes(t)) return true;
-
-    // 2) combined labels: every token must appear in the parts
-    //    so "k-beauty skin" will match ["k-beauty","skin"]
-    return tokens.every(tok => parts.includes(tok));
+function rowsForKeyword(rows, kw){ const t=normalizeKw(kw); return rows.filter(r=> getKw(r)===t); }
+function avgScore(rows){ const nums=rows.map(r=>+r.trend_score||0).filter(n=>!isNaN(n)); if(!nums.length) return 0; return Math.round((nums.reduce((a,b)=>a+b,0)/nums.length)*100)/100; }
+function topCat(rows){ const m=new Map(); rows.forEach(r=>{ if(r.category) m.set(r.category,(m.get(r.category)||0)+1); }); let best="",cnt=-1; m.forEach((v,k)=>{ if(v>cnt){cnt=v;best=k;} }); return best||"–"; }
+function statusMixByCategory(rows){
+  const cats=['fashion','beauty','wellness'], stats=['emerging','bubbling','mainstream'];
+  const table=cats.map(c=>{
+    const sub=rows.filter(r=>r.category===c);
+    const counts=stats.map(s=> sub.filter(r=>(r.status||'').toLowerCase()===s).length);
+    const tot=counts.reduce((a,b)=>a+b,0)||1;
+    return counts.map(v=>v/tot*100);
   });
+  return {cats,stats,perc:table};
 }
 
 /* Momentum & newcomers */
@@ -412,24 +396,42 @@ function crossVerticalShare(rows){
 }
 
 /* ----------- GSC: intent & questions ----------- */
+/* Expanded buckets to classify more queries */
 const INTENTS = [
-  {key:'what_is',  re:/\bwhat(\s+is|’s|'s)\b/i, label:'what is'},
-  {key:'how_to',   re:/\bhow\s+to\b/i, label:'how to'},
-  {key:'best',     re:/\bbest\b/i, label:'best'},
-  {key:'vs',       re:/\bvs\b|\bversus\b/i, label:'vs'},
-  {key:'review',   re:/\breview|reviews|rating|ratings\b/i, label:'review'},
-  {key:'near_me',  re:/\bnear\s+me\b/i, label:'near me'}
+  {key:'what_is',  re:/\bwhat(\s+is|’s|'s)\b/i,                    label:'what is'},
+  {key:'how_to',   re:/\bhow\s+to\b/i,                             label:'how to'},
+  {key:'best',     re:/\bbest\b/i,                                 label:'best'},
+  {key:'vs',       re:/\bvs\b|\bversus\b/i,                        label:'vs'},
+  {key:'review',   re:/\breview|reviews|rating|ratings\b/i,        label:'review'},
+  {key:'near_me',  re:/\bnear\s+me\b/i,                            label:'near me'},
+  /* New buckets */
+  {key:'buy',      re:/\bbuy|purchase|order|shop|for\s+sale|price|prices\b/i, label:'buy/price'},
+  {key:'brand',    re:/\bbrand|brands\b/i,                         label:'brands'},
+  {key:'where',    re:/\bwhere\b/i,                                label:'where'},
+  {key:'which',    re:/\bwhich\b/i,                                label:'which'},
+  {key:'guide',    re:/\bguide|tutorial|tips|checklist|how do i\b/i, label:'guide'},
+  {key:'other',    re:/.*/i,                                       label:'other'} // keep last
 ];
 function classifyIntent(q){
   for(const t of INTENTS){ if(t.re.test(q)) return t.key; }
   return 'other';
 }
+/* Prefer explicit signal match; fallback to token-matching queries */
 function gscForSignal(signal){
-  const s=normalizeKw(signal);
-  return gscAll.filter(r => normalizeKw(r.signal||r.keyword||'')===s);
+  const s = normalizeKw(signal);
+  let rows = gscAll.filter(r => normalizeKw(r.signal || r.keyword || '') === s);
+
+  if (!rows.length) {
+    const tokens = s.split(/\s+/).filter(Boolean);
+    rows = gscAll.filter(r => {
+      const q = normalizeKw(String(r.query || ''));
+      return tokens.every(t => q.includes(t));
+    });
+  }
+  return rows;
 }
 function intentStack(rows){
-  const buckets={what_is:0,how_to:0,best:0,vs:0,review:0,near_me:0,other:0};
+  const buckets={what_is:0,how_to:0,best:0,vs:0,review:0,near_me:0,buy:0,brand:0,where:0,which:0,guide:0,other:0};
   let tot=0;
   rows.forEach(r=>{
     const imp=+r.impressions||0; const q=String(r.query||'');
@@ -451,7 +453,6 @@ function answerGapPct(signalRows, gscRows){
   const qImp   = gscRows.filter(r => /\b(what|how|why|can|should|does|is|are)\b/i.test(r.query||'')).reduce((s,r)=> s + (+r.impressions||0), 0);
   const questionShare = totImp ? (qImp/totImp*100) : 0;
 
-  // crude “answer” share: article titles that look explanatory
   const ex = /(?:how|why|what|guide|explained|q&a|faq)/i;
   const titles = signalRows.map(r=> String(r.title||''));
   const answered = titles.filter(t=> ex.test(t)).length;
@@ -572,17 +573,17 @@ function renderDetails(){
   els.openList.href = './?'+p.toString();
   els.kpiRow.style.display='flex';
 
-  // ---------- Intent stack & legend ----------
+  // Intent stack & legend
   const gscRows = gscForSignal(selectedKw);
   const stack = intentStack(gscRows);
-  const order = ['what_is','how_to','best','vs','review','near_me','other'];
+  const order = ['what_is','how_to','best','vs','review','near_me','buy','brand','where','which','guide','other'];
   const intentColors = palette(order.length);
 
   makeOrUpdate('chartIntent','bar',{
     labels:['intent'],
     datasets: order.map((k,i)=>({
       label: INTENTS.find(t=>t.key===k)?.label || (k==='other'?'other':k),
-      data:[stack.pct[k]||0],
+      data:[stack.pct[k] || 0],
       backgroundColor: intentColors[i],
       borderRadius:6
     }))
@@ -592,7 +593,6 @@ function renderDetails(){
     plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${c.parsed.x}%`}}}
   });
 
-  // external legend chips (always readable)
   els.intentLegend.innerHTML = order.map((k,i)=>{
     const lbl = INTENTS.find(t=>t.key===k)?.label || (k==='other'?'other':k);
     return `<span class="chip"><span class="sw" style="background:${intentColors[i]}"></span>${lbl}</span>`;
@@ -613,7 +613,7 @@ function renderDetails(){
   const gap = answerGapPct(rkw, gscRows);
   els.gapBadge.textContent = `Answer Gap: ${gap}%`;
 
-  // latest 12 articles (scrollable list)
+  // latest 12 articles
   const latest = rkw.slice().sort((a,b)=>(Date.parse(b.published||0)||0)-(Date.parse(a.published||0)||0)).slice(0,12);
   els.kwList.innerHTML = latest.map(r=>{
     const d = (r.published||"").slice(0,10);
