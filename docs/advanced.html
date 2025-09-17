@@ -329,18 +329,30 @@ function topSignals(rows, limit, filterTxt){
   arr.sort((a,b)=>b[1]-a[1]);
   return arr.slice(0,limit);
 }
-function rowsForKeyword(rows, kw){ const t=normalizeKw(kw); return rows.filter(r=> getKw(r)===t); }
-function avgScore(rows){ const nums=rows.map(r=>+r.trend_score||0).filter(n=>!isNaN(n)); if(!nums.length) return 0; return Math.round((nums.reduce((a,b)=>a+b,0)/nums.length)*100)/100; }
-function topCat(rows){ const m=new Map(); rows.forEach(r=>{ if(r.category) m.set(r.category,(m.get(r.category)||0)+1); }); let best="",cnt=-1; m.forEach((v,k)=>{ if(v>cnt){cnt=v;best=k;} }); return best||"–"; }
-function statusMixByCategory(rows){
-  const cats=['fashion','beauty','wellness'], stats=['emerging','bubbling','mainstream'];
-  const table=cats.map(c=>{
-    const sub=rows.filter(r=>r.category===c);
-    const counts=stats.map(s=> sub.filter(r=>(r.status||'').toLowerCase()===s).length);
-    const tot=counts.reduce((a,b)=>a+b,0)||1;
-    return counts.map(v=>v/tot*100);
+// Replace your current rowsForKeyword with this version
+function rowsForKeyword(rows, kw){
+  const t = normalizeKw(kw);
+  if(!t) return [];
+
+  // if the selected label is a combo ("k-beauty skin"), require all tokens to be present
+  const tokens = t.split(/\s+/).filter(Boolean);
+
+  return rows.filter(r=>{
+    const raw = String(r.primary_keyword || r.keyword || '');
+    // split multi-keyword cells and normalize each piece
+    const parts = raw.split(',')
+      .map(s => normalizeKw(s))
+      .filter(Boolean); // e.g. ["k-beauty","skin"]
+
+    if(!parts.length) return false;
+
+    // 1) exact match still works
+    if (parts.includes(t)) return true;
+
+    // 2) combined labels: every token must appear in the parts
+    //    so "k-beauty skin" will match ["k-beauty","skin"]
+    return tokens.every(tok => parts.includes(tok));
   });
-  return {cats,stats,perc:table};
 }
 
 /* Momentum & newcomers */
